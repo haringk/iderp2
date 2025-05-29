@@ -20,6 +20,7 @@ Custom app per ERPNext che gestisce prodotti venduti al metro quadro, aggiungend
 ## Utilità
 bench update --reset
 bench --site sito.local set-maintenance-mode off
+bench --site sito.local install-app iderp
 
 
 ## Avvio
