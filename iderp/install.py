@@ -38,7 +38,7 @@ def after_install():
             "insert_after": "altezza",
             "precision": 3,
             "read_only": 1,
-            "description": "Base x Altezza / 1000000",
+            "description": "Base x Altezza / 10000",
         },
     ]
     for dt in doctypes:

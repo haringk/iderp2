@@ -25,3 +25,6 @@ doc_events = {
     "Sales Invoice": {"before_submit": "iderp.copy_fields.copy_custom_fields"},
     # Aggiungi altri DocType se necessario
 }
+
+# Esegui la creazione dei campi custom automaticamente
+after_install = "iderp.install.after_install"

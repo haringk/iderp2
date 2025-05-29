@@ -17,7 +17,7 @@ frappe.ui.form.on('Sales Order Item', {
 function calcola_prezzo(frm, cdt, cdn) {
     let row = locals[cdt][cdn];
     if(row.base && row.altezza && row.rate) {
-        let mq = row.base * row.altezza;
+        let mq = (row.base * row.altezza) / 10000; // misure in cm
         let amount = mq * row.rate;
         frappe.model.set_value(cdt, cdn, "amount", amount);
     }

@@ -1,13 +1,22 @@
-frappe.ui.form.on(cur_frm.doctype, {
-    base: function(frm, cdt, cdn) {
-        calculate_importo(frm, cdt, cdn);
-    },
-    altezza: function(frm, cdt, cdn) {
-        calculate_importo(frm, cdt, cdn);
-    },
-    prezzo_mq: function(frm, cdt, cdn) {
-        calculate_importo(frm, cdt, cdn);
-    }
+[
+    'Quotation Item',
+    'Sales Order Item',
+    'Sales Invoice Item',
+    'Delivery Note Item',
+    'Work Order Item',
+    'Web Order Item'
+].forEach(function(dt) {
+    frappe.ui.form.on(dt, {
+        base: function(frm, cdt, cdn) {
+            calculate_importo(frm, cdt, cdn);
+        },
+        altezza: function(frm, cdt, cdn) {
+            calculate_importo(frm, cdt, cdn);
+        },
+        prezzo_mq: function(frm, cdt, cdn) {
+            calculate_importo(frm, cdt, cdn);
+        }
+    });
 });
 
 function calculate_importo(frm, cdt, cdn) {
