@@ -50,3 +50,6 @@ def after_install():
                     **cf
                 })
                 cf_doc.insert(ignore_permissions=True)
+                print(f"[iderp] Aggiunto campo {cf['fieldname']} a {dt}")
+            else:
+                print(f"[iderp] Campo {cf['fieldname']} già presente su {dt}")

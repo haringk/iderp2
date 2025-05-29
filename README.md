@@ -18,9 +18,43 @@ Custom app per ERPNext che gestisce prodotti venduti al metro quadro, aggiungend
 
 
 ## Utilità
+```bash
 bench update --reset
 bench --site sito.local set-maintenance-mode off
 bench --site sito.local install-app iderp
+```
+
+Per refresh
+```bash
+bench --site sito.local clear-cache
+bench clear-compiled # questo non va 
+bench restart
+```
+
+Disinstalla:
+```bash
+bench --site sito.local uninstall-app iderp
+```
+Rimuovi manualmente la diga "iderp" da ```sites/sito.local/apps.txt``` (aggiungila dopo la reinstallazione.
+```bash
+bench build
+bench --site sito.local clear-cache
+bench restart
+```
+Cancella la cartella "iderp" 
+
+
+Console:
+```bash
+bench --site sito.local console
+```
+
+Installa:
+```
+bench get-app iderp https://github.com/haringk/iderp2.git
+bench --site sito.local install-app iderp
+```
+Verifica che in ```sites/sito.local/apps.txt``` ci sia la voce del plugin.
 
 
 ## Avvio
