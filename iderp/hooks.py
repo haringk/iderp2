@@ -1,0 +1,6 @@
+app_name = "iderp"
+app_title = "iderp"
+app_publisher = "idstudio AI"
+app_description = "Custom app for ERPNext"
+app_email = "ai@idstudio.org"
+app_license = "MIT"
