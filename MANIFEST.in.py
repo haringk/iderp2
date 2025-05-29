@@ -1,4 +1,4 @@
 include README.md
+include MANIFEST.in
 include requirements.txt
 recursive-include iderp *
-recursive-include public *
