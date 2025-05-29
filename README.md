@@ -16,6 +16,12 @@ Custom app per ERPNext che gestisce prodotti venduti al metro quadro, aggiungend
 ## Note
 - il file apps.txt nel quale deve esserci il nome del plugin è quello nella directory /sites/
 
+
+## Utilità
+bench update --reset
+bench --site sito.local set-maintenance-mode off
+
+
 ## Avvio
 ```bash
 source ~/frappe-bench/bench-env/bin/activate
