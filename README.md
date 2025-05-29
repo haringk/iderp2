@@ -13,6 +13,9 @@ Custom app per ERPNext che gestisce prodotti venduti al metro quadro, aggiungend
 - Verifica che iderp.js sia incluso.
 
 
+## Note
+- il file apps.txt nel quale deve esserci il nome del plugin è quello nella directory /sites/
+
 ## Avvio
 ```bash
 source ~/frappe-bench/bench-env/bin/activate
