@@ -14,9 +14,10 @@ Custom app per ERPNext che gestisce prodotti venduti al metro quadro, aggiungend
 
 
 ## Avvio
-- source ~/frappe-bench/bench-env/bin/activate
-- cd ~/frappe-bench
-- bench start
+```bash
+source ~/frappe-bench/bench-env/bin/activate
+cd ~/frappe-bench
+bench start
 
 # iderp
 
