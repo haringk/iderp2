@@ -9,12 +9,12 @@ app_include_js = "/assets/iderp/js/iderp.js"
 app_include_css = "/assets/iderp/css/iderp.css"
 
 doctype_js = {
-    "Quotation Item": "public/js/item_dimension.js",
-    "Sales Order Item": "public/js/item_dimension.js",
-	"Sales Invoice Item": "public/js/item_dimension.js",
-	"Delivery Note Item": "public/js/item_dimension.js",
-	"Work Order Item": "public/js/item_dimension.js",
-	"Web Order Item": "public/js/item_dimension.js"
+    "Quotation Item": "iderp/public/js/item_dimension.js",
+    "Sales Order Item": "iderp/public/js/item_dimension.js",
+	"Sales Invoice Item": "iderp/public/js/item_dimension.js",
+	"Delivery Note Item": "iderp/public/js/item_dimension.js",
+	"Work Order Item": "iderp/public/js/item_dimension.js",
+	"Web Order Item": "iderp/public/js/item_dimension.js"
 	# ...ecc.
 }
 
