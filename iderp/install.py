@@ -37,7 +37,7 @@ def after_install():
             "fieldtype": "Float",
             "insert_after": "altezza",
             "precision": 3,
-            "read_only": 1,
+#            "read_only": 1,
             "description": "Base x Altezza / 10000",
         },
     ]
