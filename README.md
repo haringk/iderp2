@@ -24,6 +24,16 @@ bench --site sito.local set-maintenance-mode off
 bench --site sito.local install-app iderp
 ```
 
+Aggiornamento
+```bash
+cd ~/frappe-bench/apps/iderp
+git pull origin master
+bench build
+cd ~/frappe-bench
+bench --site sito.local clear-cache
+bench restart
+```
+
 Per refresh
 ```bash
 bench --site sito.local clear-cache
