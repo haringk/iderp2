@@ -115,8 +115,7 @@ function calculate_mq(frm, cdt, cdn) {
         }
     }
     frm.refresh_field("items");
-	frm.refresh_field("importo_mq", cdn);
-	frm.refresh_field("totale_mq", cdn);
+    cur_frm.refresh_fields();
 }
 
 
