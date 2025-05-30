@@ -1,22 +1,89 @@
-frappe.ui.form.on(
-	[
+/*
 		'Quotation Item',
 		'Sales Order Item', 
 		'Sales Invoice Item', 
 		'Delivery Note Item', 
 		'Work Order Item', 
 		'Web Order Item'], 
-	{
+*/
+
+
+frappe.ui.form.on('Quotation Item', {
 	
-    base: function(frm, cdt, cdn) {
-        calculate_mq(frm, cdt, cdn);
-    },
-    altezza: function(frm, cdt, cdn) {
-        calculate_mq(frm, cdt, cdn);
-    },
-    prezzo_mq: function(frm, cdt, cdn) {
-        calculate_mq(frm, cdt, cdn);
-    },
+    base: function(frm, cdt, cdn) { calculate_mq(frm, cdt, cdn); },
+    altezza: function(frm, cdt, cdn) { calculate_mq(frm, cdt, cdn); },
+    prezzo_mq: function(frm, cdt, cdn) { calculate_mq(frm, cdt, cdn); },
+
+    // Esegui anche al refresh (quando carica)
+    refresh: function(frm) {
+        $.each(frm.doc.items || frm.doc.quotation_items || [], function(i, row) {
+            calculate_mq(frm, row.doctype, row.name);
+        });
+    }
+});
+
+frappe.ui.form.on('Sales Order Item', {
+	
+    base: function(frm, cdt, cdn) { calculate_mq(frm, cdt, cdn); },
+    altezza: function(frm, cdt, cdn) { calculate_mq(frm, cdt, cdn); },
+    prezzo_mq: function(frm, cdt, cdn) { calculate_mq(frm, cdt, cdn); },
+
+    // Esegui anche al refresh (quando carica)
+    refresh: function(frm) {
+        $.each(frm.doc.items || frm.doc.quotation_items || [], function(i, row) {
+            calculate_mq(frm, row.doctype, row.name);
+        });
+    }
+});
+
+frappe.ui.form.on('Sales Invoice Item', {
+	
+    base: function(frm, cdt, cdn) { calculate_mq(frm, cdt, cdn); },
+    altezza: function(frm, cdt, cdn) { calculate_mq(frm, cdt, cdn); },
+    prezzo_mq: function(frm, cdt, cdn) { calculate_mq(frm, cdt, cdn); },
+
+    // Esegui anche al refresh (quando carica)
+    refresh: function(frm) {
+        $.each(frm.doc.items || frm.doc.quotation_items || [], function(i, row) {
+            calculate_mq(frm, row.doctype, row.name);
+        });
+    }
+});
+
+frappe.ui.form.on('Delivery Note Item', {
+	
+    base: function(frm, cdt, cdn) { calculate_mq(frm, cdt, cdn); },
+    altezza: function(frm, cdt, cdn) { calculate_mq(frm, cdt, cdn); },
+    prezzo_mq: function(frm, cdt, cdn) { calculate_mq(frm, cdt, cdn); },
+
+    // Esegui anche al refresh (quando carica)
+    refresh: function(frm) {
+        $.each(frm.doc.items || frm.doc.quotation_items || [], function(i, row) {
+            calculate_mq(frm, row.doctype, row.name);
+        });
+    }
+});
+
+frappe.ui.form.on('Work Order Item', {
+	
+    base: function(frm, cdt, cdn) { calculate_mq(frm, cdt, cdn); },
+    altezza: function(frm, cdt, cdn) { calculate_mq(frm, cdt, cdn); },
+    prezzo_mq: function(frm, cdt, cdn) { calculate_mq(frm, cdt, cdn); },
+
+    // Esegui anche al refresh (quando carica)
+    refresh: function(frm) {
+        $.each(frm.doc.items || frm.doc.quotation_items || [], function(i, row) {
+            calculate_mq(frm, row.doctype, row.name);
+        });
+    }
+});
+
+frappe.ui.form.on('Web Order Item', {
+	
+    base: function(frm, cdt, cdn) { calculate_mq(frm, cdt, cdn); },
+    altezza: function(frm, cdt, cdn) { calculate_mq(frm, cdt, cdn); },
+    prezzo_mq: function(frm, cdt, cdn) { calculate_mq(frm, cdt, cdn); },
+
     // Esegui anche al refresh (quando carica)
     refresh: function(frm) {
         $.each(frm.doc.items || frm.doc.quotation_items || [], function(i, row) {
