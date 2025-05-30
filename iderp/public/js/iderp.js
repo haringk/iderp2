@@ -1,3 +1,5 @@
+/*
+
 frappe.ui.form.on('Quotation Item', {
     base: function(frm, cdt, cdn) {
         calcola_prezzo(frm, cdt, cdn);
@@ -22,3 +24,5 @@ function calcola_prezzo(frm, cdt, cdn) {
         frappe.model.set_value(cdt, cdn, "amount", amount);
     }
 }
+
+*/
