@@ -1,3 +1,5 @@
+console.log("IDERP: JS LOADED");
+
 /*
 		'Quotation Item',
 		'Sales Order Item', 
