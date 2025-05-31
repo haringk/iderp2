@@ -1,0 +1,254 @@
+/* iderp/public/css/ecommerce_styles.css */
+
+/* Container principale calcolatore */
+.measurement-calculator {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 20px;
+    margin: 20px 0;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.measurement-calculator h5 {
+    color: #495057;
+    margin-bottom: 15px;
+    font-weight: 600;
+}
+
+/* Campi di input */
+.measurement-calculator .form-control {
+    border-radius: 4px;
+    border: 1px solid #ced4da;
+    padding: 8px 12px;
+    font-size: 14px;
+}
+
+.measurement-calculator .form-control:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
+}
+
+/* Dropdown tipo vendita */
+#tipo_vendita {
+    background-color: #e9ecef;
+    font-weight: 500;
+    color: #495057;
+}
+
+/* Sezioni misure */
+.measurement-fields {
+    background: white;
+    padding: 15px;
+    border-radius: 6px;
+    margin: 15px 0;
+    border: 1px solid #e9ecef;
+}
+
+.measurement-fields label {
+    font-weight: 500;
+    color: #6c757d;
+    margin-bottom: 5px;
+}
+
+/* Risultati calcoli */
+.price-calculation {
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    color: white;
+    padding: 15px;
+    border-radius: 6px;
+    text-align: center;
+}
+
+.price-calculation .alert {
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.2);
+    color: white;
+    margin: 0;
+}
+
+.price-calculation .alert strong {
+    font-size: 1.2em;
+}
+
+#calculated-price {
+    font-size: 1.4em;
+    font-weight: bold;
+    color: #28a745;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+}
+
+/* Note di calcolo */
+#calculation-note {
+    opacity: 0.9;
+    font-style: italic;
+}
+
+/* Indicatori metratura */
+#mq-result, #ml-result {
+    font-weight: bold;
+    color: #007bff;
+    font-size: 1.1em;
+}
+
+/* Pulsante aggiungi carrello */
+#add-to-cart-calculated {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    border: none;
+    padding: 12px 20px;
+    font-size: 16px;
+    font-weight: 600;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+#add-to-cart-calculated:hover:not(:disabled) {
+    background: linear-gradient(135deg, #218838 0%, #1e7e34 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+#add-to-cart-calculated:disabled {
+    background: #6c757d;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+/* Messaggi di successo */
+.alert-success {
+    background-color: #d4edda;
+    border-color: #c3e6cb;
+    color: #155724;
+    animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .measurement-calculator {
+        padding: 15px;
+        margin: 15px 0;
+    }
+    
+    .measurement-fields .row .col-md-6 {
+        margin-bottom: 10px;
+    }
+    
+    #calculated-price {
+        font-size: 1.2em;
+    }
+}
+
+/* Stili per validazione */
+.form-control.is-invalid {
+    border-color: #dc3545;
+}
+
+.form-control.is-valid {
+    border-color: #28a745;
+}
+
+.invalid-feedback {
+    color: #dc3545;
+    font-size: 0.875em;
+    margin-top: 5px;
+}
+
+.valid-feedback {
+    color: #28a745;
+    font-size: 0.875em;
+    margin-top: 5px;
+}
+
+/* Loading stato */
+.calculator-loading {
+    opacity: 0.6;
+    pointer-events: none;
+    position: relative;
+}
+
+.calculator-loading::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
+    border: 2px solid #ccc;
+    border-top-color: #007bff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Miglioramenti UX */
+.measurement-calculator input[type="number"]::-webkit-outer-spin-button,
+.measurement-calculator input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.measurement-calculator input[type="number"] {
+    -moz-appearance: textfield;
+}
+
+/* Tooltip per aiuto */
+.help-tooltip {
+    position: relative;
+    display: inline-block;
+    cursor: help;
+    color: #6c757d;
+    margin-left: 5px;
+}
+
+.help-tooltip .tooltiptext {
+    visibility: hidden;
+    width: 200px;
+    background-color: #555;
+    color: #fff;
+    text-align: center;
+    border-radius: 6px;
+    padding: 5px;
+    position: absolute;
+    z-index: 1;
+    bottom: 125%;
+    left: 50%;
+    margin-left: -100px;
+    opacity: 0;
+    transition: opacity 0.3s;
+    font-size: 12px;
+}
+
+.help-tooltip:hover .tooltiptext {
+    visibility: visible;
+    opacity: 1;
+}
+
+/* Preloader per configurazione */
+.config-loading {
+    text-align: center;
+    padding: 20px;
+    color: #6c757d;
+}
+
+.config-loading .spinner-border {
+    width: 2rem;
+    height: 2rem;
+}
