@@ -1,4 +1,4 @@
-console.log("IDERP: Multi-Unit JS LOADED v3.0 - Con scaglioni prezzo");
+console.log("IDERP: Multi-Unit JS LOADED v3.1 - Base senza scaglioni");
 
 // Funzione principale per tutti i DocType
 frappe.ui.form.on('Quotation Item', {
@@ -26,10 +26,6 @@ frappe.ui.form.on('Quotation Item', {
     prezzo_ml: function(frm, cdt, cdn) {
         calculate_price(frm, cdt, cdn);
     },
-    item_code: function(frm, cdt, cdn) {
-        // Quando cambia item, carica scaglioni prezzo
-        load_pricing_tiers(frm, cdt, cdn);
-    },
     refresh: function(frm) {
         $.each(frm.doc.items || [], function(i, row) {
             calculate_price(frm, row.doctype, row.name);
@@ -48,7 +44,6 @@ frappe.ui.form.on('Quotation Item', {
         larghezza_materiale: function(frm, cdt, cdn) { calculate_price(frm, cdt, cdn); },
         lunghezza: function(frm, cdt, cdn) { calculate_price(frm, cdt, cdn); },
         prezzo_ml: function(frm, cdt, cdn) { calculate_price(frm, cdt, cdn); },
-        item_code: function(frm, cdt, cdn) { load_pricing_tiers(frm, cdt, cdn); },
         refresh: function(frm) {
             $.each(frm.doc.items || [], function(i, row) {
                 calculate_price(frm, row.doctype, row.name);
@@ -56,56 +51,6 @@ frappe.ui.form.on('Quotation Item', {
         }
     });
 });
-
-function load_pricing_tiers(frm, cdt, cdn) {
-    var row = locals[cdt][cdn];
-    
-    if (!row.item_code || row.tipo_vendita !== 'Metro Quadrato') {
-        return;
-    }
-    
-    // Carica scaglioni prezzo per questo item
-    frappe.call({
-        method: 'frappe.client.get_list',
-        args: {
-            doctype: 'Pricing Tier',
-            filters: {
-                item_code: row.item_code
-            },
-            fields: ['from_sqm', 'to_sqm', 'price_per_sqm', 'is_default'],
-            order_by: 'from_sqm asc'
-        },
-        callback: function(r) {
-            if (r.message && r.message.length > 0) {
-                row.pricing_tiers = r.message;
-                console.log("Scaglioni caricati per", row.item_code, ":", r.message);
-                
-                // Mostra info scaglioni all'utente
-                show_pricing_info(frm, row, r.message);
-                
-                // Ricalcola con i nuovi scaglioni
-                calculate_price(frm, cdt, cdn);
-            }
-        }
-    });
-}
-
-function show_pricing_info(frm, row, tiers) {
-    // Crea messaggio informativo sugli scaglioni
-    let info = "Scaglioni prezzo:\n";
-    tiers.forEach(function(tier) {
-        if (tier.to_sqm) {
-            info += `${tier.from_sqm} - ${tier.to_sqm} m²: €${tier.price_per_sqm}/m²\n`;
-        } else {
-            info += `Oltre ${tier.from_sqm} m²: €${tier.price_per_sqm}/m²\n`;
-        }
-    });
-    
-    // Aggiorna campo note_calcolo con info scaglioni
-    if (!row.note_calcolo || !row.note_calcolo.includes("Scaglioni")) {
-        row.note_calcolo = info + (row.note_calcolo || "");
-    }
-}
 
 function reset_and_calculate(frm, cdt, cdn) {
     var row = locals[cdt][cdn];
@@ -115,8 +60,8 @@ function reset_and_calculate(frm, cdt, cdn) {
     // Reset campi quando cambia tipo vendita
     row.base = 0;
     row.altezza = 0;
-    row.mq_calcolati = 0;
     row.mq_singolo = 0;
+    row.mq_calcolati = 0;
     row.larghezza_materiale = 0;
     row.lunghezza = 0;
     row.ml_calcolati = 0;
@@ -142,7 +87,6 @@ function calculate_price(frm, cdt, cdn) {
     
     console.log("Calcolando prezzo per:", {
         tipo_vendita: row.tipo_vendita,
-        item_code: row.item_code,
         base: row.base,
         altezza: row.altezza,
         qty: row.qty,
@@ -151,7 +95,7 @@ function calculate_price(frm, cdt, cdn) {
     
     switch(row.tipo_vendita) {
         case "Metro Quadrato":
-            calculate_square_meters_with_tiers(row, frm, cdt, cdn);
+            calculate_square_meters_basic(row);
             break;
         case "Metro Lineare":
             calculate_linear_meters(row);
@@ -167,8 +111,8 @@ function calculate_price(frm, cdt, cdn) {
     frm.refresh_field("items");
 }
 
-function calculate_square_meters_with_tiers(row, frm, cdt, cdn) {
-    console.log("Calcolo metri quadrati con scaglioni:", row.base, "x", row.altezza, "x", row.qty);
+function calculate_square_meters_basic(row) {
+    console.log("Calcolo metri quadrati basic:", row.base, "x", row.altezza, "x", row.qty);
     
     if (!row.base || !row.altezza || row.base <= 0 || row.altezza <= 0) {
         row.mq_singolo = 0;
@@ -187,65 +131,33 @@ function calculate_square_meters_with_tiers(row, frm, cdt, cdn) {
     
     console.log("MQ singolo:", row.mq_singolo, "MQ totali:", row.mq_calcolati);
     
-    // Se ci sono scaglioni prezzo, usali
-    if (row.pricing_tiers && row.pricing_tiers.length > 0) {
-        calculate_with_pricing_tiers(row, qty);
-    } else if (row.prezzo_mq && row.prezzo_mq > 0) {
-        // Fallback: usa prezzo fisso
+    // Calcolo prezzo con prezzo_mq fisso
+    if (row.prezzo_mq && row.prezzo_mq > 0) {
+        // Rate = prezzo per singolo pezzo
         row.rate = row.mq_singolo * row.prezzo_mq;
-        row.note_calcolo = `${row.mq_singolo.toFixed(4)} m² × €${row.prezzo_mq} = €${row.rate.toFixed(2)} cad\nTotale: ${qty} pz × €${row.rate.toFixed(2)} = €${(row.rate * qty).toFixed(2)}`;
-    } else {
-        // Carica scaglioni se non ci sono
-        load_pricing_tiers(frm, cdt, cdn);
-        row.note_calcolo = `${row.mq_calcolati.toFixed(3)} m² totali (${row.mq_singolo.toFixed(4)} m² × ${qty} pz)\nCaricamento scaglioni prezzo...`;
-    }
-}
-
-function calculate_with_pricing_tiers(row, qty) {
-    // Trova scaglione appropriato in base ai m² totali
-    var total_sqm = row.mq_calcolati;
-    var price_per_sqm = 0;
-    var tier_info = "";
-    
-    // Cerca scaglione corretto
-    for (let tier of row.pricing_tiers) {
-        if (total_sqm >= tier.from_sqm && (!tier.to_sqm || total_sqm <= tier.to_sqm)) {
-            price_per_sqm = tier.price_per_sqm;
-            tier_info = tier.to_sqm ? 
-                `${tier.from_sqm}-${tier.to_sqm} m²` : 
-                `oltre ${tier.from_sqm} m²`;
-            break;
-        }
-    }
-    
-    // Se non trova scaglione, usa l'ultimo (più alto)
-    if (price_per_sqm === 0 && row.pricing_tiers.length > 0) {
-        var last_tier = row.pricing_tiers[row.pricing_tiers.length - 1];
-        price_per_sqm = last_tier.price_per_sqm;
-        tier_info = `oltre ${last_tier.from_sqm} m²`;
-    }
-    
-    if (price_per_sqm > 0) {
-        // Calcola prezzo unitario (per singolo pezzo)
-        row.rate = row.mq_singolo * price_per_sqm;
         
-        // Aggiorna campo prezzo_mq per coerenza
-        row.prezzo_mq = price_per_sqm;
-        
+        // Note dettagliate
         row.note_calcolo = 
-            `Scaglione: ${tier_info} = €${price_per_sqm}/m²\n` +
-            `Singolo: ${row.mq_singolo.toFixed(4)} m² × €${price_per_sqm} = €${row.rate.toFixed(2)}\n` +
-            `Totale: ${qty} pz × €${row.rate.toFixed(2)} = €${(row.rate * qty).toFixed(2)} (${total_sqm.toFixed(3)} m² tot)`;
+            `Dimensioni: ${row.base}×${row.altezza}cm\n` +
+            `m² singolo: ${row.mq_singolo.toFixed(4)} m²\n` +
+            `Prezzo unitario: ${row.mq_singolo.toFixed(4)} × €${row.prezzo_mq} = €${row.rate.toFixed(2)}\n` +
+            `Quantità: ${qty} pz\n` +
+            `m² totali: ${row.mq_calcolati.toFixed(3)} m²\n` +
+            `Totale ordine: ${qty} × €${row.rate.toFixed(2)} = €${(row.rate * qty).toFixed(2)}`;
         
-        console.log("Prezzo calcolato con scaglioni:", {
-            tier_info: tier_info,
-            price_per_sqm: price_per_sqm,
+        console.log("Prezzo calcolato:", {
+            mq_singolo: row.mq_singolo,
+            mq_totali: row.mq_calcolati,
             rate: row.rate,
             total: row.rate * qty
         });
     } else {
         row.rate = 0;
-        row.note_calcolo = `${total_sqm.toFixed(3)} m² totali - Nessuno scaglione configurato`;
+        row.note_calcolo = 
+            `Dimensioni: ${row.base}×${row.altezza}cm\n` +
+            `m² singolo: ${row.mq_singolo.toFixed(4)} m²\n` +
+            `m² totali: ${row.mq_calcolati.toFixed(3)} m² (${qty} pz)\n` +
+            `Inserire prezzo al m²`;
     }
 }
 
@@ -260,21 +172,33 @@ function calculate_linear_meters(row) {
     }
     
     var qty = row.qty || 1;
-    row.ml_calcolati = (row.lunghezza / 100) * qty;
+    
+    // Calcola metri lineari singolo
+    var ml_singolo = row.lunghezza / 100;
+    
+    // Calcola metri lineari totali
+    row.ml_calcolati = ml_singolo * qty;
     
     if (row.prezzo_ml && row.prezzo_ml > 0) {
-        row.rate = (row.lunghezza / 100) * row.prezzo_ml;
+        row.rate = ml_singolo * row.prezzo_ml;
         
-        let note = `${(row.lunghezza / 100).toFixed(2)} ml × €${row.prezzo_ml} = €${row.rate.toFixed(2)} cad`;
+        let note = `Lunghezza: ${row.lunghezza}cm = ${ml_singolo.toFixed(2)} ml\n`;
         if (row.larghezza_materiale) {
-            note += ` (largh. ${row.larghezza_materiale}cm)`;
+            note += `Larghezza materiale: ${row.larghezza_materiale}cm\n`;
         }
-        note += `\nTotale: ${qty} pz × €${row.rate.toFixed(2)} = €${(row.rate * qty).toFixed(2)}`;
+        note += `Prezzo unitario: ${ml_singolo.toFixed(2)} × €${row.prezzo_ml} = €${row.rate.toFixed(2)}\n`;
+        note += `Quantità: ${qty} pz\n`;
+        note += `ml totali: ${row.ml_calcolati.toFixed(2)} ml\n`;
+        note += `Totale ordine: ${qty} × €${row.rate.toFixed(2)} = €${(row.rate * qty).toFixed(2)}`;
+        
         row.note_calcolo = note;
         
         console.log("Prezzo ml calcolato:", row.rate);
     } else {
-        row.note_calcolo = `${row.ml_calcolati.toFixed(2)} ml totali (inserire prezzo al ml)`;
+        row.note_calcolo = 
+            `Lunghezza: ${row.lunghezza}cm = ${ml_singolo.toFixed(2)} ml\n` +
+            `ml totali: ${row.ml_calcolati.toFixed(2)} ml (${qty} pz)\n` +
+            `Inserire prezzo al ml`;
     }
 }
 
@@ -284,7 +208,11 @@ function calculate_pieces(row) {
     var qty = row.qty || 1;
     
     if (row.rate && qty) {
-        row.note_calcolo = `${qty} pz × €${row.rate} = €${(qty * row.rate).toFixed(2)}`;
+        row.note_calcolo = 
+            `Vendita al pezzo\n` +
+            `Prezzo unitario: €${row.rate}\n` +
+            `Quantità: ${qty} pz\n` +
+            `Totale: ${qty} × €${row.rate} = €${(qty * row.rate).toFixed(2)}`;
     } else {
         row.note_calcolo = "Vendita al pezzo - inserire prezzo unitario";
     }
