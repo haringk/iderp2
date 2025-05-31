@@ -1,55 +1,100 @@
-console.log("IDERP: Multi-Unit JS LOADED v2.0");
+console.log("IDERP: Multi-Unit JS LOADED v2.1");
 
-// Lista di tutti i DocType supportati
-const SUPPORTED_DOCTYPES = [
-    'Quotation Item',
-    'Sales Order Item', 
-    'Sales Invoice Item',
-    'Delivery Note Item',
-    'Work Order Item'
-];
+// Funzione principale per tutti i DocType
+frappe.ui.form.on('Quotation Item', {
+    tipo_vendita: function(frm, cdt, cdn) {
+        reset_and_calculate(frm, cdt, cdn);
+    },
+    base: function(frm, cdt, cdn) {
+        calculate_price(frm, cdt, cdn);
+    },
+    altezza: function(frm, cdt, cdn) {
+        calculate_price(frm, cdt, cdn);
+    },
+    prezzo_mq: function(frm, cdt, cdn) {
+        calculate_price(frm, cdt, cdn);
+    },
+    larghezza_materiale: function(frm, cdt, cdn) {
+        calculate_price(frm, cdt, cdn);
+    },
+    lunghezza: function(frm, cdt, cdn) {
+        calculate_price(frm, cdt, cdn);
+    },
+    prezzo_ml: function(frm, cdt, cdn) {
+        calculate_price(frm, cdt, cdn);
+    },
+    refresh: function(frm) {
+        $.each(frm.doc.items || [], function(i, row) {
+            calculate_price(frm, row.doctype, row.name);
+        });
+    }
+});
 
-// Applica gli eventi a tutti i DocType
-SUPPORTED_DOCTYPES.forEach(function(doctype) {
-    frappe.ui.form.on(doctype, {
-        // Cambio tipo vendita
-        tipo_vendita: function(frm, cdt, cdn) {
-            reset_and_calculate(frm, cdt, cdn);
-        },
-        
-        // Eventi per metri quadrati
-        base: function(frm, cdt, cdn) {
-            calculate_price(frm, cdt, cdn);
-        },
-        altezza: function(frm, cdt, cdn) {
-            calculate_price(frm, cdt, cdn);
-        },
-        prezzo_mq: function(frm, cdt, cdn) {
-            calculate_price(frm, cdt, cdn);
-        },
-        
-        // Eventi per metri lineari
-        larghezza_materiale: function(frm, cdt, cdn) {
-            calculate_price(frm, cdt, cdn);
-        },
-        lunghezza: function(frm, cdt, cdn) {
-            calculate_price(frm, cdt, cdn);
-        },
-        prezzo_ml: function(frm, cdt, cdn) {
-            calculate_price(frm, cdt, cdn);
-        },
-        
-        // Refresh generale
-        refresh: function(frm) {
-            $.each(frm.doc.items || [], function(i, row) {
-                calculate_price(frm, row.doctype, row.name);
-            });
-        }
-    });
+// Copia gli stessi eventi per altri DocType
+frappe.ui.form.on('Sales Order Item', {
+    tipo_vendita: function(frm, cdt, cdn) { reset_and_calculate(frm, cdt, cdn); },
+    base: function(frm, cdt, cdn) { calculate_price(frm, cdt, cdn); },
+    altezza: function(frm, cdt, cdn) { calculate_price(frm, cdt, cdn); },
+    prezzo_mq: function(frm, cdt, cdn) { calculate_price(frm, cdt, cdn); },
+    larghezza_materiale: function(frm, cdt, cdn) { calculate_price(frm, cdt, cdn); },
+    lunghezza: function(frm, cdt, cdn) { calculate_price(frm, cdt, cdn); },
+    prezzo_ml: function(frm, cdt, cdn) { calculate_price(frm, cdt, cdn); },
+    refresh: function(frm) {
+        $.each(frm.doc.items || [], function(i, row) {
+            calculate_price(frm, row.doctype, row.name);
+        });
+    }
+});
+
+frappe.ui.form.on('Sales Invoice Item', {
+    tipo_vendita: function(frm, cdt, cdn) { reset_and_calculate(frm, cdt, cdn); },
+    base: function(frm, cdt, cdn) { calculate_price(frm, cdt, cdn); },
+    altezza: function(frm, cdt, cdn) { calculate_price(frm, cdt, cdn); },
+    prezzo_mq: function(frm, cdt, cdn) { calculate_price(frm, cdt, cdn); },
+    larghezza_materiale: function(frm, cdt, cdn) { calculate_price(frm, cdt, cdn); },
+    lunghezza: function(frm, cdt, cdn) { calculate_price(frm, cdt, cdn); },
+    prezzo_ml: function(frm, cdt, cdn) { calculate_price(frm, cdt, cdn); },
+    refresh: function(frm) {
+        $.each(frm.doc.items || [], function(i, row) {
+            calculate_price(frm, row.doctype, row.name);
+        });
+    }
+});
+
+frappe.ui.form.on('Delivery Note Item', {
+    tipo_vendita: function(frm, cdt, cdn) { reset_and_calculate(frm, cdt, cdn); },
+    base: function(frm, cdt, cdn) { calculate_price(frm, cdt, cdn); },
+    altezza: function(frm, cdt, cdn) { calculate_price(frm, cdt, cdn); },
+    prezzo_mq: function(frm, cdt, cdn) { calculate_price(frm, cdt, cdn); },
+    larghezza_materiale: function(frm, cdt, cdn) { calculate_price(frm, cdt, cdn); },
+    lunghezza: function(frm, cdt, cdn) { calculate_price(frm, cdt, cdn); },
+    prezzo_ml: function(frm, cdt, cdn) { calculate_price(frm, cdt, cdn); },
+    refresh: function(frm) {
+        $.each(frm.doc.items || [], function(i, row) {
+            calculate_price(frm, row.doctype, row.name);
+        });
+    }
+});
+
+frappe.ui.form.on('Work Order Item', {
+    tipo_vendita: function(frm, cdt, cdn) { reset_and_calculate(frm, cdt, cdn); },
+    base: function(frm, cdt, cdn) { calculate_price(frm, cdt, cdn); },
+    altezza: function(frm, cdt, cdn) { calculate_price(frm, cdt, cdn); },
+    prezzo_mq: function(frm, cdt, cdn) { calculate_price(frm, cdt, cdn); },
+    larghezza_materiale: function(frm, cdt, cdn) { calculate_price(frm, cdt, cdn); },
+    lunghezza: function(frm, cdt, cdn) { calculate_price(frm, cdt, cdn); },
+    prezzo_ml: function(frm, cdt, cdn) { calculate_price(frm, cdt, cdn); },
+    refresh: function(frm) {
+        $.each(frm.doc.items || [], function(i, row) {
+            calculate_price(frm, row.doctype, row.name);
+        });
+    }
 });
 
 function reset_and_calculate(frm, cdt, cdn) {
     var row = locals[cdt][cdn];
+    
+    console.log("Reset e calcolo per tipo vendita:", row.tipo_vendita);
     
     // Reset tutti i campi quando cambia tipo vendita
     row.base = 0;
@@ -60,22 +105,35 @@ function reset_and_calculate(frm, cdt, cdn) {
     row.ml_calcolati = 0;
     row.prezzo_mq = 0;
     row.prezzo_ml = 0;
-    row.rate = 0;
     row.note_calcolo = "";
+    
+    // Non resettare il rate se è vendita al pezzo
+    if (row.tipo_vendita !== "Pezzo") {
+        row.rate = 0;
+    }
     
     frm.refresh_field("items");
     
-    console.log("Reset campi per tipo vendita:", row.tipo_vendita);
+    // Calcola subito dopo il reset
+    calculate_price(frm, cdt, cdn);
 }
 
 function calculate_price(frm, cdt, cdn) {
     var row = locals[cdt][cdn];
     
+    // Imposta default se non c'è tipo vendita
     if (!row.tipo_vendita) {
         row.tipo_vendita = "Pezzo";
     }
     
-    console.log("Calcolando prezzo per:", row.tipo_vendita, row);
+    console.log("Calcolando prezzo per:", {
+        tipo_vendita: row.tipo_vendita,
+        base: row.base,
+        altezza: row.altezza,
+        lunghezza: row.lunghezza,
+        prezzo_mq: row.prezzo_mq,
+        prezzo_ml: row.prezzo_ml
+    });
     
     switch(row.tipo_vendita) {
         case "Metro Quadrato":
@@ -85,32 +143,36 @@ function calculate_price(frm, cdt, cdn) {
             calculate_linear_meters(row);
             break;
         case "Pezzo":
-            calculate_pieces(row);
-            break;
         default:
             calculate_pieces(row);
+            break;
     }
     
     frm.refresh_field("items");
 }
 
 function calculate_square_meters(row) {
+    console.log("Calcolo metri quadrati:", row.base, "x", row.altezza);
+    
     // Reset campi non utilizzati
     row.larghezza_materiale = 0;
     row.lunghezza = 0;
     row.ml_calcolati = 0;
     row.prezzo_ml = 0;
     
-    if (row.base && row.altezza) {
+    if (row.base && row.altezza && row.base > 0 && row.altezza > 0) {
         // Calcola metri quadrati (da cm a m²)
         row.mq_calcolati = (row.base * row.altezza) / 10000;
+        
+        console.log("MQ calcolati:", row.mq_calcolati);
         
         if (row.prezzo_mq && row.prezzo_mq > 0) {
             row.rate = row.mq_calcolati * row.prezzo_mq;
             row.note_calcolo = `${row.mq_calcolati.toFixed(3)} m² × €${row.prezzo_mq} = €${row.rate.toFixed(2)}`;
+            console.log("Prezzo calcolato:", row.rate);
         } else {
             row.rate = 0;
-            row.note_calcolo = `${row.mq_calcolati.toFixed(3)} m² (manca prezzo al m²)`;
+            row.note_calcolo = `${row.mq_calcolati.toFixed(3)} m² (inserire prezzo al m²)`;
         }
     } else {
         row.mq_calcolati = 0;
@@ -120,15 +182,19 @@ function calculate_square_meters(row) {
 }
 
 function calculate_linear_meters(row) {
+    console.log("Calcolo metri lineari:", row.lunghezza);
+    
     // Reset campi non utilizzati
     row.base = 0;
     row.altezza = 0;
     row.mq_calcolati = 0;
     row.prezzo_mq = 0;
     
-    if (row.lunghezza) {
+    if (row.lunghezza && row.lunghezza > 0) {
         // Calcola metri lineari (da cm a m)
         row.ml_calcolati = row.lunghezza / 100;
+        
+        console.log("ML calcolati:", row.ml_calcolati);
         
         if (row.prezzo_ml && row.prezzo_ml > 0) {
             row.rate = row.ml_calcolati * row.prezzo_ml;
@@ -139,9 +205,11 @@ function calculate_linear_meters(row) {
             }
             note += ` = €${row.rate.toFixed(2)}`;
             row.note_calcolo = note;
+            
+            console.log("Prezzo calcolato:", row.rate);
         } else {
             row.rate = 0;
-            row.note_calcolo = `${row.ml_calcolati.toFixed(2)} ml (manca prezzo al ml)`;
+            row.note_calcolo = `${row.ml_calcolati.toFixed(2)} ml (inserire prezzo al ml)`;
         }
     } else {
         row.ml_calcolati = 0;
@@ -151,6 +219,8 @@ function calculate_linear_meters(row) {
 }
 
 function calculate_pieces(row) {
+    console.log("Calcolo al pezzo");
+    
     // Reset tutti i campi di misurazione
     row.base = 0;
     row.altezza = 0;
@@ -167,15 +237,4 @@ function calculate_pieces(row) {
     } else {
         row.note_calcolo = "Vendita al pezzo - inserire prezzo unitario";
     }
-}
-
-// Funzione di utilità per debug
-function debug_row(row) {
-    console.log("=== DEBUG ROW ===");
-    console.log("Tipo vendita:", row.tipo_vendita);
-    console.log("Base:", row.base, "Altezza:", row.altezza, "MQ:", row.mq_calcolati);
-    console.log("Lunghezza:", row.lunghezza, "Largh. materiale:", row.larghezza_materiale, "ML:", row.ml_calcolati);
-    console.log("Prezzi - MQ:", row.prezzo_mq, "ML:", row.prezzo_ml, "Rate:", row.rate);
-    console.log("Note:", row.note_calcolo);
-    console.log("================");
 }
