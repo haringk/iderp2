@@ -286,21 +286,31 @@ function calculate_with_pricing_tiers(row, qty) {
         // Calcola prezzo unitario (per singolo pezzo)
         var calculated_rate = row.mq_singolo * price_per_sqm;
         
-        // Imposta il rate SENZA triggare altri eventi
-        frappe.model.set_value(row.doctype, row.name, "rate", calculated_rate, null, true);
+        // FORZA il formato corretto per evitare problemi di localizzazione
+        calculated_rate = parseFloat(calculated_rate.toFixed(2));
+        
+        console.log("Rate calcolato prima del set:", calculated_rate);
+        
+        // Metodo più robusto per impostare il rate
+        setTimeout(function() {
+            // Usa il metodo Frappe specifico per valute
+            frappe.model.set_value(row.doctype, row.name, "rate", calculated_rate);
+            
+            console.log("Rate impostato:", calculated_rate, "Row rate attuale:", row.rate);
+        }, 100);
         
         // Aggiorna campo prezzo_mq per coerenza
         row.prezzo_mq = price_per_sqm;
         
         row.note_calcolo = 
             `🎯 Scaglione: ${tier_info}\n` +
-            `💰 Prezzo: €${price_per_sqm}/m²\n` +
+            `💰 Prezzo: €${format_currency(price_per_sqm)}/m²\n` +
             `📐 Dimensioni: ${row.base}×${row.altezza}cm\n` +
             `🔢 m² singolo: ${row.mq_singolo.toFixed(4)} m²\n` +
-            `💵 Prezzo unitario: €${calculated_rate.toFixed(2)}\n` +
+            `💵 Prezzo unitario: €${format_currency(calculated_rate)}\n` +
             `📦 Quantità: ${qty} pz\n` +
             `📊 m² totali: ${total_sqm.toFixed(3)} m²\n` +
-            `💸 Totale ordine: €${(calculated_rate * qty).toFixed(2)}`;
+            `💸 Totale ordine: €${format_currency(calculated_rate * qty)}`;
         
         console.log("Prezzo calcolato con scaglioni:", {
             tier_info: tier_info,
@@ -313,6 +323,19 @@ function calculate_with_pricing_tiers(row, qty) {
         row.note_calcolo = `${total_sqm.toFixed(3)} m² totali - Nessuno scaglione applicabile`;
         console.log("Nessuno scaglione trovato per", total_sqm, "m²");
     }
+}
+
+// Funzione helper per formattare valute in modo consistente
+function format_currency(value) {
+    if (typeof value !== 'number') {
+        value = parseFloat(value) || 0;
+    }
+    
+    // Forza formato italiano/europeo: 1.234,56
+    return value.toLocaleString('it-IT', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
 }
 
 function calculate_with_manual_price(row, qty) {
