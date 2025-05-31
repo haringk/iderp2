@@ -1,8 +1,8 @@
 import frappe
 
 def after_install():
-    """Installazione plugin iderp con supporto multi-unità e scaglioni"""
-    print("[iderp] Iniziando installazione plugin...")
+    """Installazione completa plugin iderp"""
+    print("[iderp] === Iniziando installazione plugin ===")
     
     # 1. Installa campi custom per documenti di vendita
     install_sales_custom_fields()
@@ -10,19 +10,23 @@ def after_install():
     # 2. Installa campi custom per configurazione Item
     install_item_config_fields()
     
-    # 3. Crea DocType per scaglioni prezzo
-    create_pricing_tier_doctype()
+    # 3. Crea Child Table per scaglioni prezzo
+    create_item_pricing_tier_child_table()
     
-    print("[iderp] Installazione completata con successo!")
-    print("[iderp] Plugin installato con supporto per:")
-    print("[iderp] - Vendita al pezzo")
-    print("[iderp] - Vendita al metro quadrato con scaglioni") 
-    print("[iderp] - Vendita al metro lineare")
-    print("[iderp] - Configurazione Item personalizzata")
-    print("[iderp] - Tabella scaglioni prezzo")
+    # 4. Aggiunge tabella scaglioni all'Item
+    add_pricing_table_to_item()
+    
+    print("[iderp] === Installazione completata ===")
+    print("[iderp] ✓ Vendita al pezzo")
+    print("[iderp] ✓ Vendita al metro quadrato con scaglioni") 
+    print("[iderp] ✓ Vendita al metro lineare")
+    print("[iderp] ✓ Configurazione Item con scaglioni prezzo")
+    print("[iderp] ✓ Sistema completo pronto all'uso")
 
 def install_sales_custom_fields():
     """Installa campi custom per documenti di vendita"""
+    print("[iderp] Installando campi vendita...")
+    
     doctypes = [
         "Quotation Item",
         "Sales Order Item",
@@ -150,7 +154,9 @@ def install_sales_custom_fields():
             create_custom_field(dt, cf)
 
 def install_item_config_fields():
-    """Installa campi custom per configurazione Item"""
+    """Installa campi custom per configurazione Item base"""
+    print("[iderp] Installando configurazione Item...")
+    
     custom_fields = [
         {
             "fieldname": "measurement_config_section",
@@ -187,126 +193,30 @@ def install_item_config_fields():
             "insert_after": "config_column_break",
             "depends_on": "eval:doc.tipo_vendita_default=='Metro Lineare'",
         },
-        
-        # Sezione scaglioni prezzo
-        {
-            "fieldname": "pricing_tiers_section",
-            "fieldtype": "Section Break",
-            "label": "Scaglioni Prezzo",
-            "insert_after": "larghezza_materiale_default",
-            "depends_on": "eval:doc.tipo_vendita_default=='Metro Quadrato'",
-            "collapsible": 1,
-        },
-        {
-            "fieldname": "pricing_tiers",
-            "fieldtype": "Table",
-            "label": "Scaglioni Prezzo m²",
-            "insert_after": "pricing_tiers_section",
-            "options": "Pricing Tier",
-            "depends_on": "eval:doc.tipo_vendita_default=='Metro Quadrato'",
-            "description": "Definisci prezzi diversi in base ai metri quadri totali",
-        },
-        
-        # Limiti misurazione
-        {
-            "fieldname": "measurement_limits_section", 
-            "fieldtype": "Section Break",
-            "label": "Limiti Misurazione",
-            "insert_after": "pricing_tiers",
-            "depends_on": "supports_custom_measurement",
-            "collapsible": 1,
-        },
-        {
-            "fieldname": "base_min",
-            "fieldtype": "Float",
-            "label": "Base Minima (cm)",
-            "default": 1,
-            "insert_after": "measurement_limits_section",
-            "depends_on": "eval:doc.tipo_vendita_default=='Metro Quadrato'",
-        },
-        {
-            "fieldname": "base_max", 
-            "fieldtype": "Float",
-            "label": "Base Massima (cm)",
-            "default": 1000,
-            "insert_after": "base_min",
-            "depends_on": "eval:doc.tipo_vendita_default=='Metro Quadrato'",
-        },
-        {
-            "fieldname": "limits_column_break",
-            "fieldtype": "Column Break",
-            "insert_after": "base_max",
-        },
-        {
-            "fieldname": "altezza_min",
-            "fieldtype": "Float", 
-            "label": "Altezza Minima (cm)",
-            "default": 1,
-            "insert_after": "limits_column_break",
-            "depends_on": "eval:doc.tipo_vendita_default=='Metro Quadrato'",
-        },
-        {
-            "fieldname": "altezza_max",
-            "fieldtype": "Float",
-            "label": "Altezza Massima (cm)", 
-            "default": 1000,
-            "insert_after": "altezza_min",
-            "depends_on": "eval:doc.tipo_vendita_default=='Metro Quadrato'",
-        },
-        {
-            "fieldname": "lunghezza_limits_section",
-            "fieldtype": "Section Break",
-            "label": "Limiti Lunghezza",
-            "insert_after": "altezza_max",
-            "depends_on": "eval:doc.tipo_vendita_default=='Metro Lineare'",
-            "collapsible": 1,
-        },
-        {
-            "fieldname": "lunghezza_min",
-            "fieldtype": "Float",
-            "label": "Lunghezza Minima (cm)",
-            "default": 1,
-            "insert_after": "lunghezza_limits_section",
-            "depends_on": "eval:doc.tipo_vendita_default=='Metro Lineare'",
-        },
-        {
-            "fieldname": "lunghezza_max",
-            "fieldtype": "Float",
-            "label": "Lunghezza Massima (cm)",
-            "default": 10000,
-            "insert_after": "lunghezza_min",
-            "depends_on": "eval:doc.tipo_vendita_default=='Metro Lineare'",
-        },
     ]
     
     for cf in custom_fields:
         create_custom_field("Item", cf)
 
-def create_pricing_tier_doctype():
-    """Crea il DocType per gli scaglioni prezzo"""
+def create_item_pricing_tier_child_table():
+    """Crea Child Table per scaglioni prezzo"""
+    print("[iderp] Creando Child Table per scaglioni...")
     
     # Verifica se esiste già
-    if frappe.db.exists("DocType", "Pricing Tier"):
-        print("[iderp] - DocType Pricing Tier già esistente")
-        return
+    if frappe.db.exists("DocType", "Item Pricing Tier"):
+        print("[iderp] - Child Table già esistente")
+        return True
     
-    # Crea il DocType
-    doctype_json = {
+    child_doctype = {
         "doctype": "DocType",
-        "name": "Pricing Tier",
-        "module": "iderp",
+        "name": "Item Pricing Tier",
+        "module": "Custom",
+        "custom": 1,
         "istable": 1,
         "editable_grid": 1,
+        "track_changes": 0,
         "engine": "InnoDB",
         "fields": [
-            {
-                "fieldname": "item_code",
-                "fieldtype": "Link",
-                "options": "Item",
-                "label": "Item Code",
-                "reqd": 1,
-                "in_list_view": 1
-            },
             {
                 "fieldname": "from_sqm",
                 "fieldtype": "Float",
@@ -314,7 +224,8 @@ def create_pricing_tier_doctype():
                 "precision": 3,
                 "reqd": 1,
                 "in_list_view": 1,
-                "description": "Metri quadri minimi per questo scaglione"
+                "columns": 2,
+                "description": "Metri quadri minimi"
             },
             {
                 "fieldname": "to_sqm",
@@ -322,21 +233,32 @@ def create_pricing_tier_doctype():
                 "label": "A m²",
                 "precision": 3,
                 "in_list_view": 1,
-                "description": "Metri quadri massimi (lascia vuoto per 'oltre')"
+                "columns": 2,
+                "description": "Metri quadri massimi (vuoto = illimitato)"
             },
             {
                 "fieldname": "price_per_sqm",
                 "fieldtype": "Currency",
-                "label": "Prezzo €/m²",
+                "label": "€/m²",
                 "reqd": 1,
                 "in_list_view": 1,
-                "description": "Prezzo per metro quadrato in questo scaglione"
+                "columns": 2,
+                "description": "Prezzo per metro quadrato"
+            },
+            {
+                "fieldname": "tier_name",
+                "fieldtype": "Data",
+                "label": "Nome Scaglione",
+                "in_list_view": 1,
+                "columns": 3,
+                "description": "Es: Piccole tirature, Industriale, ecc."
             },
             {
                 "fieldname": "is_default",
                 "fieldtype": "Check",
-                "label": "Prezzo Default",
-                "description": "Usa come prezzo di fallback se nessuno scaglione corrisponde"
+                "label": "Default",
+                "columns": 1,
+                "description": "Prezzo di fallback"
             }
         ],
         "permissions": [
@@ -345,15 +267,10 @@ def create_pricing_tier_doctype():
                 "read": 1,
                 "write": 1,
                 "create": 1,
-                "delete": 1,
-                "export": 1,
-                "print": 1,
-                "email": 1,
-                "report": 1,
-                "share": 1
+                "delete": 1
             },
             {
-                "role": "Sales Manager",
+                "role": "Sales Manager", 
                 "read": 1,
                 "write": 1,
                 "create": 1,
@@ -369,11 +286,58 @@ def create_pricing_tier_doctype():
     }
     
     try:
-        doctype_doc = frappe.get_doc(doctype_json)
-        doctype_doc.insert(ignore_permissions=True)
-        print("[iderp] ✓ DocType Pricing Tier creato")
+        child_doc = frappe.get_doc(child_doctype)
+        child_doc.insert(ignore_permissions=True)
+        print("[iderp] ✓ Child Table 'Item Pricing Tier' creata")
+        return True
     except Exception as e:
-        print(f"[iderp] ✗ Errore creazione DocType Pricing Tier: {str(e)}")
+        print(f"[iderp] ✗ Errore creazione Child Table: {e}")
+        return False
+
+def add_pricing_table_to_item():
+    """Aggiunge la tabella scaglioni all'Item"""
+    print("[iderp] Aggiungendo tabella scaglioni all'Item...")
+    
+    item_fields = [
+        {
+            "fieldname": "pricing_section",
+            "fieldtype": "Section Break",
+            "label": "Scaglioni Prezzo m²",
+            "insert_after": "larghezza_materiale_default",
+            "collapsible": 1,
+            "depends_on": "eval:doc.supports_custom_measurement && doc.tipo_vendita_default=='Metro Quadrato'",
+            "description": "Configura prezzi diversi in base ai metri quadri totali dell'ordine"
+        },
+        {
+            "fieldname": "pricing_tiers",
+            "fieldtype": "Table",
+            "label": "Scaglioni Prezzo",
+            "insert_after": "pricing_section",
+            "options": "Item Pricing Tier",
+            "depends_on": "eval:doc.supports_custom_measurement && doc.tipo_vendita_default=='Metro Quadrato'",
+            "description": "Definisci prezzi per fasce di metri quadri"
+        },
+        {
+            "fieldname": "pricing_help",
+            "fieldtype": "HTML",
+            "label": "",
+            "insert_after": "pricing_tiers",
+            "options": """
+            <div class="alert alert-info">
+                <strong>💡 Come funzionano gli scaglioni:</strong><br>
+                • I prezzi si applicano in base ai <strong>metri quadri totali</strong> dell'ordine<br>
+                • Esempio: 0-10m² = €10/m², 10-50m² = €8/m², oltre 50m² = €6/m²<br>
+                • Il sistema sceglierà automaticamente il prezzo giusto<br>
+                • Lascia "A m²" vuoto per indicare "oltre X metri quadri"<br>
+                • Spunta "Default" per il prezzo di fallback
+            </div>
+            """,
+            "depends_on": "eval:doc.supports_custom_measurement && doc.tipo_vendita_default=='Metro Quadrato'"
+        }
+    ]
+    
+    for field in item_fields:
+        create_custom_field("Item", field)
 
 def create_custom_field(doctype, field_dict):
     """Crea un Custom Field se non esiste già"""
@@ -385,74 +349,236 @@ def create_custom_field(doctype, field_dict):
                 **field_dict
             })
             cf_doc.insert(ignore_permissions=True)
-            print(f"[iderp] ✓ Aggiunto campo {field_dict['fieldname']} a {doctype}")
+            print(f"[iderp] ✓ Campo {field_dict['fieldname']} aggiunto a {doctype}")
         except Exception as e:
-            print(f"[iderp] ✗ Errore creazione campo {field_dict['fieldname']}: {str(e)}")
+            print(f"[iderp] ✗ Errore campo {field_dict['fieldname']}: {str(e)}")
     else:
         print(f"[iderp] - Campo {field_dict['fieldname']} già presente su {doctype}")
 
-# Funzioni di utilità per debug e manutenzione
-def reinstall_sales_fields():
-    """Reinstalla solo i campi di vendita (per debug)"""
-    print("[iderp] Reinstallando campi di vendita...")
-    install_sales_custom_fields()
-    print("[iderp] Reinstallazione completata!")
+# ===== FUNZIONI UTILITY =====
 
-def create_sample_pricing_tiers(item_code):
+def reinstall_all():
+    """Reinstalla tutto da capo"""
+    print("[iderp] === Reinstallazione completa ===")
+    after_install()
+
+def create_sample_pricing_for_item(item_code):
     """Crea scaglioni di esempio per un item"""
-    sample_tiers = [
-        {"from_sqm": 0, "to_sqm": 10, "price_per_sqm": 10.0},
-        {"from_sqm": 10.001, "to_sqm": 50, "price_per_sqm": 8.0},
-        {"from_sqm": 50.001, "to_sqm": 100, "price_per_sqm": 7.0},
-        {"from_sqm": 100.001, "to_sqm": None, "price_per_sqm": 6.0},
-    ]
+    print(f"[iderp] Creando scaglioni esempio per {item_code}...")
     
-    for tier in sample_tiers:
-        if not frappe.db.exists("Pricing Tier", {
-            "item_code": item_code, 
-            "from_sqm": tier["from_sqm"]
-        }):
-            tier_doc = frappe.get_doc({
-                "doctype": "Pricing Tier",
-                "item_code": item_code,
-                **tier
-            })
-            tier_doc.insert(ignore_permissions=True)
-            print(f"[iderp] ✓ Creato scaglione {tier['from_sqm']}-{tier['to_sqm']} per {item_code}")
+    if not frappe.db.exists("Item", item_code):
+        print(f"[iderp] ✗ Item {item_code} non trovato")
+        return False
+    
+    try:
+        item_doc = frappe.get_doc("Item", item_code)
+        
+        # Abilita misure personalizzate
+        item_doc.supports_custom_measurement = 1
+        item_doc.tipo_vendita_default = "Metro Quadrato"
+        
+        # Scaglioni di esempio
+        sample_tiers = [
+            {
+                "from_sqm": 0,
+                "to_sqm": 1,
+                "price_per_sqm": 15.0,
+                "tier_name": "Piccole tirature"
+            },
+            {
+                "from_sqm": 1.001,
+                "to_sqm": 10,
+                "price_per_sqm": 12.0,
+                "tier_name": "Tirature medie"
+            },
+            {
+                "from_sqm": 10.001,
+                "to_sqm": 50,
+                "price_per_sqm": 9.0,
+                "tier_name": "Tirature grandi"
+            },
+            {
+                "from_sqm": 50.001,
+                "to_sqm": None,
+                "price_per_sqm": 6.0,
+                "tier_name": "Industriali",
+                "is_default": 1
+            }
+        ]
+        
+        # Pulisci e aggiungi scaglioni
+        item_doc.pricing_tiers = []
+        for tier_data in sample_tiers:
+            item_doc.append("pricing_tiers", tier_data)
+        
+        item_doc.save(ignore_permissions=True)
+        print(f"[iderp] ✓ Scaglioni esempio creati per {item_code}")
+        return True
+        
+    except Exception as e:
+        print(f"[iderp] ✗ Errore creazione scaglioni: {e}")
+        return False
+
+def show_available_items():
+    """Mostra item disponibili per test"""
+    items = frappe.get_all("Item", 
+        fields=["item_code", "item_name"], 
+        filters={"disabled": 0},
+        limit=10
+    )
+    
+    print("[iderp] === Item disponibili per test ===")
+    for item in items:
+        print(f"[iderp] - {item.item_code}: {item.item_name}")
+    
+    if items:
+        print(f"[iderp] Per test: create_sample_pricing_for_item('{items[0].item_code}')")
+    
+    return items
 
 def remove_all_custom_fields():
-    """Rimuove tutti i campi custom di iderp (per debug)"""
+    """Rimuove tutti i campi custom di iderp (per debug/reinstallazione)"""
+    print("[iderp] === Rimozione campi custom ===")
+    
     field_names = [
         "tipo_vendita", "base", "altezza", "mq_singolo", "mq_calcolati",
         "larghezza_materiale", "lunghezza", "ml_calcolati",
-        "prezzo_mq", "prezzo_ml", "note_calcolo"
+        "prezzo_mq", "prezzo_ml", "note_calcolo",
+        "measurement_config_section", "supports_custom_measurement", 
+        "tipo_vendita_default", "config_column_break", "larghezza_materiale_default",
+        "pricing_section", "pricing_tiers", "pricing_help"
     ]
     
-    doctypes = [
+    # DocType per documenti di vendita
+    sales_doctypes = [
         "Quotation Item", "Sales Order Item", "Delivery Note Item", 
         "Sales Invoice Item", "Purchase Order Item", "Purchase Invoice Item", 
         "Material Request Item"
     ]
     
-    for dt in doctypes:
+    # Rimuovi da documenti vendita
+    for dt in sales_doctypes:
         for field_name in field_names:
             if frappe.db.exists("Custom Field", {"dt": dt, "fieldname": field_name}):
-                frappe.delete_doc("Custom Field", {"dt": dt, "fieldname": field_name})
-                print(f"[iderp] Rimosso campo {field_name} da {dt}")
+                try:
+                    frappe.delete_doc("Custom Field", {"dt": dt, "fieldname": field_name})
+                    print(f"[iderp] ✓ Rimosso {field_name} da {dt}")
+                except:
+                    pass
+    
+    # Rimuovi da Item
+    for field_name in field_names:
+        if frappe.db.exists("Custom Field", {"dt": "Item", "fieldname": field_name}):
+            try:
+                frappe.delete_doc("Custom Field", {"dt": "Item", "fieldname": field_name})
+                print(f"[iderp] ✓ Rimosso {field_name} da Item")
+            except:
+                pass
+    
+    # Rimuovi Child DocType se esiste
+    if frappe.db.exists("DocType", "Item Pricing Tier"):
+        try:
+            frappe.delete_doc("DocType", "Item Pricing Tier", force=True)
+            print("[iderp] ✓ Rimosso DocType Item Pricing Tier")
+        except:
+            pass
+    
+    print("[iderp] === Rimozione completata ===")
 
-def get_pricing_for_item(item_code, total_sqm):
-    """Funzione di utilità per ottenere prezzo da scaglioni"""
-    tiers = frappe.get_all("Pricing Tier", 
-        filters={"item_code": item_code},
-        fields=["from_sqm", "to_sqm", "price_per_sqm", "is_default"],
-        order_by="from_sqm asc"
-    )
+def reinstall_from_scratch():
+    """Reinstallazione completa da zero (rimuove tutto e reinstalla)"""
+    print("[iderp] === Reinstallazione da zero ===")
     
-    # Cerca scaglione appropriato
-    for tier in tiers:
-        if total_sqm >= tier.from_sqm and (not tier.to_sqm or total_sqm <= tier.to_sqm):
-            return tier.price_per_sqm
+    # Prima rimuovi tutto
+    remove_all_custom_fields()
     
-    # Fallback su prezzo default
-    default_tier = next((t for t in tiers if t.is_default), None)
-    return default_tier.price_per_sqm if default_tier else 0
+    # Poi reinstalla tutto
+    after_install()
+    
+    print("[iderp] === Reinstallazione da zero completata ===")
+
+def quick_test_setup():
+    """Setup rapido per test con primo item disponibile"""
+    print("[iderp] === Setup rapido per test ===")
+    
+    # Mostra item disponibili
+    items = show_available_items()
+    
+    if items:
+        # Prendi il primo item e crea scaglioni
+        test_item = items[0].item_code
+        print(f"[iderp] Configurando {test_item} per test...")
+        
+        if create_sample_pricing_for_item(test_item):
+            print(f"[iderp] ✓ Setup test completato!")
+            print(f"[iderp] Vai su Item → {test_item} → Scaglioni Prezzo m²")
+            print(f"[iderp] Poi testa in una Quotation")
+            return test_item
+    else:
+        print("[iderp] ✗ Nessun item disponibile per test")
+        return None
+
+def validate_installation():
+    """Valida che l'installazione sia corretta"""
+    print("[iderp] === Validazione installazione ===")
+    
+    errors = []
+    
+    # Verifica Child DocType
+    if not frappe.db.exists("DocType", "Item Pricing Tier"):
+        errors.append("DocType 'Item Pricing Tier' mancante")
+    
+    # Verifica campi su Quotation Item
+    required_fields = ["tipo_vendita", "base", "altezza", "mq_singolo", "mq_calcolati"]
+    for field in required_fields:
+        if not frappe.db.exists("Custom Field", {"dt": "Quotation Item", "fieldname": field}):
+            errors.append(f"Campo {field} mancante su Quotation Item")
+    
+    # Verifica campi su Item
+    item_fields = ["supports_custom_measurement", "tipo_vendita_default", "pricing_tiers"]
+    for field in item_fields:
+        if not frappe.db.exists("Custom Field", {"dt": "Item", "fieldname": field}):
+            errors.append(f"Campo {field} mancante su Item")
+    
+    if errors:
+        print("[iderp] ✗ Errori trovati:")
+        for error in errors:
+            print(f"[iderp]   - {error}")
+        return False
+    else:
+        print("[iderp] ✓ Installazione valida!")
+        return True
+
+def get_installation_status():
+    """Ottieni stato dettagliato dell'installazione"""
+    print("[iderp] === Stato installazione ===")
+    
+    # Child DocType
+    has_child_doctype = frappe.db.exists("DocType", "Item Pricing Tier")
+    print(f"[iderp] Child DocType: {'✓' if has_child_doctype else '✗'}")
+    
+    # Campi vendita
+    sales_fields = ["tipo_vendita", "base", "altezza", "mq_singolo", "mq_calcolati", "note_calcolo"]
+    for field in sales_fields:
+        has_field = frappe.db.exists("Custom Field", {"dt": "Quotation Item", "fieldname": field})
+        print(f"[iderp] Campo {field}: {'✓' if has_field else '✗'}")
+    
+    # Campi Item
+    item_fields = ["supports_custom_measurement", "pricing_tiers"]
+    for field in item_fields:
+        has_field = frappe.db.exists("Custom Field", {"dt": "Item", "fieldname": field})
+        print(f"[iderp] Item {field}: {'✓' if has_field else '✗'}")
+    
+    # Item configurati
+    configured_items = frappe.db.sql("""
+        SELECT item_code 
+        FROM `tabItem` 
+        WHERE supports_custom_measurement = 1
+        LIMIT 5
+    """, as_dict=True)
+    
+    print(f"[iderp] Item configurati: {len(configured_items)}")
+    for item in configured_items:
+        print(f"[iderp]   - {item.item_code}")
+    
+    print("[iderp] === Fine stato ===")
