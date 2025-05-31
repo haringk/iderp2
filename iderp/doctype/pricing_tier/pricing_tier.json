@@ -1,0 +1,128 @@
+# iderp/doctype/pricing_tier/pricing_tier.json
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-05-31 16:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "item_code",
+  "from_sqm",
+  "to_sqm", 
+  "price_per_sqm",
+  "is_default"
+ ],
+ "fields": [
+  {
+   "fieldname": "item_code",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Item Code",
+   "options": "Item",
+   "reqd": 1
+  },
+  {
+   "fieldname": "from_sqm",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Da m²",
+   "precision": 3,
+   "reqd": 1
+  },
+  {
+   "fieldname": "to_sqm", 
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "A m²",
+   "precision": 3
+  },
+  {
+   "fieldname": "price_per_sqm",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Prezzo €/m²",
+   "reqd": 1
+  },
+  {
+   "fieldname": "is_default",
+   "fieldtype": "Check",
+   "label": "Prezzo Default"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2025-05-31 16:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "iderp",
+ "name": "Pricing Tier",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
+
+# iderp/doctype/pricing_tier/pricing_tier.py
+import frappe
+from frappe.model.document import Document
+
+class PricingTier(Document):
+    def validate(self):
+        if self.to_sqm and self.from_sqm >= self.to_sqm:
+            frappe.throw("'A m²' deve essere maggiore di 'Da m²'")
+        
+        if self.from_sqm < 0:
+            frappe.throw("'Da m²' non può essere negativo")
+
+    @staticmethod
+    def get_price_for_sqm(item_code, total_sqm):
+        """Ottieni prezzo per m² in base agli scaglioni"""
+        
+        # Cerca scaglione appropriato
+        tiers = frappe.get_all("Pricing Tier", 
+            filters={
+                "item_code": item_code,
+                "from_sqm": ["<=", total_sqm]
+            },
+            fields=["from_sqm", "to_sqm", "price_per_sqm"],
+            order_by="from_sqm desc"
+        )
+        
+        for tier in tiers:
+            # Se to_sqm è None, significa "oltre X m²"
+            if not tier.to_sqm or total_sqm <= tier.to_sqm:
+                return tier.price_per_sqm
+        
+        # Se non trova scaglioni, cerca prezzo default
+        default_tier = frappe.get_value("Pricing Tier", 
+            {"item_code": item_code, "is_default": 1}, 
+            "price_per_sqm"
+        )
+        
+        if default_tier:
+            return default_tier
+            
+        # Fallback: cerca Price List standard
+        from erpnext.stock.get_item_details import get_price_list_rate
+        return get_price_list_rate({
+            "item_code": item_code,
+            "price_list": frappe.db.get_single_value("Selling Settings", "selling_price_list")
+        }) or 0
+
+# iderp/doctype/pricing_tier/__init__.py
+# Empty file for module
