@@ -1,7 +1,7 @@
 import frappe
 
 def after_install():
-    """Installazione completa plugin iderp con supporto e-commerce"""
+    """Installazione plugin iderp con supporto multi-unità"""
     print("[iderp] Iniziando installazione plugin...")
     
     # 1. Installa campi custom per documenti di vendita
@@ -10,16 +10,17 @@ def after_install():
     # 2. Installa campi custom per configurazione Item
     install_item_config_fields()
     
-    # 3. Crea Custom Fields per e-commerce
-    install_ecommerce_fields()
-    
-    # 4. Setup configurazioni e-commerce
-    setup_ecommerce_settings()
-    
-    # 5. Crea print formats personalizzati
-    create_custom_print_formats()
-    
     print("[iderp] Installazione completata con successo!")
+    print("[iderp] Plugin installato con supporto per:")
+    print("[iderp] - Vendita al pezzo")
+    print("[iderp] - Vendita al metro quadrato") 
+    print("[iderp] - Vendita al metro lineare")
+    print("[iderp] - Configurazione Item personalizzata")
+    
+    # TODO: Abilitare gradualmente:
+    # - API e-commerce
+    # - Frontend calculator
+    # - Print formats personalizzati
 
 def install_sales_custom_fields():
     """Installa campi custom per documenti di vendita"""
@@ -230,5 +231,57 @@ def install_item_config_fields():
             "depends_on": "eval:doc.tipo_vendita_default=='Metro Lineare'",
             "collapsible": 1,
         },
+        },
         {
             "fieldname": "lunghezza_min",
+            "fieldtype": "Float",
+            "label": "Lunghezza Minima (cm)",
+            "default": 1,
+            "insert_after": "lunghezza_limits_section",
+            "depends_on": "eval:doc.tipo_vendita_default=='Metro Lineare'",
+        },
+        {
+            "fieldname": "lunghezza_max",
+            "fieldtype": "Float",
+            "label": "Lunghezza Massima (cm)",
+            "default": 10000,
+            "insert_after": "lunghezza_min",
+            "depends_on": "eval:doc.tipo_vendita_default=='Metro Lineare'",
+        },
+    ]
+    
+    for cf in custom_fields:
+        create_custom_field("Item", cf)
+
+def create_custom_field(doctype, field_dict):
+    """Crea un Custom Field se non esiste già"""
+    if not frappe.db.exists("Custom Field", {"dt": doctype, "fieldname": field_dict["fieldname"]}):
+        try:
+            cf_doc = frappe.get_doc({
+                "doctype": "Custom Field",
+                "dt": doctype,
+                **field_dict
+            })
+            cf_doc.insert(ignore_permissions=True)
+            print(f"[iderp] ✓ Aggiunto campo {field_dict['fieldname']} a {doctype}")
+        except Exception as e:
+            print(f"[iderp] ✗ Errore creazione campo {field_dict['fieldname']}: {str(e)}")
+    else:
+        print(f"[iderp] - Campo {field_dict['fieldname']} già presente su {doctype}")
+
+# ===== FUNZIONI E-COMMERCE (DA IMPLEMENTARE) =====
+
+def install_ecommerce_fields():
+    """Da implementare: Campi specifici per e-commerce"""
+    print("[iderp] TODO: install_ecommerce_fields")
+    pass
+
+def setup_ecommerce_settings(): 
+    """Da implementare: Configurazioni e-commerce"""
+    print("[iderp] TODO: setup_ecommerce_settings")
+    pass
+
+def create_custom_print_formats():
+    """Da implementare: Print formats personalizzati"""
+    print("[iderp] TODO: create_custom_print_formats")
+    pass
