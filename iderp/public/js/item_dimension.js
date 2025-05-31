@@ -1,4 +1,4 @@
-console.log("IDERP: Multi-Unit JS LOADED v2.1");
+console.log("IDERP: Multi-Unit JS LOADED v2.2 - BUGFIX");
 
 // Funzione principale per tutti i DocType
 frappe.ui.form.on('Quotation Item', {
@@ -96,7 +96,7 @@ function reset_and_calculate(frm, cdt, cdn) {
     
     console.log("Reset e calcolo per tipo vendita:", row.tipo_vendita);
     
-    // Reset tutti i campi quando cambia tipo vendita
+    // Reset solo quando l'utente cambia tipo vendita esplicitamente
     row.base = 0;
     row.altezza = 0;
     row.mq_calcolati = 0;
@@ -121,9 +121,10 @@ function reset_and_calculate(frm, cdt, cdn) {
 function calculate_price(frm, cdt, cdn) {
     var row = locals[cdt][cdn];
     
-    // Imposta default se non c'è tipo vendita
+    // Se non c'è tipo vendita, non fare nulla (lascia che l'utente lo imposti)
     if (!row.tipo_vendita) {
-        row.tipo_vendita = "Pezzo";
+        console.log("Nessun tipo vendita impostato, non calcolo nulla");
+        return;
     }
     
     console.log("Calcolando prezzo per:", {
@@ -143,9 +144,12 @@ function calculate_price(frm, cdt, cdn) {
             calculate_linear_meters(row);
             break;
         case "Pezzo":
-        default:
             calculate_pieces(row);
             break;
+        default:
+            // Se tipo vendita non riconosciuto, non fare nulla
+            console.log("Tipo vendita non riconosciuto:", row.tipo_vendita);
+            return;
     }
     
     frm.refresh_field("items");
@@ -154,11 +158,12 @@ function calculate_price(frm, cdt, cdn) {
 function calculate_square_meters(row) {
     console.log("Calcolo metri quadrati:", row.base, "x", row.altezza);
     
-    // Reset campi non utilizzati
-    row.larghezza_materiale = 0;
-    row.lunghezza = 0;
-    row.ml_calcolati = 0;
-    row.prezzo_ml = 0;
+    // NON resettare i campi se l'utente li sta compilando
+    // Reset solo campi non utilizzati per questo tipo vendita
+    if (!row.larghezza_materiale) row.larghezza_materiale = 0;
+    if (!row.lunghezza) row.lunghezza = 0;
+    if (!row.ml_calcolati) row.ml_calcolati = 0;
+    if (!row.prezzo_ml) row.prezzo_ml = 0;
     
     if (row.base && row.altezza && row.base > 0 && row.altezza > 0) {
         // Calcola metri quadrati (da cm a m²)
@@ -171,24 +176,27 @@ function calculate_square_meters(row) {
             row.note_calcolo = `${row.mq_calcolati.toFixed(3)} m² × €${row.prezzo_mq} = €${row.rate.toFixed(2)}`;
             console.log("Prezzo calcolato:", row.rate);
         } else {
-            row.rate = 0;
+            // Non resettare il rate se non c'è prezzo_mq
             row.note_calcolo = `${row.mq_calcolati.toFixed(3)} m² (inserire prezzo al m²)`;
         }
     } else {
-        row.mq_calcolati = 0;
-        row.rate = 0;
-        row.note_calcolo = "Inserire base e altezza";
+        // Solo se entrambi i campi sono vuoti, resetta
+        if ((!row.base || row.base <= 0) && (!row.altezza || row.altezza <= 0)) {
+            row.mq_calcolati = 0;
+            row.note_calcolo = "Inserire base e altezza";
+        }
     }
 }
 
 function calculate_linear_meters(row) {
     console.log("Calcolo metri lineari:", row.lunghezza);
     
-    // Reset campi non utilizzati
-    row.base = 0;
-    row.altezza = 0;
-    row.mq_calcolati = 0;
-    row.prezzo_mq = 0;
+    // NON resettare i campi se l'utente li sta compilando
+    // Reset solo campi non utilizzati per questo tipo vendita
+    if (!row.base) row.base = 0;
+    if (!row.altezza) row.altezza = 0;
+    if (!row.mq_calcolati) row.mq_calcolati = 0;
+    if (!row.prezzo_mq) row.prezzo_mq = 0;
     
     if (row.lunghezza && row.lunghezza > 0) {
         // Calcola metri lineari (da cm a m)
@@ -208,28 +216,23 @@ function calculate_linear_meters(row) {
             
             console.log("Prezzo calcolato:", row.rate);
         } else {
-            row.rate = 0;
+            // Non resettare il rate se non c'è prezzo_ml
             row.note_calcolo = `${row.ml_calcolati.toFixed(2)} ml (inserire prezzo al ml)`;
         }
     } else {
-        row.ml_calcolati = 0;
-        row.rate = 0;
-        row.note_calcolo = "Inserire lunghezza";
+        // Solo se il campo è vuoto, resetta
+        if (!row.lunghezza || row.lunghezza <= 0) {
+            row.ml_calcolati = 0;
+            row.note_calcolo = "Inserire lunghezza";
+        }
     }
 }
 
 function calculate_pieces(row) {
     console.log("Calcolo al pezzo");
     
-    // Reset tutti i campi di misurazione
-    row.base = 0;
-    row.altezza = 0;
-    row.mq_calcolati = 0;
-    row.larghezza_materiale = 0;
-    row.lunghezza = 0;
-    row.ml_calcolati = 0;
-    row.prezzo_mq = 0;
-    row.prezzo_ml = 0;
+    // Per vendita al pezzo, non toccare nessun campo di misurazione
+    // L'utente può aver impostato un tipo vendita diverso prima
     
     // Per vendita al pezzo, rate rimane come impostato manualmente
     if (row.rate && row.qty) {
