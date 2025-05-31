@@ -16,11 +16,6 @@ def after_install():
     print("[iderp] - Vendita al metro quadrato") 
     print("[iderp] - Vendita al metro lineare")
     print("[iderp] - Configurazione Item personalizzata")
-    
-    # TODO: Abilitare gradualmente:
-    # - API e-commerce
-    # - Frontend calculator
-    # - Print formats personalizzati
 
 def install_sales_custom_fields():
     """Installa campi custom per documenti di vendita"""
@@ -41,7 +36,7 @@ def install_sales_custom_fields():
             "label": "Tipo Vendita", 
             "fieldtype": "Select",
             "options": "\nPezzo\nMetro Quadrato\nMetro Lineare",
-            "default": "Pezzo",
+            "default": "Metro Quadrato",
             "insert_after": "item_code",
             "reqd": 1,
             "description": "Seleziona come vendere questo prodotto",
@@ -231,7 +226,6 @@ def install_item_config_fields():
             "depends_on": "eval:doc.tipo_vendita_default=='Metro Lineare'",
             "collapsible": 1,
         },
-        },
         {
             "fieldname": "lunghezza_min",
             "fieldtype": "Float",
@@ -269,19 +263,30 @@ def create_custom_field(doctype, field_dict):
     else:
         print(f"[iderp] - Campo {field_dict['fieldname']} già presente su {doctype}")
 
-# ===== FUNZIONI E-COMMERCE (DA IMPLEMENTARE) =====
+# Funzione di utilità per reinstallare solo i campi di vendita
+def reinstall_sales_fields():
+    """Reinstalla solo i campi di vendita (per debug)"""
+    print("[iderp] Reinstallando campi di vendita...")
+    install_sales_custom_fields()
+    print("[iderp] Reinstallazione completata!")
 
-def install_ecommerce_fields():
-    """Da implementare: Campi specifici per e-commerce"""
-    print("[iderp] TODO: install_ecommerce_fields")
-    pass
-
-def setup_ecommerce_settings(): 
-    """Da implementare: Configurazioni e-commerce"""
-    print("[iderp] TODO: setup_ecommerce_settings")
-    pass
-
-def create_custom_print_formats():
-    """Da implementare: Print formats personalizzati"""
-    print("[iderp] TODO: create_custom_print_formats")
-    pass
+# Funzione per rimuovere tutti i campi (se necessario)
+def remove_all_custom_fields():
+    """Rimuove tutti i campi custom di iderp (per debug)"""
+    field_names = [
+        "tipo_vendita", "base", "altezza", "mq_calcolati",
+        "larghezza_materiale", "lunghezza", "ml_calcolati",
+        "prezzo_mq", "prezzo_ml", "note_calcolo"
+    ]
+    
+    doctypes = [
+        "Quotation Item", "Sales Order Item", "Delivery Note Item", 
+        "Sales Invoice Item", "Purchase Order Item", "Purchase Invoice Item", 
+        "Material Request Item"
+    ]
+    
+    for dt in doctypes:
+        for field_name in field_names:
+            if frappe.db.exists("Custom Field", {"dt": dt, "fieldname": field_name}):
+                frappe.delete_doc("Custom Field", {"dt": dt, "fieldname": field_name})
+                print(f"[iderp] Rimosso campo {field_name} da {dt}")
