@@ -33,6 +33,22 @@ frappe.ui.form.on('Quotation Item', {
         // Carica scaglioni quando cambia item
         load_item_pricing_tiers(frm, cdt, cdn);
     },
+    rate: function(frm, cdt, cdn) {
+        // NON ricalcolare quando l'utente modifica manualmente il rate
+        // Solo aggiorna le note per spiegare che è manuale
+        var row = locals[cdt][cdn];
+        if (row.tipo_vendita === "Metro Quadrato" && row.base && row.altezza) {
+            var qty = row.qty || 1;
+            row.note_calcolo = 
+                `⚠️ PREZZO MANUALE\n` +
+                `📐 Dimensioni: ${row.base}×${row.altezza}cm\n` +
+                `🔢 m² singolo: ${row.mq_singolo || 0} m²\n` +
+                `💵 Prezzo manuale: €${row.rate}\n` +
+                `📦 Quantità: ${qty} pz\n` +
+                `💸 Totale ordine: €${(row.rate * qty).toFixed(2)}`;
+        }
+        frm.refresh_field("items");
+    },
     refresh: function(frm) {
         $.each(frm.doc.items || [], function(i, row) {
             calculate_price(frm, row.doctype, row.name);
@@ -52,6 +68,21 @@ frappe.ui.form.on('Quotation Item', {
         lunghezza: function(frm, cdt, cdn) { calculate_price(frm, cdt, cdn); },
         prezzo_ml: function(frm, cdt, cdn) { calculate_price(frm, cdt, cdn); },
         item_code: function(frm, cdt, cdn) { load_item_pricing_tiers(frm, cdt, cdn); },
+        rate: function(frm, cdt, cdn) {
+            // NON ricalcolare quando l'utente modifica manualmente il rate
+            var row = locals[cdt][cdn];
+            if (row.tipo_vendita === "Metro Quadrato" && row.base && row.altezza) {
+                var qty = row.qty || 1;
+                row.note_calcolo = 
+                    `⚠️ PREZZO MANUALE\n` +
+                    `📐 Dimensioni: ${row.base}×${row.altezza}cm\n` +
+                    `🔢 m² singolo: ${row.mq_singolo || 0} m²\n` +
+                    `💵 Prezzo manuale: €${row.rate}\n` +
+                    `📦 Quantità: ${qty} pz\n` +
+                    `💸 Totale ordine: €${(row.rate * qty).toFixed(2)}`;
+            }
+            frm.refresh_field("items");
+        },
         refresh: function(frm) {
             $.each(frm.doc.items || [], function(i, row) {
                 calculate_price(frm, row.doctype, row.name);
@@ -253,7 +284,10 @@ function calculate_with_pricing_tiers(row, qty) {
     
     if (price_per_sqm > 0) {
         // Calcola prezzo unitario (per singolo pezzo)
-        row.rate = row.mq_singolo * price_per_sqm;
+        var calculated_rate = row.mq_singolo * price_per_sqm;
+        
+        // Imposta il rate SENZA triggare altri eventi
+        frappe.model.set_value(row.doctype, row.name, "rate", calculated_rate, null, true);
         
         // Aggiorna campo prezzo_mq per coerenza
         row.prezzo_mq = price_per_sqm;
@@ -263,16 +297,16 @@ function calculate_with_pricing_tiers(row, qty) {
             `💰 Prezzo: €${price_per_sqm}/m²\n` +
             `📐 Dimensioni: ${row.base}×${row.altezza}cm\n` +
             `🔢 m² singolo: ${row.mq_singolo.toFixed(4)} m²\n` +
-            `💵 Prezzo unitario: €${row.rate.toFixed(2)}\n` +
+            `💵 Prezzo unitario: €${calculated_rate.toFixed(2)}\n` +
             `📦 Quantità: ${qty} pz\n` +
             `📊 m² totali: ${total_sqm.toFixed(3)} m²\n` +
-            `💸 Totale ordine: €${(row.rate * qty).toFixed(2)}`;
+            `💸 Totale ordine: €${(calculated_rate * qty).toFixed(2)}`;
         
         console.log("Prezzo calcolato con scaglioni:", {
             tier_info: tier_info,
             price_per_sqm: price_per_sqm,
-            rate: row.rate,
-            total: row.rate * qty
+            rate: calculated_rate,
+            total: calculated_rate * qty
         });
     } else {
         row.rate = 0;
