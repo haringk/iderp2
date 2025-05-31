@@ -286,31 +286,37 @@ function calculate_with_pricing_tiers(row, qty) {
         // Calcola prezzo unitario (per singolo pezzo)
         var calculated_rate = row.mq_singolo * price_per_sqm;
         
-        // FORZA il formato corretto per evitare problemi di localizzazione
-        calculated_rate = parseFloat(calculated_rate.toFixed(2));
+        // METODO DIRETTO - bypass completo di ERPNext
+        console.log("PRIMA - Rate row:", row.rate, "Calculated:", calculated_rate);
         
-        console.log("Rate calcolato prima del set:", calculated_rate);
+        // Imposta direttamente nell'oggetto row
+        row.rate = Number(calculated_rate.toFixed(2));
         
-        // Metodo più robusto per impostare il rate
-        setTimeout(function() {
-            // Usa il metodo Frappe specifico per valute
-            frappe.model.set_value(row.doctype, row.name, "rate", calculated_rate);
-            
-            console.log("Rate impostato:", calculated_rate, "Row rate attuale:", row.rate);
-        }, 100);
+        console.log("DOPO - Rate row:", row.rate);
+        
+        // Forza l'aggiornamento del DOM direttamente
+        var field_wrapper = cur_frm.get_field("items").grid.grid_rows.find(r => r.doc.name === row.name);
+        if (field_wrapper && field_wrapper.columns.rate) {
+            var rate_input = field_wrapper.columns.rate.df.input;
+            if (rate_input) {
+                // Imposta il valore direttamente nell'input
+                $(rate_input).val(calculated_rate.toFixed(2));
+                console.log("DOM aggiornato direttamente con:", calculated_rate.toFixed(2));
+            }
+        }
         
         // Aggiorna campo prezzo_mq per coerenza
         row.prezzo_mq = price_per_sqm;
         
         row.note_calcolo = 
             `🎯 Scaglione: ${tier_info}\n` +
-            `💰 Prezzo: €${format_currency(price_per_sqm)}/m²\n` +
+            `💰 Prezzo: €${price_per_sqm.toFixed(2)}/m²\n` +
             `📐 Dimensioni: ${row.base}×${row.altezza}cm\n` +
             `🔢 m² singolo: ${row.mq_singolo.toFixed(4)} m²\n` +
-            `💵 Prezzo unitario: €${format_currency(calculated_rate)}\n` +
+            `💵 Prezzo unitario: €${calculated_rate.toFixed(2)}\n` +
             `📦 Quantità: ${qty} pz\n` +
             `📊 m² totali: ${total_sqm.toFixed(3)} m²\n` +
-            `💸 Totale ordine: €${format_currency(calculated_rate * qty)}`;
+            `💸 Totale ordine: €${(calculated_rate * qty).toFixed(2)}`;
         
         console.log("Prezzo calcolato con scaglioni:", {
             tier_info: tier_info,
@@ -323,19 +329,6 @@ function calculate_with_pricing_tiers(row, qty) {
         row.note_calcolo = `${total_sqm.toFixed(3)} m² totali - Nessuno scaglione applicabile`;
         console.log("Nessuno scaglione trovato per", total_sqm, "m²");
     }
-}
-
-// Funzione helper per formattare valute in modo consistente
-function format_currency(value) {
-    if (typeof value !== 'number') {
-        value = parseFloat(value) || 0;
-    }
-    
-    // Forza formato italiano/europeo: 1.234,56
-    return value.toLocaleString('it-IT', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-    });
 }
 
 function calculate_with_manual_price(row, qty) {
