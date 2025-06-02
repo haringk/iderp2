@@ -1,196 +1,37 @@
-console.log("IDERP: Multi-Unit JS v8.0 - FIXED LOOP INFINITO");
+console.log("IDERP: Multi-Unit JS v9.0 - DEFINITIVO CON MINIMI AUTOMATICI");
 
 // Cache per item e relativi minimi
 var item_config_cache = {};
 
-// FLAG per prevenire loop infiniti
-var calculating_in_progress = false;
+// FLAG per prevenire loop infiniti - CRITICO
+var iderp_calculation_locked = false;
 
-// Funzione principale per tutti i DocType
-frappe.ui.form.on('Quotation Item', {
-    tipo_vendita: function(frm, cdt, cdn) {
-        reset_and_calculate(frm, cdt, cdn);
-    },
-    base: function(frm, cdt, cdn) {
-        calculate_price_with_item_minimums(frm, cdt, cdn);
-    },
-    altezza: function(frm, cdt, cdn) {
-        calculate_price_with_item_minimums(frm, cdt, cdn);
-    },
-    qty: function(frm, cdt, cdn) {
-        calculate_price_with_item_minimums(frm, cdt, cdn);
-    },
-    prezzo_mq: function(frm, cdt, cdn) {
-        calculate_price_with_item_minimums(frm, cdt, cdn);
-    },
-    larghezza_materiale: function(frm, cdt, cdn) {
-        calculate_price_with_item_minimums(frm, cdt, cdn);
-    },
-    lunghezza: function(frm, cdt, cdn) {
-        calculate_price_with_item_minimums(frm, cdt, cdn);
-    },
-    prezzo_ml: function(frm, cdt, cdn) {
-        calculate_price_with_item_minimums(frm, cdt, cdn);
-    },
-    item_code: function(frm, cdt, cdn) {
-        // Carica configurazione item quando cambia
-        load_item_configuration(frm, cdt, cdn);
-    },
-    // FIXED: Evento rate che NON crea loop infinito
-    rate: function(frm, cdt, cdn) {
-        // CRITICO: Previeni loop infinito
-        if (calculating_in_progress) {
-            console.log("🛑 Rate change durante calcolo - ignorato per prevenire loop");
-            return;
-        }
-        
-        var row = locals[cdt][cdn];
-        
-        // Solo aggiorna note se è vendita al metro quadrato E ha dimensioni
-        if (row.tipo_vendita === "Metro Quadrato" && row.base && row.altezza && row.rate) {
-            var qty = row.qty || 1;
-            var mq_singolo = (row.base * row.altezza) / 10000;
-            var mq_totali = mq_singolo * qty;
-            
-            // SOLO note, NON ricalcola niente
-            row.note_calcolo = 
-                `⚠️ PREZZO MANUALE\n` +
-                `📐 Dimensioni: ${row.base}×${row.altezza}cm\n` +
-                `🔢 m² singolo: ${mq_singolo.toFixed(4)} m²\n` +
-                `💵 Prezzo manuale: €${row.rate}\n` +
-                `📦 Quantità: ${qty} pz\n` +
-                `📊 m² totali: ${mq_totali.toFixed(3)} m²\n` +
-                `💸 Totale ordine: €${(row.rate * qty).toFixed(2)}`;
-            
-            // CRITICO: NON fare refresh automatico che può triggerare altri eventi
-            // frm.refresh_field("items");  // ← RIMOSSO per evitare loop
-        }
+// FUNZIONE PRINCIPALE: APPLICA MINIMO AUTOMATICO
+function apply_minimum_automatic(frm, cdt, cdn) {
+    // Previeni loop infiniti
+    if (iderp_calculation_locked) {
+        console.log("🛑 Calcolo bloccato per prevenire loop");
+        return;
     }
-});
-
-// Hook per quando cambia il cliente nel documento principale
-frappe.ui.form.on('Quotation', {
-    customer: function(frm) {
-        console.log("Cliente cambiato:", frm.doc.customer);
-        // Pulisci cache
-        item_config_cache = {};
-        
-        // Ricalcola tutti gli item con il nuovo cliente
-        $.each(frm.doc.items || [], function(i, row) {
-            calculate_price_with_item_minimums(frm, row.doctype, row.name);
-        });
-    },
-    refresh: function(frm) {
-        // Mostra info customer group se presente
-        if (frm.doc.customer) {
-            show_customer_group_info(frm);
-        }
-    }
-});
-
-// Copia eventi per altri DocType
-['Sales Order Item', 'Sales Invoice Item', 'Delivery Note Item', 'Work Order Item'].forEach(function(doctype) {
-    frappe.ui.form.on(doctype, {
-        tipo_vendita: function(frm, cdt, cdn) { reset_and_calculate(frm, cdt, cdn); },
-        base: function(frm, cdt, cdn) { calculate_price_with_item_minimums(frm, cdt, cdn); },
-        altezza: function(frm, cdt, cdn) { calculate_price_with_item_minimums(frm, cdt, cdn); },
-        qty: function(frm, cdt, cdn) { calculate_price_with_item_minimums(frm, cdt, cdn); },
-        prezzo_mq: function(frm, cdt, cdn) { calculate_price_with_item_minimums(frm, cdt, cdn); },
-        larghezza_materiale: function(frm, cdt, cdn) { calculate_price_with_item_minimums(frm, cdt, cdn); },
-        lunghezza: function(frm, cdt, cdn) { calculate_price_with_item_minimums(frm, cdt, cdn); },
-        prezzo_ml: function(frm, cdt, cdn) { calculate_price_with_item_minimums(frm, cdt, cdn); },
-        item_code: function(frm, cdt, cdn) { load_item_configuration(frm, cdt, cdn); },
-        // FIXED: Stesso fix per rate su altri DocType
-        rate: function(frm, cdt, cdn) {
-            if (calculating_in_progress) {
-                console.log("🛑 Rate change durante calcolo - ignorato per prevenire loop");
-                return;
-            }
-            
-            var row = locals[cdt][cdn];
-            if (row.tipo_vendita === "Metro Quadrato" && row.base && row.altezza && row.rate) {
-                var qty = row.qty || 1;
-                var mq_singolo = (row.base * row.altezza) / 10000;
-                var mq_totali = mq_singolo * qty;
-                
-                row.note_calcolo = 
-                    `⚠️ PREZZO MANUALE\n` +
-                    `📐 Dimensioni: ${row.base}×${row.altezza}cm\n` +
-                    `🔢 m² singolo: ${mq_singolo.toFixed(4)} m²\n` +
-                    `💵 Prezzo manuale: €${row.rate}\n` +
-                    `📦 Quantità: ${qty} pz\n` +
-                    `📊 m² totali: ${mq_totali.toFixed(3)} m²\n` +
-                    `💸 Totale ordine: €${(row.rate * qty).toFixed(2)}`;
-            }
-        }
-    });
-});
-
-// Aggiungi hook anche per i documenti principali
-['Sales Order', 'Sales Invoice', 'Delivery Note'].forEach(function(doctype) {
-    frappe.ui.form.on(doctype, {
-        customer: function(frm) {
-            console.log("Cliente cambiato:", frm.doc.customer);
-            item_config_cache = {};
-            $.each(frm.doc.items || [], function(i, row) {
-                calculate_price_with_item_minimums(frm, row.doctype, row.name);
-            });
-        },
-        refresh: function(frm) {
-            if (frm.doc.customer) {
-                show_customer_group_info(frm);
-            }
-        }
-    });
-});
-
-function show_customer_group_info(frm) {
-    // Mostra informazioni gruppo cliente
-    if (!frm.doc.customer) return;
     
-    frappe.db.get_value("Customer", frm.doc.customer, "customer_group").then(r => {
-        if (r.message && r.message.customer_group) {
-            var group = r.message.customer_group;
-            
-            // Scegli colore badge in base al gruppo
-            var badge_color = "blue";
-            if (group === "Diamond") badge_color = "purple";
-            else if (group === "Gold") badge_color = "orange";
-            else if (group === "Bronze") badge_color = "green";
-            else if (group === "Finale") badge_color = "gray";
-            
-            // Aggiungi badge o info visiva
-            if (!frm.customer_group_indicator) {
-                frm.customer_group_indicator = frm.page.add_label(
-                    `👥 Gruppo: ${group}`, 
-                    badge_color
-                );
-            } else {
-                frm.customer_group_indicator.text(`👥 Gruppo: ${group}`);
-                frm.customer_group_indicator.removeClass().addClass(`label label-${badge_color}`);
-            }
-        }
-    });
-}
-
-function load_item_configuration(frm, cdt, cdn) {
     var row = locals[cdt][cdn];
-    
-    if (!row.item_code) {
+    if (!row || !row.item_code || row.tipo_vendita !== "Metro Quadrato") {
         return;
     }
     
-    console.log("Caricando configurazione per item:", row.item_code);
-    
-    // Verifica cache
-    if (item_config_cache[row.item_code]) {
-        row.item_config = item_config_cache[row.item_code];
-        console.log("Configurazione da cache per", row.item_code);
-        calculate_price_with_item_minimums(frm, cdt, cdn);
+    var customer = frm.doc.customer || frm.doc.party_name;
+    if (!customer) {
+        console.log("⚠️ Nessun cliente - calcolo standard");
+        calculate_standard_pricing(row);
         return;
     }
     
-    // Carica configurazione item completa
+    // Blocca calcoli durante l'operazione
+    iderp_calculation_locked = true;
+    
+    console.log("🧮 Applicando calcolo automatico con minimi per:", row.item_code);
+    
+    // Carica configurazione item
     frappe.call({
         method: 'frappe.client.get',
         args: {
@@ -198,396 +39,332 @@ function load_item_configuration(frm, cdt, cdn) {
             name: row.item_code
         },
         callback: function(r) {
-            if (r.message) {
-                var item_doc = r.message;
-                
-                // Estrai configurazione rilevante
-                var config = {
-                    supports_custom_measurement: item_doc.supports_custom_measurement || 0,
-                    tipo_vendita_default: item_doc.tipo_vendita_default || 'Pezzo',
-                    pricing_tiers: item_doc.pricing_tiers || [],
-                    customer_group_minimums: item_doc.customer_group_minimums || []
-                };
-                
-                // Salva in cache
-                item_config_cache[row.item_code] = config;
-                row.item_config = config;
-                
-                console.log("Configurazione caricata per", row.item_code, ":", config);
-                
-                // Imposta tipo vendita default se non impostato
-                if (!row.tipo_vendita && config.tipo_vendita_default) {
-                    row.tipo_vendita = config.tipo_vendita_default;
+            try {
+                if (!r.message || !r.message.customer_group_minimums) {
+                    console.log("⚠️ Nessun minimo configurato - calcolo standard");
+                    calculate_standard_pricing(row);
+                    return;
                 }
                 
-                // Ricalcola con la nuova configurazione
-                calculate_price_with_item_minimums(frm, cdt, cdn);
-                frm.refresh_field("items");
+                var item_doc = r.message;
+                
+                // Ottieni gruppo cliente
+                frappe.db.get_value("Customer", customer, "customer_group").then(customer_r => {
+                    try {
+                        var customer_group = customer_r.message.customer_group;
+                        
+                        // Cerca minimo per questo gruppo
+                        var minimum = item_doc.customer_group_minimums.find(
+                            m => m.customer_group === customer_group && m.enabled
+                        );
+                        
+                        if (!minimum) {
+                            console.log("⚠️ Nessun minimo per gruppo", customer_group, "- calcolo standard");
+                            calculate_standard_pricing(row);
+                            return;
+                        }
+                        
+                        // Calcola con minimi
+                        calculate_pricing_with_minimums(row, item_doc, minimum, frm);
+                        
+                    } catch (err) {
+                        console.log("❌ Errore gruppo cliente:", err);
+                        calculate_standard_pricing(row);
+                    } finally {
+                        iderp_calculation_locked = false;
+                    }
+                }).catch(err => {
+                    console.log("❌ Errore gruppo cliente:", err);
+                    calculate_standard_pricing(row);
+                    iderp_calculation_locked = false;
+                });
+                
+            } catch (err) {
+                console.log("❌ Errore item config:", err);
+                calculate_standard_pricing(row);
+                iderp_calculation_locked = false;
             }
         },
-        error: function(r) {
-            console.log("Errore caricamento item config:", r);
-            row.item_config = null;
+        error: function(err) {
+            console.log("❌ Errore caricamento item:", err);
+            calculate_standard_pricing(row);
+            iderp_calculation_locked = false;
         }
     });
 }
 
-function calculate_price_with_item_minimums(frm, cdt, cdn) {
-    // CRITICO: Previeni loop infinito
-    if (calculating_in_progress) {
-        console.log("🛑 Calcolo già in corso - ignorato per prevenire loop");
+function calculate_pricing_with_minimums(row, item_doc, minimum, frm) {
+    var base = parseFloat(row.base) || 0;
+    var altezza = parseFloat(row.altezza) || 0;
+    var qty = parseFloat(row.qty) || 1;
+    
+    if (!base || !altezza) {
+        row.note_calcolo = "Inserire base e altezza";
+        row.rate = 0;
+        row.amount = 0;
+        finalize_calculation(row, frm);
         return;
     }
     
-    calculating_in_progress = true;
+    // Calcola m²
+    var mq_singolo = (base * altezza) / 10000;
+    var mq_totali = mq_singolo * qty;
+    var mq_effettivi = Math.max(mq_totali, minimum.min_sqm);
+    var minimo_applicato = mq_effettivi > mq_totali;
     
-    try {
-        var row = locals[cdt][cdn];
-        
-        if (!row.tipo_vendita) {
-            console.log("Nessun tipo vendita impostato");
-            return;
-        }
-        
-        console.log("Calcolando prezzo con minimi item per:", {
-            customer: frm.doc.customer,
-            tipo_vendita: row.tipo_vendita,
-            item_code: row.item_code,
-            base: row.base,
-            altezza: row.altezza,
-            qty: row.qty
-        });
-        
-        switch(row.tipo_vendita) {
-            case "Metro Quadrato":
-                calculate_square_meters_with_item_minimums(row, frm, cdt, cdn);
-                break;
-            case "Metro Lineare":
-                calculate_linear_meters(row);
-                break;
-            case "Pezzo":
-                calculate_pieces(row);
-                break;
-            default:
-                console.log("Tipo vendita non riconosciuto:", row.tipo_vendita);
-                return;
-        }
-        
-        frm.refresh_field("items");
-        
-    } finally {
-        // CRITICO: Sempre rilascia il flag anche in caso di errore
-        calculating_in_progress = false;
+    row.mq_singolo = mq_singolo;
+    row.mq_calcolati = mq_totali;
+    
+    // Trova scaglione prezzo
+    var tier = null;
+    if (item_doc.pricing_tiers && item_doc.pricing_tiers.length > 0) {
+        tier = item_doc.pricing_tiers.find(t => 
+            mq_effettivi >= t.from_sqm && 
+            (!t.to_sqm || mq_effettivi <= t.to_sqm)
+        );
     }
+    
+    if (!tier) {
+        console.log("❌ Nessuno scaglione trovato per", mq_effettivi, "m²");
+        if (row.prezzo_mq && row.prezzo_mq > 0) {
+            // Usa prezzo manuale
+            var calculated_rate = (mq_effettivi / qty) * row.prezzo_mq;
+            row.rate = parseFloat(calculated_rate.toFixed(2));
+        } else {
+            row.rate = 0;
+        }
+    } else {
+        // Calcola prezzo con scaglione
+        var calculated_rate = (mq_effettivi / qty) * tier.price_per_sqm;
+        row.rate = parseFloat(calculated_rate.toFixed(2));
+        row.prezzo_mq = tier.price_per_sqm;
+    }
+    
+    // Calcola amount
+    row.amount = parseFloat((row.rate * qty).toFixed(2));
+    
+    // Crea note dettagliate
+    var note = [];
+    note.push(`🎯 Gruppo: ${minimum.customer_group}`);
+    note.push(`📐 Dimensioni: ${base}×${altezza}cm`);
+    note.push(`🔢 m² singolo: ${mq_singolo.toFixed(4)} m²`);
+    note.push(`📦 Quantità: ${qty} pz`);
+    note.push(`📊 m² originali: ${mq_totali.toFixed(3)} m²`);
+    
+    if (minimo_applicato) {
+        note.push(`⚠️ MINIMO APPLICATO: ${minimum.min_sqm} m²`);
+        note.push(`📈 m² fatturati: ${mq_effettivi.toFixed(3)} m²`);
+    } else {
+        note.push(`📈 m² fatturati: ${mq_effettivi.toFixed(3)} m²`);
+    }
+    
+    if (tier) {
+        note.push(`💰 Scaglione: ${tier.tier_name || (tier.from_sqm + '-' + (tier.to_sqm || '∞'))} (€${tier.price_per_sqm}/m²)`);
+    } else if (row.prezzo_mq) {
+        note.push(`💰 Prezzo manuale: €${row.prezzo_mq}/m²`);
+    }
+    
+    note.push(`💵 Prezzo unitario: €${row.rate}`);
+    note.push(`💸 Totale riga: €${row.amount}`);
+    
+    row.note_calcolo = note.join('\n');
+    
+    console.log("✅ Calcolo con minimi completato:", {
+        mq_totali: mq_totali,
+        mq_effettivi: mq_effettivi,
+        minimo_applicato: minimo_applicato,
+        rate: row.rate,
+        amount: row.amount
+    });
+    
+    finalize_calculation(row, frm);
 }
 
-function calculate_square_meters_with_item_minimums(row, frm, cdt, cdn) {
-    console.log("Calcolo metri quadrati con minimi item:", row.base, "x", row.altezza, "x", row.qty);
+function calculate_standard_pricing(row) {
+    var base = parseFloat(row.base) || 0;
+    var altezza = parseFloat(row.altezza) || 0;
+    var qty = parseFloat(row.qty) || 1;
     
-    if (!row.base || !row.altezza || row.base <= 0 || row.altezza <= 0) {
+    if (!base || !altezza) {
         row.mq_singolo = 0;
         row.mq_calcolati = 0;
         row.rate = 0;
+        row.amount = 0;
         row.note_calcolo = "Inserire base e altezza";
         return;
     }
     
-    // Calcola m² per singolo pezzo
-    row.mq_singolo = (row.base * row.altezza) / 10000;
+    var mq_singolo = (base * altezza) / 10000;
+    var mq_totali = mq_singolo * qty;
     
-    // Calcola m² totali (singolo × quantità)
-    var qty = row.qty || 1;
-    row.mq_calcolati = row.mq_singolo * qty;
+    row.mq_singolo = mq_singolo;
+    row.mq_calcolati = mq_totali;
     
-    console.log("MQ singolo:", row.mq_singolo, "MQ totali:", row.mq_calcolati);
-    
-    // Ottieni minimo per gruppo cliente dalla configurazione item (asincrono)
-    get_customer_group_minimum_from_item(row, frm.doc.customer, function(customer_group_minimum) {
-        // Calcola con minimi applicati (ora nel callback)
-        if (row.item_config && row.item_config.pricing_tiers && row.item_config.pricing_tiers.length > 0) {
-            calculate_with_pricing_tiers_and_item_minimums(row, qty, customer_group_minimum);
-        } else if (row.prezzo_mq && row.prezzo_mq > 0) {
-            calculate_with_manual_price_and_item_minimums(row, qty, customer_group_minimum);
-        } else {
-            apply_item_minimum_only(row, qty, customer_group_minimum);
-        }
+    if (row.prezzo_mq && row.prezzo_mq > 0) {
+        var calculated_rate = mq_singolo * row.prezzo_mq;
+        row.rate = parseFloat(calculated_rate.toFixed(2));
+        row.amount = parseFloat((row.rate * qty).toFixed(2));
         
-        // Refresh dopo il calcolo
-        frm.refresh_field("items");
-    });
-}
-
-function get_customer_group_minimum_from_item(row, customer, callback) {
-    // Ottieni minimo dal customer group minimums dell'item
-    if (!row.item_config || !row.item_config.customer_group_minimums || !customer) {
-        callback({min_sqm: 0, customer_group: null, source: "Nessun minimo configurato"});
-        return;
-    }
-    
-    // Ottieni gruppo del cliente
-    frappe.db.get_value("Customer", customer, "customer_group").then(r => {
-        if (!r.message || !r.message.customer_group) {
-            callback({min_sqm: 0, customer_group: null, source: "Cliente senza gruppo"});
-            return;
-        }
-        
-        var customer_group = r.message.customer_group;
-        
-        // Cerca minimo per questo gruppo nei customer_group_minimums dell'item
-        var matching_minimum = null;
-        for (var i = 0; i < row.item_config.customer_group_minimums.length; i++) {
-            var minimum = row.item_config.customer_group_minimums[i];
-            if (minimum.customer_group === customer_group && minimum.enabled) {
-                matching_minimum = minimum;
-                break;
-            }
-        }
-        
-        if (matching_minimum) {
-            callback({
-                min_sqm: matching_minimum.min_sqm,
-                customer_group: customer_group,
-                description: matching_minimum.description,
-                source: "Item configuration"
-            });
-        } else {
-            callback({
-                min_sqm: 0,
-                customer_group: customer_group,
-                source: "Nessun minimo per questo gruppo"
-            });
-        }
-    }).catch(err => {
-        console.log("Errore ottenimento customer group:", err);
-        callback({min_sqm: 0, customer_group: null, source: "Errore"});
-    });
-}
-
-function calculate_with_pricing_tiers_and_item_minimums(row, qty, minimum_info) {
-    var total_sqm = row.mq_calcolati;
-    var original_sqm = total_sqm;
-    var min_applied = false;
-    
-    // Applica minimo se necessario
-    if (minimum_info.min_sqm && total_sqm < minimum_info.min_sqm) {
-        total_sqm = minimum_info.min_sqm;
-        min_applied = true;
-        console.log("Applicato minimo item:", minimum_info.min_sqm, "m² invece di", original_sqm);
-    }
-    
-    var price_per_sqm = 0;
-    var tier_info = "";
-    var found_tier = null;
-    
-    console.log("Cercando scaglione per", total_sqm, "m² (originali:", original_sqm, ") in:", row.item_config.pricing_tiers);
-    
-    // Cerca scaglione appropriato basato sui m² effettivi (con minimo applicato)
-    for (let tier of row.item_config.pricing_tiers) {
-        if (total_sqm >= tier.from_sqm) {
-            if (!tier.to_sqm || total_sqm <= tier.to_sqm) {
-                price_per_sqm = tier.price_per_sqm;
-                tier_info = tier.tier_name || 
-                    (tier.to_sqm ? 
-                        `${tier.from_sqm}-${tier.to_sqm} m²` : 
-                        `oltre ${tier.from_sqm} m²`);
-                found_tier = tier;
-                break;
-            }
-        }
-    }
-    
-    // Fallback se non trova scaglione
-    if (price_per_sqm === 0 && row.item_config.pricing_tiers.length > 0) {
-        var sorted_tiers = row.item_config.pricing_tiers.sort((a, b) => a.from_sqm - b.from_sqm);
-        for (let tier of sorted_tiers.reverse()) {
-            if (total_sqm >= tier.from_sqm) {
-                price_per_sqm = tier.price_per_sqm;
-                tier_info = tier.tier_name || `oltre ${tier.from_sqm} m²`;
-                found_tier = tier;
-                break;
-            }
-        }
-    }
-    
-    if (price_per_sqm > 0) {
-        // Calcola prezzo unitario basato sui m² effettivi
-        var calculated_rate = (total_sqm / qty) * price_per_sqm;
-        
-        // CRITICO: Imposta il prezzo SENZA triggerare eventi
-        row.rate = Number(calculated_rate.toFixed(2));
-        row.prezzo_mq = price_per_sqm;
-        
-        // Crea note dettagliate
-        var note_parts = [
-            `🎯 Scaglione: ${tier_info}`,
-            `💰 Prezzo: €${price_per_sqm.toFixed(2)}/m²`,
-            `📐 Dimensioni: ${row.base}×${row.altezza}cm`,
-            `🔢 m² singolo: ${row.mq_singolo.toFixed(4)} m²`,
-            `📦 Quantità: ${qty} pz`,
-            `📊 m² originali: ${original_sqm.toFixed(3)} m²`
-        ];
-        
-        if (min_applied && minimum_info.customer_group) {
-            note_parts.push(`⚠️ MINIMO GRUPPO ${minimum_info.customer_group.toUpperCase()}: ${minimum_info.min_sqm} m²`);
-            if (minimum_info.description) {
-                note_parts.push(`💡 ${minimum_info.description}`);
-            }
-            note_parts.push(`📈 Fatturato su: ${total_sqm.toFixed(3)} m²`);
-        } else {
-            note_parts.push(`📈 m² fatturati: ${total_sqm.toFixed(3)} m²`);
-        }
-        
-        note_parts.push(`💵 Prezzo unitario: €${calculated_rate.toFixed(2)}`);
-        note_parts.push(`💸 Totale ordine: €${(calculated_rate * qty).toFixed(2)}`);
-        
-        row.note_calcolo = note_parts.join('\n');
-        
-        console.log("Prezzo calcolato con minimi item:", {
-            tier_info: tier_info,
-            price_per_sqm: price_per_sqm,
-            original_sqm: original_sqm,
-            effective_sqm: total_sqm,
-            min_applied: min_applied,
-            rate: calculated_rate
-        });
-        
-    } else {
-        row.rate = 0;
-        row.note_calcolo = `${total_sqm.toFixed(3)} m² totali - Nessuno scaglione applicabile`;
-        console.log("Nessuno scaglione trovato per", total_sqm, "m²");
-    }
-}
-
-function calculate_with_manual_price_and_item_minimums(row, qty, minimum_info) {
-    var total_sqm = row.mq_calcolati;
-    var original_sqm = total_sqm;
-    var min_applied = false;
-    
-    // Applica minimo se necessario
-    if (minimum_info.min_sqm && total_sqm < minimum_info.min_sqm) {
-        total_sqm = minimum_info.min_sqm;
-        min_applied = true;
-    }
-    
-    // Calcola prezzo basato sui m² effettivi
-    var calculated_rate = (total_sqm / qty) * row.prezzo_mq;
-    row.rate = Number(calculated_rate.toFixed(2));
-    
-    var note_parts = [
-        `📐 Dimensioni: ${row.base}×${row.altezza}cm`,
-        `🔢 m² singolo: ${row.mq_singolo.toFixed(4)} m²`,
-        `💰 Prezzo manuale: €${row.prezzo_mq}/m²`,
-        `📦 Quantità: ${qty} pz`,
-        `📊 m² originali: ${original_sqm.toFixed(3)} m²`
-    ];
-    
-    if (min_applied && minimum_info.customer_group) {
-        note_parts.push(`⚠️ MINIMO GRUPPO ${minimum_info.customer_group.toUpperCase()}: ${minimum_info.min_sqm} m²`);
-        if (minimum_info.description) {
-            note_parts.push(`💡 ${minimum_info.description}`);
-        }
-        note_parts.push(`📈 Fatturato su: ${total_sqm.toFixed(3)} m²`);
-    } else {
-        note_parts.push(`📈 m² fatturati: ${total_sqm.toFixed(3)} m²`);
-    }
-    
-    note_parts.push(`💵 Prezzo unitario: €${calculated_rate.toFixed(2)}`);
-    note_parts.push(`💸 Totale ordine: €${(calculated_rate * qty).toFixed(2)}`);
-    
-    row.note_calcolo = note_parts.join('\n');
-    
-    console.log("Prezzo manuale con minimi item:", calculated_rate);
-}
-
-function apply_item_minimum_only(row, qty, minimum_info) {
-    if (minimum_info.min_sqm && row.mq_calcolati < minimum_info.min_sqm && minimum_info.customer_group) {
-        var note_parts = [
-            `${row.mq_calcolati.toFixed(3)} m² totali`,
-            `⚠️ MINIMO GRUPPO ${minimum_info.customer_group.toUpperCase()}: ${minimum_info.min_sqm} m²`
-        ];
-        if (minimum_info.description) {
-            note_parts.push(`💡 ${minimum_info.description}`);
-        }
-        note_parts.push("Nessun prezzo configurato");
-        row.note_calcolo = note_parts.join('\n');
-    } else {
-        row.note_calcolo = `${row.mq_calcolati.toFixed(3)} m² totali (${row.mq_singolo.toFixed(4)} m² × ${qty} pz)\nNessun prezzo configurato`;
-    }
-    row.rate = 0;
-}
-
-function reset_and_calculate(frm, cdt, cdn) {
-    var row = locals[cdt][cdn];
-    
-    console.log("Reset e calcolo per tipo vendita:", row.tipo_vendita);
-    
-    // Reset campi quando cambia tipo vendita
-    row.base = 0;
-    row.altezza = 0;
-    row.mq_singolo = 0;
-    row.mq_calcolati = 0;
-    row.larghezza_materiale = 0;
-    row.lunghezza = 0;
-    row.ml_calcolati = 0;
-    row.prezzo_mq = 0;
-    row.prezzo_ml = 0;
-    row.note_calcolo = "";
-    
-    if (row.tipo_vendita !== "Pezzo") {
-        row.rate = 0;
-    }
-    
-    frm.refresh_field("items");
-    calculate_price_with_item_minimums(frm, cdt, cdn);
-}
-
-// Mantieni le funzioni esistenti per compatibilità
-function calculate_linear_meters(row) {
-    console.log("Calcolo metri lineari:", row.lunghezza);
-    
-    if (!row.lunghezza || row.lunghezza <= 0) {
-        row.ml_calcolati = 0;
-        row.rate = 0;
-        row.note_calcolo = "Inserire lunghezza";
-        return;
-    }
-    
-    var qty = row.qty || 1;
-    var ml_singolo = row.lunghezza / 100;
-    row.ml_calcolati = ml_singolo * qty;
-    
-    if (row.prezzo_ml && row.prezzo_ml > 0) {
-        row.rate = ml_singolo * row.prezzo_ml;
-        
-        let note = `📏 Lunghezza: ${row.lunghezza}cm = ${ml_singolo.toFixed(2)} ml\n`;
-        if (row.larghezza_materiale) {
-            note += `📐 Larghezza materiale: ${row.larghezza_materiale}cm\n`;
-        }
-        note += `💰 Prezzo: €${row.prezzo_ml}/ml\n`;
-        note += `💵 Prezzo unitario: €${row.rate.toFixed(2)}\n`;
-        note += `📦 Quantità: ${qty} pz\n`;
-        note += `📊 ml totali: ${row.ml_calcolati.toFixed(2)} ml\n`;
-        note += `💸 Totale ordine: €${(row.rate * qty).toFixed(2)}`;
-        
-        row.note_calcolo = note;
-        console.log("Prezzo ml calcolato:", row.rate);
-    } else {
-        row.note_calcolo = `📏 ml totali: ${row.ml_calcolati.toFixed(2)} ml (${qty} pz)\nInserire prezzo al ml`;
-    }
-}
-
-function calculate_pieces(row) {
-    console.log("Calcolo al pezzo");
-    
-    var qty = row.qty || 1;
-    
-    if (row.rate && qty) {
         row.note_calcolo = 
-            `📦 Vendita al pezzo\n` +
+            `📐 Dimensioni: ${base}×${altezza}cm\n` +
+            `🔢 m² singolo: ${mq_singolo.toFixed(4)} m²\n` +
+            `💰 Prezzo: €${row.prezzo_mq}/m²\n` +
             `💵 Prezzo unitario: €${row.rate}\n` +
             `📦 Quantità: ${qty} pz\n` +
-            `💸 Totale: €${(qty * row.rate).toFixed(2)}`;
+            `📊 m² totali: ${mq_totali.toFixed(3)} m²\n` +
+            `💸 Totale riga: €${row.amount}`;
     } else {
-        row.note_calcolo = "Vendita al pezzo - inserire prezzo unitario";
+        row.rate = 0;
+        row.amount = 0;
+        row.note_calcolo = `${mq_totali.toFixed(3)} m² totali - Inserire prezzo al m²`;
     }
+    
+    console.log("✅ Calcolo standard completato");
 }
+
+function finalize_calculation(row, frm) {
+    // Aggiorna anche locals se esiste
+    if (window.locals && window.locals[row.doctype] && window.locals[row.doctype][row.name]) {
+        var locals_item = window.locals[row.doctype][row.name];
+        locals_item.rate = row.rate;
+        locals_item.amount = row.amount;
+        locals_item.prezzo_mq = row.prezzo_mq;
+        locals_item.note_calcolo = row.note_calcolo;
+        locals_item.mq_singolo = row.mq_singolo;
+        locals_item.mq_calcolati = row.mq_calcolati;
+    }
+    
+    // Refresh campi
+    frm.refresh_field("items");
+    
+    // Ricalcola totali documento con delay per evitare conflitti
+    setTimeout(() => {
+        if (frm && frm.script_manager) {
+            frm.script_manager.trigger("calculate_taxes_and_totals");
+        }
+    }, 100);
+}
+
+// EVENTI FRAPPE - VERSIONE SAFE
+frappe.ui.form.on('Quotation Item', {
+    // Trigger automatico quando cambiano i dati rilevanti
+    item_code: function(frm, cdt, cdn) {
+        setTimeout(() => apply_minimum_automatic(frm, cdt, cdn), 200);
+    },
+    
+    base: function(frm, cdt, cdn) {
+        setTimeout(() => apply_minimum_automatic(frm, cdt, cdn), 200);
+    },
+    
+    altezza: function(frm, cdt, cdn) {
+        setTimeout(() => apply_minimum_automatic(frm, cdt, cdn), 200);
+    },
+    
+    qty: function(frm, cdt, cdn) {
+        setTimeout(() => apply_minimum_automatic(frm, cdt, cdn), 200);
+    },
+    
+    tipo_vendita: function(frm, cdt, cdn) {
+        var row = locals[cdt][cdn];
+        // Reset campi quando cambia tipo vendita
+        row.base = 0;
+        row.altezza = 0;
+        row.mq_singolo = 0;
+        row.mq_calcolati = 0;
+        row.rate = 0;
+        row.amount = 0;
+        row.note_calcolo = "";
+        frm.refresh_field("items");
+    },
+    
+    // Evento rate LIMITATO per evitare loop
+    rate: function(frm, cdt, cdn) {
+        if (iderp_calculation_locked) {
+            return; // Blocca durante calcoli automatici
+        }
+        
+        var row = locals[cdt][cdn];
+        var qty = parseFloat(row.qty) || 1;
+        var rate = parseFloat(row.rate) || 0;
+        
+        // Solo ricalcola amount, non triggerare altri eventi
+        row.amount = parseFloat((rate * qty).toFixed(2));
+        
+        // Aggiorna locals
+        if (window.locals && window.locals[row.doctype] && window.locals[row.doctype][row.name]) {
+            window.locals[row.doctype][row.name].amount = row.amount;
+        }
+        
+        // Non refreshare items per evitare loop, solo ricalcola totali
+        if (frm && frm.script_manager) {
+            frm.script_manager.trigger("calculate_taxes_and_totals");
+        }
+    }
+});
+
+// Evento quando cambia il cliente
+frappe.ui.form.on('Quotation', {
+    customer: function(frm) {
+        console.log("Cliente cambiato:", frm.doc.customer);
+        // Ricalcola tutti gli item con il nuovo cliente
+        if (frm.doc.items) {
+            frm.doc.items.forEach(function(item) {
+                if (item.tipo_vendita === "Metro Quadrato" && item.base && item.altezza) {
+                    setTimeout(() => apply_minimum_automatic(frm, item.doctype, item.name), 300);
+                }
+            });
+        }
+    }
+});
+
+// Copia eventi per altri DocType
+['Sales Order Item', 'Sales Invoice Item', 'Delivery Note Item'].forEach(function(doctype) {
+    frappe.ui.form.on(doctype, {
+        item_code: function(frm, cdt, cdn) {
+            setTimeout(() => apply_minimum_automatic(frm, cdt, cdn), 200);
+        },
+        base: function(frm, cdt, cdn) {
+            setTimeout(() => apply_minimum_automatic(frm, cdt, cdn), 200);
+        },
+        altezza: function(frm, cdt, cdn) {
+            setTimeout(() => apply_minimum_automatic(frm, cdt, cdn), 200);
+        },
+        qty: function(frm, cdt, cdn) {
+            setTimeout(() => apply_minimum_automatic(frm, cdt, cdn), 200);
+        },
+        rate: function(frm, cdt, cdn) {
+            if (iderp_calculation_locked) return;
+            
+            var row = locals[cdt][cdn];
+            var qty = parseFloat(row.qty) || 1;
+            var rate = parseFloat(row.rate) || 0;
+            row.amount = parseFloat((rate * qty).toFixed(2));
+            
+            if (window.locals && window.locals[row.doctype] && window.locals[row.doctype][row.name]) {
+                window.locals[row.doctype][row.name].amount = row.amount;
+            }
+            
+            if (frm && frm.script_manager) {
+                frm.script_manager.trigger("calculate_taxes_and_totals");
+            }
+        }
+    });
+});
+
+// Copia eventi customer per altri DocType
+['Sales Order', 'Sales Invoice', 'Delivery Note'].forEach(function(doctype) {
+    frappe.ui.form.on(doctype, {
+        customer: function(frm) {
+            console.log("Cliente cambiato in", doctype, ":", frm.doc.customer);
+            if (frm.doc.items) {
+                frm.doc.items.forEach(function(item) {
+                    if (item.tipo_vendita === "Metro Quadrato" && item.base && item.altezza) {
+                        setTimeout(() => apply_minimum_automatic(frm, item.doctype, item.name), 300);
+                    }
+                });
+            }
+        }
+    });
+});
+
+console.log("✅ IDERP Multi-Unit System con minimi automatici caricato");
