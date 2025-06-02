@@ -48,12 +48,16 @@ EOF
 
 - ogni qual volta modifichiamo la struttura o aggiorniamo o aumentiamo le funzioni aggiorneremo questo file per tenere traccia degli aggiornamenti
 
-- visti i tuoi limiti: crea sempre un file alla volta e passa al successivo dopo la mia conferma.
+- visti i tuoi limiti: crea sempre un file alla volta e passa al successivo dopo la mia conferma
+
+- indica *sempre* quale file devo modificare
+
+- preferisce *sempre* l'iter: modifica file in locale > upload su GitHub > git dal server > aggiornamento con `./update_iderp.sh`
 
 
 
 
-
+*** Informazioni ***
 
 Tieni presente che il readme contiene solo appunti disordinati, non le indicazioni del progetto. Quelle sono più o meno le seguenti:
 
