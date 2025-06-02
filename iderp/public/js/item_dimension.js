@@ -1,19 +1,185 @@
-// IDERP: JavaScript COMPLETAMENTE DISABILITATO
-console.log("IDERP: NO JavaScript events - SOLO server-side");
+console.log("IDERP: Smart Calculator - Tempo reale + Override manuale");
 
-// NESSUN EVENTO JAVASCRIPT SUI CAMPI
-// Tutti i calcoli sono gestiti lato server negli hooks
+// Flag per prevenire loop infiniti
+var iderp_calculating = false;
 
-// Solo messaggio informativo
+// CALCOLO INTELLIGENTE
+function smart_calculate_pricing(frm, cdt, cdn) {
+    if (iderp_calculating) return; // Previeni loop
+    
+    let row = locals[cdt][cdn];
+    if (!row || !row.item_code || row.tipo_vendita !== "Metro Quadrato") {
+        return;
+    }
+    
+    let base = parseFloat(row.base) || 0;
+    let altezza = parseFloat(row.altezza) || 0;
+    let qty = parseFloat(row.qty) || 1;
+    
+    if (!base || !altezza) {
+        row.mq_singolo = 0;
+        row.mq_calcolati = 0;
+        row.note_calcolo = "Inserire base e altezza";
+        frm.refresh_field("items");
+        return;
+    }
+    
+    // Calcola m²
+    let mq_singolo = (base * altezza) / 10000;
+    let mq_totali = mq_singolo * qty;
+    
+    row.mq_singolo = parseFloat(mq_singolo.toFixed(4));
+    row.mq_calcolati = parseFloat(mq_totali.toFixed(3));
+    
+    // Chiamata API per calcolo prezzo con customer group
+    if (frm.doc.customer && row.item_code) {
+        frappe.call({
+            method: 'iderp.pricing_utils.calculate_item_pricing',
+            args: {
+                item_code: row.item_code,
+                base: base,
+                altezza: altezza,
+                qty: qty,
+                customer: frm.doc.customer
+            },
+            callback: function(r) {
+                if (r.message && r.message.success) {
+                    iderp_calculating = true; // Blocca eventi durante update
+                    
+                    // SOLO se NON è stato modificato manualmente
+                    if (!row.manual_rate_override) {
+                        row.rate = r.message.rate;
+                        row.prezzo_mq = r.message.tier_info.price_per_sqm;
+                    }
+                    
+                    row.note_calcolo = r.message.note_calcolo;
+                    row.auto_calculated = 1; // Flag calcolo automatico
+                    
+                    frm.refresh_field("items");
+                    
+                    setTimeout(() => {
+                        iderp_calculating = false; // Riabilita eventi
+                    }, 100);
+                }
+            }
+        });
+    }
+    
+    frm.refresh_field("items");
+}
+
+// EVENTI QUOTATION ITEM
+frappe.ui.form.on('Quotation Item', {
+    // Calcolo automatico su campi misure
+    base: function(frm, cdt, cdn) {
+        setTimeout(() => smart_calculate_pricing(frm, cdt, cdn), 200);
+    },
+    
+    altezza: function(frm, cdt, cdn) {
+        setTimeout(() => smart_calculate_pricing(frm, cdt, cdn), 200);
+    },
+    
+    qty: function(frm, cdt, cdn) {
+        setTimeout(() => smart_calculate_pricing(frm, cdt, cdn), 200);
+    },
+    
+    item_code: function(frm, cdt, cdn) {
+        setTimeout(() => smart_calculate_pricing(frm, cdt, cdn), 300);
+    },
+    
+    // OVERRIDE MANUALE - Importante!
+    rate: function(frm, cdt, cdn) {
+        if (iderp_calculating) return; // Ignora durante calcoli automatici
+        
+        let row = locals[cdt][cdn];
+        
+        // Marca come modificato manualmente
+        row.manual_rate_override = 1;
+        row.auto_calculated = 0;
+        
+        // Solo ricalcola amount
+        let qty = parseFloat(row.qty) || 1;
+        let rate = parseFloat(row.rate) || 0;
+        row.amount = parseFloat((rate * qty).toFixed(2));
+        
+        // Aggiorna note
+        row.note_calcolo = (row.note_calcolo || "").split('\n')[0] + 
+                          "\n🖊️ PREZZO MODIFICATO MANUALMENTE";
+        
+        frm.refresh_field("items");
+        frm.script_manager.trigger("calculate_taxes_and_totals");
+    },
+    
+    // Reset override quando cambia tipo vendita
+    tipo_vendita: function(frm, cdt, cdn) {
+        let row = locals[cdt][cdn];
+        row.manual_rate_override = 0;
+        row.auto_calculated = 0;
+        row.base = 0;
+        row.altezza = 0;
+        row.mq_singolo = 0;
+        row.mq_calcolati = 0;
+        row.rate = 0;
+        row.note_calcolo = "";
+        frm.refresh_field("items");
+    }
+});
+
+// Evento cambio cliente
 frappe.ui.form.on('Quotation', {
+    customer: function(frm) {
+        if (frm.doc.items) {
+            frm.doc.items.forEach(function(item) {
+                if (item.tipo_vendita === "Metro Quadrato" && 
+                    item.base && item.altezza && 
+                    !item.manual_rate_override) {
+                    
+                    setTimeout(() => smart_calculate_pricing(frm, item.doctype, item.name), 500);
+                }
+            });
+        }
+    },
+    
     refresh: function(frm) {
         if (frm.doc.docstatus === 0) {
-            frm.page.set_indicator("💾 Salva per calcolare prezzi", "orange");
+            frm.page.set_indicator("🧮 Calcolo automatico + override manuale", "green");
         }
     }
 });
 
-console.log("✅ IDERP: Solo modalità server-side - zero interferenze JS");
+// Copia eventi per altri DocType
+['Sales Order Item', 'Sales Invoice Item', 'Delivery Note Item'].forEach(function(doctype) {
+    frappe.ui.form.on(doctype, {
+        base: function(frm, cdt, cdn) {
+            setTimeout(() => smart_calculate_pricing(frm, cdt, cdn), 200);
+        },
+        altezza: function(frm, cdt, cdn) {
+            setTimeout(() => smart_calculate_pricing(frm, cdt, cdn), 200);
+        },
+        qty: function(frm, cdt, cdn) {
+            setTimeout(() => smart_calculate_pricing(frm, cdt, cdn), 200);
+        },
+        rate: function(frm, cdt, cdn) {
+            if (iderp_calculating) return;
+            
+            let row = locals[cdt][cdn];
+            row.manual_rate_override = 1;
+            row.auto_calculated = 0;
+            
+            let qty = parseFloat(row.qty) || 1;
+            let rate = parseFloat(row.rate) || 0;
+            row.amount = parseFloat((rate * qty).toFixed(2));
+            
+            row.note_calcolo = (row.note_calcolo || "").split('\n')[0] + 
+                              "\n🖊️ PREZZO MODIFICATO MANUALMENTE";
+            
+            frm.refresh_field("items");
+            frm.script_manager.trigger("calculate_taxes_and_totals");
+        }
+    });
+});
+
+console.log("✅ IDERP Smart Calculator: Tempo reale + Override abilitato");
 
 
 /*
