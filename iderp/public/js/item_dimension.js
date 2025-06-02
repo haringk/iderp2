@@ -1,3 +1,24 @@
+// IDERP: JavaScript COMPLETAMENTE DISABILITATO
+console.log("IDERP: NO JavaScript events - SOLO server-side");
+
+// NESSUN EVENTO JAVASCRIPT SUI CAMPI
+// Tutti i calcoli sono gestiti lato server negli hooks
+
+// Solo messaggio informativo
+frappe.ui.form.on('Quotation', {
+    refresh: function(frm) {
+        if (frm.doc.docstatus === 0) {
+            frm.page.set_indicator("💾 Salva per calcolare prezzi", "orange");
+        }
+    }
+});
+
+console.log("✅ IDERP: Solo modalità server-side - zero interferenze JS");
+
+
+/*
+
+
 // IDERP: JavaScript Disabilitato - Solo Server-Side  
 console.log("IDERP: Calcoli solo server-side - no loop infiniti");
 
@@ -25,7 +46,7 @@ frappe.ui.form.on('Quotation', {
 });
 
 console.log("✅ IDERP: Modalità server-side attiva");
-
+*/
 
 /*
 
