@@ -50,7 +50,7 @@ Se puoi evita di farmi usare la console e usa i file per installare o aggiornare
 - [ ] Validazione in preventivi/ordini
 - [ ] Messaggi utente chiari su minimi applicati
 
-## Fase 2: Sistema Optional/Lavorazioni (1-2 settimane)
+## Fase 2: Sistema Optional/Lavorazioni 
 
 ### 2.1 DocType Item Optional
 - [ ] Creare struttura per optional (plastificazione, fustella, ecc.)
@@ -67,7 +67,7 @@ Se puoi evita di farmi usare la console e usa i file per installare o aggiornare
 - [ ] Configurazione rapida
 - [ ] Prezzi dinamici basati su quantità
 
-## Fase 3: Customer Portal e Conferma (1 settimana)
+## Fase 3: Customer Portal e Conferma 
 
 ### 3.1 Estensione Portal Cliente
 - [ ] Vista preventivi da confermare
@@ -84,7 +84,7 @@ Se puoi evita di farmi usare la console e usa i file per installare o aggiornare
 - [ ] Log azioni cliente
 - [ ] Validazione modifiche post-conferma
 
-## Fase 4: Sistema Produzione e Task (2 settimane)
+## Fase 4: Sistema Produzione e Task
 
 ### 4.1 Work Order Automatici
 - [ ] Template Work Order per tipo prodotto
@@ -101,7 +101,7 @@ Se puoi evita di farmi usare la console e usa i file per installare o aggiornare
 - [ ] Update stato lavorazione
 - [ ] Tracking tempi e materiali
 
-## Fase 5: E-commerce e Frontend (2 settimane)
+## Fase 5: E-commerce e Frontend
 
 ### 5.1 Calcolatore Prezzi Web
 - [ ] Completare `ecommerce_calculator.js`
@@ -118,7 +118,7 @@ Se puoi evita di farmi usare la console e usa i file per installare o aggiornare
 - [ ] Storico configurazioni
 - [ ] Riordino facile
 
-## Fase 6: Ottimizzazioni e Report (1 settimana)
+## Fase 6: Ottimizzazioni e Report
 
 ### 6.1 Performance
 - [ ] Cache prezzi calcolati
@@ -135,11 +135,6 @@ Se puoi evita di farmi usare la console e usa i file per installare o aggiornare
 - [ ] Import listini prezzi
 - [ ] API per sistemi esterni
 
-## Priorità Immediate (Prossimi passi)
-
-1. **Settimana 1**: Implementare gruppi cliente base
-2. **Settimana 2**: Sistema optional semplice
-3. **Settimana 3**: Test e validazione con dati reali
 
 ## Note Tecniche
 
@@ -164,7 +159,7 @@ Se puoi evita di farmi usare la console e usa i file per installare o aggiornare
 ### Permessi
 ```python
 # Nuovi ruoli
-- Customer (esteso per conferma preventivi)
+- Clienti (esteso per conferma preventivi)
 - Machine Operator
 - Production Manager
 ```
@@ -183,3 +178,5 @@ Se puoi evita di farmi usare la console e usa i file per installare o aggiornare
 - [ ] Riduzione errori calcolo 95%
 - [ ] Automazione task produzione 100%
 - [ ] Soddisfazione cliente > 90%
+
+
