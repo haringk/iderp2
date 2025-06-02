@@ -1,4 +1,47 @@
-controlla questi file. 
+Controlla il codice in questa repository. Per le istruzioni e le linee guida leggi il file `info-id.txt`.
+
+Tieni a mente sempre che:
+- il plugin è su una macchina virtuale con Ubuntu Server
+
+- ERPNext è installato in un env di bench
+
+- per eseguire gli aggiornamenti del plugin eseguo lo script:
+```cd ~/frappe-bench  
+./update_iderp.sh```
+
+- lo script `update_iderp.sh` è questo:
+```# Sul server Ubuntu, crea questo script
+cd ~/frappe-bench
+cat > update_iderp.sh << 'EOF'
+#!/bin/bash
+echo "🔄 Aggiornando plugin iderp..."
+
+cd ~/frappe-bench/apps/iderp
+git pull origin master
+
+echo "🧹 Pulendo cache..."
+cd ~/frappe-bench
+bench --site sito.local clear-cache
+
+echo "🔨 Building assets..."
+bench build
+
+echo "🚀 Riavviando..."
+bench restart
+
+echo "✅ Plugin iderp aggiornato!"
+EOF```
+
+- carico sempre i file modificati in locale su questa repo di GitHub per poi riscaricarli e installarli aggiornati su ERPNext
+
+- l'url della repo per il `git clone` è https://github.com/haringk/iderp2.git
+
+- la base dei comandi bench è `bench --site sito.local [vari comandi]`
+
+- ogni qual volta modifichiamo la struttura o aggiorniamo le funzioni aggiorneremo questo file per tenere traccia degli aggiornamenti.
+
+
+
 
 Tieni presente che il readme contiene solo appunti disordinati, non le indicazioni del progetto. Quelle sono più o meno le seguenti:
 
