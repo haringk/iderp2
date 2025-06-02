@@ -8,7 +8,8 @@ Tieni a mente sempre che:
 
 - per eseguire gli aggiornamenti del plugin eseguo lo script:
 
-```cd ~/frappe-bench  
+```
+cd ~/frappe-bench  
 ./update_iderp.sh
 ```
 
