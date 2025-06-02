@@ -38,7 +38,7 @@ EOF```
 
 - la base dei comandi bench è `bench --site sito.local [vari comandi]`
 
-- ogni qual volta modifichiamo la struttura o aggiorniamo le funzioni aggiorneremo questo file per tenere traccia degli aggiornamenti.
+- ogni qual volta modifichiamo la struttura o aggiorniamo o aumentiamo le funzioni aggiorneremo questo file per tenere traccia degli aggiornamenti.
 
 
 
