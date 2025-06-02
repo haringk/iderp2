@@ -1,11 +1,12 @@
 # iderp/customer_group_pricing.py
 """
 Gestione prezzi differenziati per gruppo cliente
+Versione completa con supporto minimi metro quadro
 """
 
 import frappe
 from frappe import _
-from frappe.model.document import Document
+import random
 
 @frappe.whitelist()
 def get_customer_group_pricing(customer, item_code):
@@ -53,7 +54,7 @@ def apply_customer_group_rules(doc, method=None):
     customer_rules = {}
     
     for item in doc.items:
-        if not item.item_code:
+        if not item.item_code or item.tipo_vendita != "Metro Quadrato":
             continue
             
         # Cache rules per evitare query multiple
@@ -71,7 +72,7 @@ def apply_customer_group_rules(doc, method=None):
         item.customer_group_rules_applied = 1
         
         # Applica minimi per metro quadrato
-        if item.tipo_vendita == "Metro Quadrato" and rule.get("min_sqm"):
+        if rule.get("min_sqm") and rule["min_sqm"] > 0:
             if item.mq_calcolati < rule["min_sqm"]:
                 # Calcola come se fossero i m² minimi
                 old_mq = item.mq_calcolati
@@ -79,40 +80,26 @@ def apply_customer_group_rules(doc, method=None):
                 
                 # Ricalcola prezzo con m² minimi
                 if item.prezzo_mq:
+                    # Mantieni la quantità originale ma calcola su m² minimi
                     new_rate = (effective_mq / item.qty) * item.prezzo_mq if item.qty > 0 else 0
                     item.rate = new_rate
                     
-                    item.note_calcolo += f"\n⚠️ MINIMO APPLICATO: {rule['min_sqm']} m²"
-                    item.note_calcolo += f"\n📊 Calcolato su {effective_mq} m² invece di {old_mq:.3f} m²"
-        
-        # Applica importo minimo ordine
-        if rule.get("min_amount") and item.rate < rule["min_amount"]:
-            item.rate = rule["min_amount"]
-            item.note_calcolo += f"\n⚠️ IMPORTO MINIMO: €{rule['min_amount']}"
-        
-        # Applica sconto percentuale gruppo
-        if rule.get("discount_percentage"):
-            discount = rule["discount_percentage"] / 100
-            item.rate = item.rate * (1 - discount)
-            item.discount_percentage = rule["discount_percentage"]
-            item.note_calcolo += f"\n🎁 Sconto gruppo {rule['customer_group']}: {rule['discount_percentage']}%"
+                    item.note_calcolo += f"\n⚠️ MINIMO GRUPPO {rule['customer_group'].upper()}: {rule['min_sqm']} m²"
+                    item.note_calcolo += f"\n📊 Fatturato su {effective_mq} m² invece di {old_mq:.3f} m²"
 
 def create_customer_group_price_rule_doctype():
     """Crea il DocType per le regole gruppo cliente"""
     
     if frappe.db.exists("DocType", "Customer Group Price Rule"):
         print("[iderp] - DocType 'Customer Group Price Rule' già esistente")
-        return
+        return True
     
-    # Prima crea la child table
-    create_customer_group_pricing_tier_doctype()
-    
-    # Poi crea il DocType principale
+    # Crea il DocType principale
     doc = frappe.get_doc({
         "doctype": "DocType",
         "name": "Customer Group Price Rule",
         "module": "Custom",
-        "custom": 0,
+        "custom": 1,
         "is_submittable": 0,
         "track_changes": 1,
         "fields": [
@@ -155,7 +142,7 @@ def create_customer_group_price_rule_doctype():
             {
                 "fieldname": "section_break_1",
                 "fieldtype": "Section Break",
-                "label": "Minimi e Limiti"
+                "label": "Minimi Metro Quadro"
             },
             {
                 "fieldname": "min_sqm",
@@ -165,54 +152,7 @@ def create_customer_group_price_rule_doctype():
                 "description": "Metri quadri minimi fatturabili (0 = nessun minimo)"
             },
             {
-                "fieldname": "min_amount",
-                "fieldtype": "Currency",
-                "label": "Importo Minimo",
-                "description": "Importo minimo per riga ordine"
-            },
-            {
-                "fieldname": "column_break_2",
-                "fieldtype": "Column Break"
-            },
-            {
-                "fieldname": "min_quantity",
-                "fieldtype": "Int",
-                "label": "Quantità Minima",
-                "description": "Quantità minima ordinabile"
-            },
-            {
-                "fieldname": "max_quantity",
-                "fieldtype": "Int",
-                "label": "Quantità Massima",
-                "description": "Quantità massima ordinabile"
-            },
-            {
                 "fieldname": "section_break_2",
-                "fieldtype": "Section Break",
-                "label": "Prezzi e Sconti"
-            },
-            {
-                "fieldname": "discount_percentage",
-                "fieldtype": "Percent",
-                "label": "Sconto %",
-                "description": "Sconto percentuale per questo gruppo"
-            },
-            {
-                "fieldname": "use_custom_pricing_tiers",
-                "fieldtype": "Check",
-                "label": "Usa Scaglioni Personalizzati",
-                "description": "Utilizza scaglioni prezzo specifici per questo gruppo invece di quelli dell'articolo"
-            },
-            {
-                "fieldname": "pricing_tiers",
-                "fieldtype": "Table",
-                "label": "Scaglioni Prezzo Personalizzati",
-                "options": "Customer Group Pricing Tier",
-                "depends_on": "use_custom_pricing_tiers",
-                "description": "Scaglioni prezzo specifici per questo gruppo"
-            },
-            {
-                "fieldname": "section_break_3",
                 "fieldtype": "Section Break",
                 "label": "Note e Validità"
             },
@@ -266,62 +206,13 @@ def create_customer_group_price_rule_doctype():
         ]
     })
     
-    doc.insert(ignore_permissions=True)
-    print("[iderp] ✓ DocType 'Customer Group Price Rule' creato")
-
-def create_customer_group_pricing_tier_doctype():
-    """Crea child table per scaglioni prezzo gruppo"""
-    
-    if frappe.db.exists("DocType", "Customer Group Pricing Tier"):
-        print("[iderp] - Child Table 'Customer Group Pricing Tier' già esistente")
-        return
-    
-    doc = frappe.get_doc({
-        "doctype": "DocType",
-        "name": "Customer Group Pricing Tier",
-        "module": "Custom",
-        "custom": 1,
-        "istable": 1,
-        "editable_grid": 1,
-        "fields": [
-            {
-                "fieldname": "from_sqm",
-                "fieldtype": "Float",
-                "label": "Da m²",
-                "precision": 3,
-                "reqd": 1,
-                "in_list_view": 1,
-                "columns": 2
-            },
-            {
-                "fieldname": "to_sqm",
-                "fieldtype": "Float",
-                "label": "A m²",
-                "precision": 3,
-                "in_list_view": 1,
-                "columns": 2,
-                "description": "Vuoto = illimitato"
-            },
-            {
-                "fieldname": "price_per_sqm",
-                "fieldtype": "Currency",
-                "label": "€/m²",
-                "reqd": 1,
-                "in_list_view": 1,
-                "columns": 2
-            },
-            {
-                "fieldname": "description",
-                "fieldtype": "Data",
-                "label": "Descrizione",
-                "in_list_view": 1,
-                "columns": 2
-            }
-        ]
-    })
-    
-    doc.insert(ignore_permissions=True)
-    print("[iderp] ✓ Child Table 'Customer Group Pricing Tier' creata")
+    try:
+        doc.insert(ignore_permissions=True)
+        print("[iderp] ✓ DocType 'Customer Group Price Rule' creato")
+        return True
+    except Exception as e:
+        print(f"[iderp] ✗ Errore creazione DocType: {e}")
+        return False
 
 def install_customer_group_fields():
     """Installa campi per supporto gruppi cliente"""
@@ -347,64 +238,182 @@ def install_customer_group_fields():
     
     print("[iderp] ✓ Campi gruppo cliente aggiunti ai documenti vendita")
 
+def create_customer_groups():
+    """Crea i 4 gruppi cliente: finale, bronze, gold, diamond"""
+    
+    groups = [
+        {
+            "customer_group_name": "Finale",
+            "parent_customer_group": "All Customer Groups",
+            "is_group": 0
+        },
+        {
+            "customer_group_name": "Bronze", 
+            "parent_customer_group": "All Customer Groups",
+            "is_group": 0
+        },
+        {
+            "customer_group_name": "Gold",
+            "parent_customer_group": "All Customer Groups", 
+            "is_group": 0
+        },
+        {
+            "customer_group_name": "Diamond",
+            "parent_customer_group": "All Customer Groups",
+            "is_group": 0
+        }
+    ]
+    
+    created_groups = []
+    
+    for group_data in groups:
+        if not frappe.db.exists("Customer Group", group_data["customer_group_name"]):
+            try:
+                group_doc = frappe.get_doc({
+                    "doctype": "Customer Group",
+                    **group_data
+                })
+                group_doc.insert(ignore_permissions=True)
+                created_groups.append(group_data["customer_group_name"])
+                print(f"[iderp] ✓ Gruppo cliente '{group_data['customer_group_name']}' creato")
+            except Exception as e:
+                print(f"[iderp] ✗ Errore creazione gruppo {group_data['customer_group_name']}: {e}")
+        else:
+            print(f"[iderp] - Gruppo '{group_data['customer_group_name']}' già esistente")
+    
+    return created_groups
+
+def create_test_customers():
+    """Crea 10 clienti di prova assegnati casualmente ai gruppi"""
+    
+    groups = ["Finale", "Bronze", "Gold", "Diamond"]
+    
+    # Nomi di clienti di esempio per stampa digitale
+    customer_names = [
+        "Studio Grafico Pixel", "Tipografia Moderna SRL", "Print & Design Co.",
+        "Agenzia Creativa Blue", "Marketing Solutions", "Ufficio Comunicazione",
+        "Visual Impact Studio", "Brand Identity Lab", "Digital Art Works",
+        "Creative Print House"
+    ]
+    
+    created_customers = []
+    
+    for i, name in enumerate(customer_names):
+        customer_code = f"CUST-{i+1:03d}"
+        
+        if not frappe.db.exists("Customer", customer_code):
+            try:
+                # Assegna gruppo casualmente
+                assigned_group = random.choice(groups)
+                
+                customer_doc = frappe.get_doc({
+                    "doctype": "Customer",
+                    "customer_name": name,
+                    "customer_code": customer_code,
+                    "customer_group": assigned_group,
+                    "territory": "All Territories",
+                    "customer_type": "Company"
+                })
+                customer_doc.insert(ignore_permissions=True)
+                
+                created_customers.append({
+                    "code": customer_code,
+                    "name": name,
+                    "group": assigned_group
+                })
+                
+                print(f"[iderp] ✓ Cliente '{name}' ({customer_code}) creato - Gruppo: {assigned_group}")
+                
+            except Exception as e:
+                print(f"[iderp] ✗ Errore creazione cliente {name}: {e}")
+        else:
+            print(f"[iderp] - Cliente {customer_code} già esistente")
+    
+    return created_customers
+
 def create_sample_customer_group_rules():
-    """Crea regole di esempio per dimostrare il funzionamento"""
+    """Crea regole di esempio per i 4 gruppi con minimi diversi"""
     
-    # Verifica se esistono già
-    if frappe.db.exists("Customer Group Price Rule", {"customer_group": "Commercial"}):
-        print("[iderp] - Regole esempio già esistenti")
-        return
-    
-    # Trova un item di esempio
+    # Trova un item di esempio per le regole
     sample_item = frappe.db.get_value("Item", 
         {"supports_custom_measurement": 1, "tipo_vendita_default": "Metro Quadrato"}, 
         "item_code"
     )
     
     if not sample_item:
-        print("[iderp] - Nessun item configurato per metri quadri, saltando esempi")
-        return
+        print("[iderp] ✗ Nessun item configurato per metri quadri")
+        print("[iderp] Configura prima un item con 'Supporta Misure Personalizzate' = Sì")
+        return []
     
-    # Regola 1: Clienti Commercial - Nessun minimo, sconto 15%
-    try:
-        rule1 = frappe.get_doc({
-            "doctype": "Customer Group Price Rule",
-            "customer_group": "Commercial",
-            "item_code": sample_item,
-            "enabled": 1,
-            "priority": 10,
-            "min_sqm": 0,
-            "min_amount": 0,
-            "discount_percentage": 15,
-            "notes": "Clienti commerciali - Sconto 15%, nessun minimo"
-        })
-        rule1.insert(ignore_permissions=True)
-        print(f"[iderp] ✓ Regola esempio creata per gruppo Commercial")
-    except:
-        pass
+    # Regole specifiche per tipografia/stampa digitale
+    rules_config = [
+        {
+            "group": "Finale",
+            "min_sqm": 0.5,  # Minimo 0.5 m² per clienti finali
+            "description": "Clienti finali - Minimo 0.5 m²"
+        },
+        {
+            "group": "Bronze", 
+            "min_sqm": 0.25, # Minimo 0.25 m² per bronze
+            "description": "Clienti Bronze - Minimo 0.25 m²"
+        },
+        {
+            "group": "Gold",
+            "min_sqm": 0.1,  # Minimo 0.1 m² per gold  
+            "description": "Clienti Gold - Minimo 0.1 m²"
+        },
+        {
+            "group": "Diamond",
+            "min_sqm": 0,    # Nessun minimo per diamond
+            "description": "Clienti Diamond - Nessun minimo"
+        }
+    ]
     
-    # Regola 2: Clienti Individual - Minimo 1m²
-    try:
-        rule2 = frappe.get_doc({
-            "doctype": "Customer Group Price Rule",
-            "customer_group": "Individual", 
-            "item_code": sample_item,
-            "enabled": 1,
-            "priority": 5,
-            "min_sqm": 1.0,
-            "min_amount": 50,
-            "discount_percentage": 0,
-            "notes": "Clienti privati - Minimo 1m² o €50"
-        })
-        rule2.insert(ignore_permissions=True)
-        print(f"[iderp] ✓ Regola esempio creata per gruppo Individual")
-    except:
-        pass
+    created_rules = []
+    
+    for rule_config in rules_config:
+        rule_name = f"{rule_config['group']}-{sample_item}"
+        
+        if not frappe.db.exists("Customer Group Price Rule", 
+                              {"customer_group": rule_config["group"], "item_code": sample_item}):
+            try:
+                rule_doc = frappe.get_doc({
+                    "doctype": "Customer Group Price Rule",
+                    "customer_group": rule_config["group"],
+                    "item_code": sample_item,
+                    "enabled": 1,
+                    "priority": 10,
+                    "min_sqm": rule_config["min_sqm"],
+                    "notes": rule_config["description"]
+                })
+                rule_doc.insert(ignore_permissions=True)
+                
+                created_rules.append({
+                    "group": rule_config["group"],
+                    "item": sample_item,
+                    "min_sqm": rule_config["min_sqm"]
+                })
+                
+                print(f"[iderp] ✓ Regola creata: {rule_config['group']} min {rule_config['min_sqm']} m²")
+                
+            except Exception as e:
+                print(f"[iderp] ✗ Errore creazione regola {rule_config['group']}: {e}")
+        else:
+            print(f"[iderp] - Regola per {rule_config['group']} già esistente")
+    
+    return created_rules
+
+def get_customer_specific_min_sqm(customer, item_code):
+    """
+    Ottieni minimo m² per un cliente specifico
+    """
+    rule = get_customer_group_pricing(customer, item_code)
+    return rule.get("min_sqm", 0) if rule else 0
 
 # Integrazione con calcolo prezzi esistente
 def get_customer_specific_price_for_sqm(customer, item_code, total_sqm):
     """
-    Ottieni prezzo per m² considerando il gruppo cliente
+    Ottieni prezzo per m² considerando il gruppo cliente e i minimi
     """
     if not customer:
         # Se non c'è cliente, usa prezzi standard
@@ -414,27 +423,64 @@ def get_customer_specific_price_for_sqm(customer, item_code, total_sqm):
     # Ottieni regole gruppo cliente
     rule = get_customer_group_pricing(customer, item_code)
     
-    if rule and rule.get("use_custom_pricing_tiers") and rule.get("pricing_tiers"):
-        # Usa scaglioni personalizzati del gruppo
-        for tier in rule["pricing_tiers"]:
-            if total_sqm >= tier["from_sqm"]:
-                if not tier["to_sqm"] or total_sqm <= tier["to_sqm"]:
-                    return {
-                        "price_per_sqm": tier["price_per_sqm"],
-                        "tier_name": tier.get("description", f"{tier['from_sqm']}-{tier['to_sqm']} m²"),
-                        "from_sqm": tier["from_sqm"],
-                        "to_sqm": tier["to_sqm"],
-                        "customer_group_rule": True
-                    }
+    # Calcola m² effettivi considerando il minimo
+    effective_sqm = total_sqm
+    min_applied = False
     
-    # Altrimenti usa prezzi standard dell'item
+    if rule and rule.get("min_sqm") and total_sqm < rule["min_sqm"]:
+        effective_sqm = rule["min_sqm"]
+        min_applied = True
+    
+    # Usa prezzi standard dell'item con m² effettivi
     from iderp.pricing_utils import get_price_for_sqm
-    standard_price = get_price_for_sqm(item_code, total_sqm)
+    standard_price = get_price_for_sqm(item_code, effective_sqm)
     
-    # Applica eventuale sconto gruppo
-    if rule and rule.get("discount_percentage") and standard_price:
-        discount = rule["discount_percentage"] / 100
-        standard_price["price_per_sqm"] = standard_price["price_per_sqm"] * (1 - discount)
-        standard_price["customer_group_discount"] = rule["discount_percentage"]
+    if standard_price and min_applied:
+        standard_price["min_applied"] = True
+        standard_price["original_sqm"] = total_sqm
+        standard_price["effective_sqm"] = effective_sqm
+        standard_price["customer_group"] = rule.get("customer_group")
+        standard_price["min_sqm"] = rule.get("min_sqm")
     
     return standard_price
+
+def setup_complete_customer_groups():
+    """Setup completo: gruppi, clienti, regole"""
+    print("[iderp] === Setup Completo Gruppi Cliente ===")
+    
+    # 1. Crea DocType
+    if create_customer_group_price_rule_doctype():
+        # 2. Crea gruppi
+        groups = create_customer_groups()
+        
+        # 3. Crea clienti
+        customers = create_test_customers()
+        
+        # 4. Installa campi
+        install_customer_group_fields()
+        
+        # 5. Crea regole esempio
+        rules = create_sample_customer_group_rules()
+        
+        print("\n[iderp] === RIEPILOGO SETUP ===")
+        print(f"[iderp] 📋 Gruppi creati: {len(groups)}")
+        print(f"[iderp] 👥 Clienti creati: {len(customers)}")
+        print(f"[iderp] ⚙️ Regole create: {len(rules)}")
+        
+        if customers:
+            print("\n[iderp] === CLIENTI DI TEST ===")
+            for customer in customers:
+                print(f"[iderp] {customer['code']}: {customer['name']} ({customer['group']})")
+        
+        if rules:
+            print("\n[iderp] === REGOLE MINIMI ===")
+            for rule in rules:
+                print(f"[iderp] {rule['group']}: min {rule['min_sqm']} m² su {rule['item']}")
+        
+        print("\n[iderp] ✅ Setup gruppi cliente completato!")
+        print("[iderp] 🧪 Prova ora a creare un preventivo con uno dei clienti")
+        
+        return True
+    else:
+        print("[iderp] ✗ Setup fallito")
+        return False

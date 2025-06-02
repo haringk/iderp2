@@ -1,6 +1,7 @@
 # iderp/pricing_utils.py
 """
 Utility functions per gestione scaglioni prezzo
+AGGIORNATO: Supporto gruppi cliente e minimi
 """
 
 import frappe
@@ -90,9 +91,10 @@ def get_price_for_sqm(item_code, total_sqm):
         return None
 
 @frappe.whitelist()
-def calculate_item_pricing(item_code, base, altezza, qty=1):
+def calculate_item_pricing(item_code, base, altezza, qty=1, customer=None):
     """
     API per calcolare prezzo con scaglioni (chiamata da JavaScript)
+    AGGIORNATO: Supporta gruppi cliente e minimi
     """
     try:
         base = float(base) if base else 0
@@ -106,8 +108,13 @@ def calculate_item_pricing(item_code, base, altezza, qty=1):
         mq_singolo = (base * altezza) / 10000
         mq_totali = mq_singolo * qty
         
-        # Ottieni prezzo da scaglioni
-        pricing_info = get_price_for_sqm(item_code, mq_totali)
+        # NUOVO: Considera gruppo cliente se specificato
+        if customer:
+            from iderp.customer_group_pricing import get_customer_specific_price_for_sqm
+            pricing_info = get_customer_specific_price_for_sqm(customer, item_code, mq_totali)
+        else:
+            # Usa prezzi standard
+            pricing_info = get_price_for_sqm(item_code, mq_totali)
         
         if not pricing_info:
             return {
@@ -121,7 +128,7 @@ def calculate_item_pricing(item_code, base, altezza, qty=1):
         rate_unitario = mq_singolo * price_per_sqm
         totale_ordine = rate_unitario * qty
         
-        # Crea note dettagliate
+        # Prepara note base
         range_text = f"{pricing_info['from_sqm']}-{pricing_info['to_sqm'] or '∞'}"
         note_calcolo = (
             f"Scaglione: {pricing_info['tier_name']} ({range_text} m²)\n"
@@ -134,21 +141,59 @@ def calculate_item_pricing(item_code, base, altezza, qty=1):
             f"Totale ordine: €{totale_ordine:.2f}"
         )
         
+        # NUOVO: Aggiungi info gruppo cliente se presente
+        if pricing_info.get("min_applied"):
+            note_calcolo += f"\n⚠️ MINIMO GRUPPO {pricing_info['customer_group'].upper()}: {pricing_info['min_sqm']} m²"
+            note_calcolo += f"\n📊 Fatturato su {pricing_info['effective_sqm']} m² invece di {pricing_info['original_sqm']:.3f} m²"
+        
         return {
             "success": True,
             "item_code": item_code,
+            "customer": customer,
             "mq_singolo": round(mq_singolo, 4),
             "mq_totali": round(mq_totali, 3),
             "price_per_sqm": price_per_sqm,
             "rate": round(rate_unitario, 2),
             "total_amount": round(totale_ordine, 2),
             "tier_info": pricing_info,
-            "note_calcolo": note_calcolo
+            "note_calcolo": note_calcolo,
+            # NUOVO: Info gruppo cliente
+            "group_info": {
+                "min_applied": pricing_info.get("min_applied", False),
+                "customer_group": pricing_info.get("customer_group"),
+                "effective_sqm": pricing_info.get("effective_sqm", mq_totali),
+                "original_sqm": pricing_info.get("original_sqm", mq_totali)
+            }
         }
         
     except Exception as e:
         frappe.log_error(f"Errore calculate_item_pricing: {str(e)}")
         return {"error": f"Errore calcolo: {str(e)}"}
+
+@frappe.whitelist()
+def get_customer_group_min_sqm(customer, item_code):
+    """
+    API per ottenere minimo m² per un cliente (chiamata da JavaScript)
+    """
+    try:
+        if not customer or not item_code:
+            return {"min_sqm": 0}
+        
+        from iderp.customer_group_pricing import get_customer_specific_min_sqm
+        min_sqm = get_customer_specific_min_sqm(customer, item_code)
+        
+        customer_group = frappe.db.get_value("Customer", customer, "customer_group")
+        
+        return {
+            "customer": customer,
+            "customer_group": customer_group,
+            "item_code": item_code,
+            "min_sqm": min_sqm
+        }
+        
+    except Exception as e:
+        frappe.log_error(f"Errore get_customer_group_min_sqm: {str(e)}")
+        return {"min_sqm": 0, "error": str(e)}
 
 def validate_pricing_tiers(doc, method=None):
     """

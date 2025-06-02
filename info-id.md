@@ -34,11 +34,15 @@ EOF```
 
 - carico sempre i file modificati in locale su questa repo di GitHub per poi riscaricarli e installarli aggiornati su ERPNext
 
+- tutto ciò che è presente, se utile a funzioni già presenti, deve rimanere (ad esempio: se nel file di installazione ci sono comandi per installare funzioni già installate queste devono rimanere; il plugin deve poter essere installato in più installazioni di ERPNext).
+
 - l'url della repo per il `git clone` è https://github.com/haringk/iderp2.git
 
 - la base dei comandi bench è `bench --site sito.local [vari comandi]`
 
 - ogni qual volta modifichiamo la struttura o aggiorniamo o aumentiamo le funzioni aggiorneremo questo file per tenere traccia degli aggiornamenti.
+
+
 
 
 
