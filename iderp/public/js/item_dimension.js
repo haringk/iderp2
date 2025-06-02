@@ -1,7 +1,10 @@
-console.log("IDERP: Multi-Unit JS v7.0 - Con Minimi nell'Item");
+console.log("IDERP: Multi-Unit JS v8.0 - FIXED LOOP INFINITO");
 
 // Cache per item e relativi minimi
 var item_config_cache = {};
+
+// FLAG per prevenire loop infiniti
+var calculating_in_progress = false;
 
 // Funzione principale per tutti i DocType
 frappe.ui.form.on('Quotation Item', {
@@ -33,20 +36,35 @@ frappe.ui.form.on('Quotation Item', {
         // Carica configurazione item quando cambia
         load_item_configuration(frm, cdt, cdn);
     },
+    // FIXED: Evento rate che NON crea loop infinito
     rate: function(frm, cdt, cdn) {
-        // NON ricalcolare quando l'utente modifica manualmente il rate
+        // CRITICO: Previeni loop infinito
+        if (calculating_in_progress) {
+            console.log("🛑 Rate change durante calcolo - ignorato per prevenire loop");
+            return;
+        }
+        
         var row = locals[cdt][cdn];
-        if (row.tipo_vendita === "Metro Quadrato" && row.base && row.altezza) {
+        
+        // Solo aggiorna note se è vendita al metro quadrato E ha dimensioni
+        if (row.tipo_vendita === "Metro Quadrato" && row.base && row.altezza && row.rate) {
             var qty = row.qty || 1;
+            var mq_singolo = (row.base * row.altezza) / 10000;
+            var mq_totali = mq_singolo * qty;
+            
+            // SOLO note, NON ricalcola niente
             row.note_calcolo = 
                 `⚠️ PREZZO MANUALE\n` +
                 `📐 Dimensioni: ${row.base}×${row.altezza}cm\n` +
-                `🔢 m² singolo: ${row.mq_singolo || 0} m²\n` +
+                `🔢 m² singolo: ${mq_singolo.toFixed(4)} m²\n` +
                 `💵 Prezzo manuale: €${row.rate}\n` +
                 `📦 Quantità: ${qty} pz\n` +
+                `📊 m² totali: ${mq_totali.toFixed(3)} m²\n` +
                 `💸 Totale ordine: €${(row.rate * qty).toFixed(2)}`;
+            
+            // CRITICO: NON fare refresh automatico che può triggerare altri eventi
+            // frm.refresh_field("items");  // ← RIMOSSO per evitare loop
         }
-        frm.refresh_field("items");
     }
 });
 
@@ -82,19 +100,28 @@ frappe.ui.form.on('Quotation', {
         lunghezza: function(frm, cdt, cdn) { calculate_price_with_item_minimums(frm, cdt, cdn); },
         prezzo_ml: function(frm, cdt, cdn) { calculate_price_with_item_minimums(frm, cdt, cdn); },
         item_code: function(frm, cdt, cdn) { load_item_configuration(frm, cdt, cdn); },
+        // FIXED: Stesso fix per rate su altri DocType
         rate: function(frm, cdt, cdn) {
+            if (calculating_in_progress) {
+                console.log("🛑 Rate change durante calcolo - ignorato per prevenire loop");
+                return;
+            }
+            
             var row = locals[cdt][cdn];
-            if (row.tipo_vendita === "Metro Quadrato" && row.base && row.altezza) {
+            if (row.tipo_vendita === "Metro Quadrato" && row.base && row.altezza && row.rate) {
                 var qty = row.qty || 1;
+                var mq_singolo = (row.base * row.altezza) / 10000;
+                var mq_totali = mq_singolo * qty;
+                
                 row.note_calcolo = 
                     `⚠️ PREZZO MANUALE\n` +
                     `📐 Dimensioni: ${row.base}×${row.altezza}cm\n` +
-                    `🔢 m² singolo: ${row.mq_singolo || 0} m²\n` +
+                    `🔢 m² singolo: ${mq_singolo.toFixed(4)} m²\n` +
                     `💵 Prezzo manuale: €${row.rate}\n` +
                     `📦 Quantità: ${qty} pz\n` +
+                    `📊 m² totali: ${mq_totali.toFixed(3)} m²\n` +
                     `💸 Totale ordine: €${(row.rate * qty).toFixed(2)}`;
             }
-            frm.refresh_field("items");
         }
     });
 });
@@ -206,38 +233,52 @@ function load_item_configuration(frm, cdt, cdn) {
 }
 
 function calculate_price_with_item_minimums(frm, cdt, cdn) {
-    var row = locals[cdt][cdn];
-    
-    if (!row.tipo_vendita) {
-        console.log("Nessun tipo vendita impostato");
+    // CRITICO: Previeni loop infinito
+    if (calculating_in_progress) {
+        console.log("🛑 Calcolo già in corso - ignorato per prevenire loop");
         return;
     }
     
-    console.log("Calcolando prezzo con minimi item per:", {
-        customer: frm.doc.customer,
-        tipo_vendita: row.tipo_vendita,
-        item_code: row.item_code,
-        base: row.base,
-        altezza: row.altezza,
-        qty: row.qty
-    });
+    calculating_in_progress = true;
     
-    switch(row.tipo_vendita) {
-        case "Metro Quadrato":
-            calculate_square_meters_with_item_minimums(row, frm, cdt, cdn);
-            break;
-        case "Metro Lineare":
-            calculate_linear_meters(row);
-            break;
-        case "Pezzo":
-            calculate_pieces(row);
-            break;
-        default:
-            console.log("Tipo vendita non riconosciuto:", row.tipo_vendita);
+    try {
+        var row = locals[cdt][cdn];
+        
+        if (!row.tipo_vendita) {
+            console.log("Nessun tipo vendita impostato");
             return;
+        }
+        
+        console.log("Calcolando prezzo con minimi item per:", {
+            customer: frm.doc.customer,
+            tipo_vendita: row.tipo_vendita,
+            item_code: row.item_code,
+            base: row.base,
+            altezza: row.altezza,
+            qty: row.qty
+        });
+        
+        switch(row.tipo_vendita) {
+            case "Metro Quadrato":
+                calculate_square_meters_with_item_minimums(row, frm, cdt, cdn);
+                break;
+            case "Metro Lineare":
+                calculate_linear_meters(row);
+                break;
+            case "Pezzo":
+                calculate_pieces(row);
+                break;
+            default:
+                console.log("Tipo vendita non riconosciuto:", row.tipo_vendita);
+                return;
+        }
+        
+        frm.refresh_field("items");
+        
+    } finally {
+        // CRITICO: Sempre rilascia il flag anche in caso di errore
+        calculating_in_progress = false;
     }
-    
-    frm.refresh_field("items");
 }
 
 function calculate_square_meters_with_item_minimums(row, frm, cdt, cdn) {
@@ -372,7 +413,7 @@ function calculate_with_pricing_tiers_and_item_minimums(row, qty, minimum_info) 
         // Calcola prezzo unitario basato sui m² effettivi
         var calculated_rate = (total_sqm / qty) * price_per_sqm;
         
-        // Imposta il prezzo
+        // CRITICO: Imposta il prezzo SENZA triggerare eventi
         row.rate = Number(calculated_rate.toFixed(2));
         row.prezzo_mq = price_per_sqm;
         
