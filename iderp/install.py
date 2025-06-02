@@ -16,12 +16,28 @@ def after_install():
     # 4. Aggiunge tabella scaglioni all'Item
     add_pricing_table_to_item()
     
+    # 5. NUOVO: Installa sistema Customer Group Pricing
+    install_customer_group_pricing_system()
+    
     print("[iderp] === Installazione completata ===")
     print("[iderp] ✓ Vendita al pezzo")
     print("[iderp] ✓ Vendita al metro quadrato con scaglioni") 
     print("[iderp] ✓ Vendita al metro lineare")
     print("[iderp] ✓ Configurazione Item con scaglioni prezzo")
+    print("[iderp] ✓ NUOVO: Customer Group Pricing con minimi")
+    print("[iderp] ✓ Gruppi: Finale, Bronze, Gold, Diamond")
     print("[iderp] ✓ Sistema completo pronto all'uso")
+
+def install_customer_group_pricing_system():
+    """Installa il sistema Customer Group Pricing semplificato"""
+    print("[iderp] Installando Customer Group Pricing...")
+    
+    from iderp.customer_group_pricing import setup_complete_customer_groups
+    
+    # Setup completo: DocType, gruppi, clienti, regole
+    setup_complete_customer_groups()
+    
+    print("[iderp] ✓ Customer Group Pricing installato")
 
 def install_sales_custom_fields():
     """Installa campi custom per documenti di vendita"""
@@ -147,6 +163,16 @@ def install_sales_custom_fields():
             "read_only": 1,
             "description": "Mostra come è stato calcolato il prezzo con scaglioni",
         },
+        
+        # NUOVO: Campo per customer group rules
+        {
+            "fieldname": "customer_group_rules_applied",
+            "label": "Regole Gruppo Applicate",
+            "fieldtype": "Check",
+            "read_only": 1,
+            "insert_after": "note_calcolo",
+            "description": "Indica se sono state applicate regole del gruppo cliente"
+        }
     ]
     
     for dt in doctypes:
@@ -377,31 +403,31 @@ def create_sample_pricing_for_item(item_code):
         item_doc.supports_custom_measurement = 1
         item_doc.tipo_vendita_default = "Metro Quadrato"
         
-        # Scaglioni di esempio
+        # Scaglioni di esempio specifici per stampa digitale
         sample_tiers = [
             {
                 "from_sqm": 0,
+                "to_sqm": 0.25,
+                "price_per_sqm": 20.0,
+                "tier_name": "Micro tirature"
+            },
+            {
+                "from_sqm": 0.25,
                 "to_sqm": 1,
                 "price_per_sqm": 15.0,
                 "tier_name": "Piccole tirature"
             },
             {
-                "from_sqm": 1.001,
-                "to_sqm": 10,
+                "from_sqm": 1,
+                "to_sqm": 5,
                 "price_per_sqm": 12.0,
                 "tier_name": "Tirature medie"
             },
             {
-                "from_sqm": 10.001,
-                "to_sqm": 50,
-                "price_per_sqm": 9.0,
-                "tier_name": "Tirature grandi"
-            },
-            {
-                "from_sqm": 50.001,
+                "from_sqm": 5,
                 "to_sqm": None,
-                "price_per_sqm": 6.0,
-                "tier_name": "Industriali",
+                "price_per_sqm": 8.0,
+                "tier_name": "Tirature grandi",
                 "is_default": 1
             }
         ]
@@ -436,67 +462,6 @@ def show_available_items():
     
     return items
 
-def remove_all_custom_fields():
-    """Rimuove tutti i campi custom di iderp (per debug/reinstallazione)"""
-    print("[iderp] === Rimozione campi custom ===")
-    
-    field_names = [
-        "tipo_vendita", "base", "altezza", "mq_singolo", "mq_calcolati",
-        "larghezza_materiale", "lunghezza", "ml_calcolati",
-        "prezzo_mq", "prezzo_ml", "note_calcolo",
-        "measurement_config_section", "supports_custom_measurement", 
-        "tipo_vendita_default", "config_column_break", "larghezza_materiale_default",
-        "pricing_section", "pricing_tiers", "pricing_help"
-    ]
-    
-    # DocType per documenti di vendita
-    sales_doctypes = [
-        "Quotation Item", "Sales Order Item", "Delivery Note Item", 
-        "Sales Invoice Item", "Purchase Order Item", "Purchase Invoice Item", 
-        "Material Request Item"
-    ]
-    
-    # Rimuovi da documenti vendita
-    for dt in sales_doctypes:
-        for field_name in field_names:
-            if frappe.db.exists("Custom Field", {"dt": dt, "fieldname": field_name}):
-                try:
-                    frappe.delete_doc("Custom Field", {"dt": dt, "fieldname": field_name})
-                    print(f"[iderp] ✓ Rimosso {field_name} da {dt}")
-                except:
-                    pass
-    
-    # Rimuovi da Item
-    for field_name in field_names:
-        if frappe.db.exists("Custom Field", {"dt": "Item", "fieldname": field_name}):
-            try:
-                frappe.delete_doc("Custom Field", {"dt": "Item", "fieldname": field_name})
-                print(f"[iderp] ✓ Rimosso {field_name} da Item")
-            except:
-                pass
-    
-    # Rimuovi Child DocType se esiste
-    if frappe.db.exists("DocType", "Item Pricing Tier"):
-        try:
-            frappe.delete_doc("DocType", "Item Pricing Tier", force=True)
-            print("[iderp] ✓ Rimosso DocType Item Pricing Tier")
-        except:
-            pass
-    
-    print("[iderp] === Rimozione completata ===")
-
-def reinstall_from_scratch():
-    """Reinstallazione completa da zero (rimuove tutto e reinstalla)"""
-    print("[iderp] === Reinstallazione da zero ===")
-    
-    # Prima rimuovi tutto
-    remove_all_custom_fields()
-    
-    # Poi reinstalla tutto
-    after_install()
-    
-    print("[iderp] === Reinstallazione da zero completata ===")
-
 def quick_test_setup():
     """Setup rapido per test con primo item disponibile"""
     print("[iderp] === Setup rapido per test ===")
@@ -512,7 +477,7 @@ def quick_test_setup():
         if create_sample_pricing_for_item(test_item):
             print(f"[iderp] ✓ Setup test completato!")
             print(f"[iderp] Vai su Item → {test_item} → Scaglioni Prezzo m²")
-            print(f"[iderp] Poi testa in una Quotation")
+            print(f"[iderp] Poi testa in una Quotation con diversi Customer Group")
             return test_item
     else:
         print("[iderp] ✗ Nessun item disponibile per test")

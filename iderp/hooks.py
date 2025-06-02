@@ -1,7 +1,7 @@
 app_name = "iderp"
 app_title = "iderp"
 app_publisher = "idstudio AI"
-app_description = "Custom app for ERPNext with multi-unit sales"
+app_description = "Custom app for ERPNext with multi-unit sales and customer group pricing"
 app_email = "ai@idstudio.org"
 app_license = "MIT"
 
@@ -29,13 +29,38 @@ web_include_css = [
     "/assets/iderp/css/ecommerce_styles.css"
 ]
 
-# Eventi server-side
+# Eventi server-side AGGIORNATI per Customer Group Pricing
 doc_events = {
-    "Quotation": {"before_submit": "iderp.copy_fields.copy_custom_fields"},
-    "Sales Order": {"before_submit": "iderp.copy_fields.copy_custom_fields"},
-    "Delivery Note": {"before_submit": "iderp.copy_fields.copy_custom_fields"},
-    "Sales Invoice": {"before_submit": "iderp.copy_fields.copy_custom_fields"}
+    "Quotation": {
+        "before_submit": "iderp.copy_fields.copy_custom_fields",
+        "before_save": "iderp.customer_group_pricing.apply_customer_group_rules"
+    },
+    "Sales Order": {
+        "before_submit": "iderp.copy_fields.copy_custom_fields", 
+        "before_save": "iderp.customer_group_pricing.apply_customer_group_rules"
+    },
+    "Delivery Note": {
+        "before_submit": "iderp.copy_fields.copy_custom_fields",
+        "before_save": "iderp.customer_group_pricing.apply_customer_group_rules"
+    },
+    "Sales Invoice": {
+        "before_submit": "iderp.copy_fields.copy_custom_fields",
+        "before_save": "iderp.customer_group_pricing.apply_customer_group_rules"
+    },
+    # Validazione Item per scaglioni
+    "Item": {
+        "validate": "iderp.pricing_utils.validate_pricing_tiers"
+    }
 }
+
+# Whitelist API methods per Customer Group Pricing
+whitelisted_methods = [
+    "iderp.pricing_utils.get_item_pricing_tiers",
+    "iderp.pricing_utils.calculate_item_pricing",
+    "iderp.pricing_utils.get_customer_group_min_sqm",
+    "iderp.customer_group_pricing.get_customer_group_pricing",
+    "iderp.customer_group_pricing.get_customer_specific_price_for_sqm"
+]
 
 # Installazione automatica
 after_install = "iderp.install.after_install"
@@ -44,14 +69,7 @@ after_install = "iderp.install.after_install"
 
 # Questi hook verranno abilitati man mano che implementiamo le funzionalità
 
-# Whitelist API methods per e-commerce
-# whitelisted_methods = [
-#     "iderp.ecommerce.calculate_item_price",
-#     "iderp.ecommerce.add_to_cart_calculated", 
-#     "iderp.ecommerce.get_item_selling_config"
-# ]
-
-# Eventi per e-commerce
+# Eventi per e-commerce (commentati per ora)
 # doc_events.update({
 #     "Shopping Cart": {"validate": "iderp.ecommerce.validate_cart_item"},
 #     "Website Item": {"on_update": "iderp.ecommerce.extend_website_item_context"}
