@@ -7,8 +7,8 @@ Tieni a mente sempre che:
 - ERPNext è installato in un env di bench
 
 - per eseguire gli aggiornamenti del plugin eseguo lo script:
-```
-cd ~/frappe-bench  
+
+```cd ~/frappe-bench  
 ./update_iderp.sh
 ```
 
