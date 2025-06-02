@@ -1,4 +1,8 @@
 # iderp/pricing_utils.py
+
+import frappe
+from frappe import _
+
 @frappe.whitelist()
 def calculate_item_pricing(item_code, base, altezza, qty=1, customer=None):
     """
