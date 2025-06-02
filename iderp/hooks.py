@@ -29,6 +29,23 @@ web_include_css = [
     "/assets/iderp/css/ecommerce_styles.css"
 ]
 
+
+# Server-side hooks per minimi gruppo cliente
+doc_events = {
+    "Quotation": {
+        "before_save": "iderp.server_side_minimums.apply_customer_group_minimums_server_side",
+        "validate": "iderp.server_side_minimums.calculate_standard_square_meters_server_side"
+    },
+    "Sales Order": {
+        "before_save": "iderp.server_side_minimums.apply_customer_group_minimums_server_side",
+        "validate": "iderp.server_side_minimums.calculate_standard_square_meters_server_side"
+    },
+    "Sales Invoice": {
+        "before_save": "iderp.server_side_minimums.apply_customer_group_minimums_server_side", 
+        "validate": "iderp.server_side_minimums.calculate_standard_square_meters_server_side"
+    }
+}
+
 # Eventi server-side AGGIORNATI per Customer Group Pricing
 doc_events = {
     "Quotation": {

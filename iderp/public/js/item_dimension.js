@@ -1,3 +1,35 @@
+// IDERP: JavaScript Disabilitato - Solo Server-Side  
+console.log("IDERP: Calcoli solo server-side - no loop infiniti");
+
+// Solo eventi minimal per UX
+frappe.ui.form.on('Quotation Item', {
+    tipo_vendita: function(frm, cdt, cdn) {
+        let row = locals[cdt][cdn];
+        if (row.tipo_vendita !== "Metro Quadrato") {
+            row.base = 0;
+            row.altezza = 0;
+            row.mq_singolo = 0; 
+            row.mq_calcolati = 0;
+        }
+        frm.refresh_field("items");
+    }
+});
+
+// Messaggio per utente
+frappe.ui.form.on('Quotation', {
+    refresh: function(frm) {
+        if (frm.doc.docstatus === 0) {
+            frm.page.set_indicator("Calcoli al salvataggio", "orange");
+        }
+    }
+});
+
+console.log("✅ IDERP: Modalità server-side attiva");
+
+
+/*
+
+
 console.log("IDERP: Multi-Unit JS v9.0 - DEFINITIVO CON MINIMI AUTOMATICI");
 
 // Cache per item e relativi minimi
@@ -368,3 +400,5 @@ frappe.ui.form.on('Quotation', {
 });
 
 console.log("✅ IDERP Multi-Unit System con minimi automatici caricato");
+
+*/
