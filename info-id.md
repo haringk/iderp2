@@ -27,6 +27,7 @@ git pull origin master
 echo "🧹 Pulendo cache..."
 cd ~/frappe-bench
 bench --site sito.local clear-cache
+bench --site sito.local clear-website-cache
 
 echo "🔨 Building assets..."
 bench build
