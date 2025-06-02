@@ -1,7 +1,7 @@
 # iderp/customer_group_pricing.py
 """
 Gestione prezzi differenziati per gruppo cliente
-Versione completa con supporto minimi metro quadro
+Versione corretta con verifica gruppo radice
 """
 
 import frappe
@@ -86,6 +86,50 @@ def apply_customer_group_rules(doc, method=None):
                     
                     item.note_calcolo += f"\n⚠️ MINIMO GRUPPO {rule['customer_group'].upper()}: {rule['min_sqm']} m²"
                     item.note_calcolo += f"\n📊 Fatturato su {effective_mq} m² invece di {old_mq:.3f} m²"
+
+def get_root_customer_group():
+    """
+    Trova il gruppo cliente radice in ERPNext
+    """
+    # Prova diversi nomi possibili per il gruppo radice
+    possible_roots = [
+        "All Customer Groups",
+        "All Customer Groups", 
+        "",  # Gruppo vuoto
+        None
+    ]
+    
+    # Cerca il gruppo con is_group=1 e parent_customer_group vuoto o None
+    root_groups = frappe.get_all("Customer Group", 
+        filters={"is_group": 1}, 
+        fields=["name", "parent_customer_group"],
+        order_by="creation"
+    )
+    
+    for group in root_groups:
+        if not group.parent_customer_group or group.parent_customer_group == "":
+            print(f"[iderp] Gruppo radice trovato: '{group.name}'")
+            return group.name
+    
+    # Se non trova nessun gruppo radice, usa il primo gruppo disponibile
+    if root_groups:
+        print(f"[iderp] Usando primo gruppo disponibile: '{root_groups[0].name}'")
+        return root_groups[0].name
+    
+    # Se non ci sono gruppi, crea quello di default
+    print("[iderp] Creando gruppo radice di default...")
+    try:
+        root_doc = frappe.get_doc({
+            "doctype": "Customer Group",
+            "customer_group_name": "All Customer Groups",
+            "is_group": 1
+        })
+        root_doc.insert(ignore_permissions=True)
+        print("[iderp] ✓ Gruppo radice 'All Customer Groups' creato")
+        return "All Customer Groups"
+    except Exception as e:
+        print(f"[iderp] ✗ Errore creazione gruppo radice: {e}")
+        return None
 
 def create_customer_group_price_rule_doctype():
     """Crea il DocType per le regole gruppo cliente"""
@@ -239,27 +283,38 @@ def install_customer_group_fields():
     print("[iderp] ✓ Campi gruppo cliente aggiunti ai documenti vendita")
 
 def create_customer_groups():
-    """Crea i 4 gruppi cliente: finale, bronze, gold, diamond"""
+    """
+    Crea i 4 gruppi cliente: finale, bronze, gold, diamond
+    CORRETTO: Usa il gruppo radice corretto
+    """
+    
+    # Trova il gruppo radice corretto
+    root_group = get_root_customer_group()
+    if not root_group:
+        print("[iderp] ✗ Impossibile determinare gruppo cliente radice")
+        return []
+    
+    print(f"[iderp] Usando gruppo padre: '{root_group}'")
     
     groups = [
         {
             "customer_group_name": "Finale",
-            "parent_customer_group": "All Customer Groups",
+            "parent_customer_group": root_group,
             "is_group": 0
         },
         {
             "customer_group_name": "Bronze", 
-            "parent_customer_group": "All Customer Groups",
+            "parent_customer_group": root_group,
             "is_group": 0
         },
         {
             "customer_group_name": "Gold",
-            "parent_customer_group": "All Customer Groups", 
+            "parent_customer_group": root_group, 
             "is_group": 0
         },
         {
             "customer_group_name": "Diamond",
-            "parent_customer_group": "All Customer Groups",
+            "parent_customer_group": root_group,
             "is_group": 0
         }
     ]
@@ -279,6 +334,7 @@ def create_customer_groups():
             except Exception as e:
                 print(f"[iderp] ✗ Errore creazione gruppo {group_data['customer_group_name']}: {e}")
         else:
+            created_groups.append(group_data["customer_group_name"])
             print(f"[iderp] - Gruppo '{group_data['customer_group_name']}' già esistente")
     
     return created_groups
@@ -286,7 +342,33 @@ def create_customer_groups():
 def create_test_customers():
     """Crea 10 clienti di prova assegnati casualmente ai gruppi"""
     
-    groups = ["Finale", "Bronze", "Gold", "Diamond"]
+    # Verifica che i gruppi esistano
+    existing_groups = []
+    for group in ["Finale", "Bronze", "Gold", "Diamond"]:
+        if frappe.db.exists("Customer Group", group):
+            existing_groups.append(group)
+    
+    if not existing_groups:
+        print("[iderp] ✗ Nessun gruppo cliente disponibile per creare clienti")
+        return []
+    
+    # Trova territorio di default
+    default_territory = frappe.db.get_value("Territory", {"is_group": 0}, "name")
+    if not default_territory:
+        default_territory = "All Territories"
+        # Crea territorio se non esiste
+        if not frappe.db.exists("Territory", default_territory):
+            try:
+                territory_doc = frappe.get_doc({
+                    "doctype": "Territory",
+                    "territory_name": default_territory,
+                    "is_group": 1
+                })
+                territory_doc.insert(ignore_permissions=True)
+                print(f"[iderp] ✓ Territorio '{default_territory}' creato")
+            except Exception as e:
+                print(f"[iderp] ✗ Errore creazione territorio: {e}")
+                default_territory = "Rest Of The World"  # Fallback ERPNext
     
     # Nomi di clienti di esempio per stampa digitale
     customer_names = [
@@ -303,15 +385,15 @@ def create_test_customers():
         
         if not frappe.db.exists("Customer", customer_code):
             try:
-                # Assegna gruppo casualmente
-                assigned_group = random.choice(groups)
+                # Assegna gruppo casualmente tra quelli esistenti
+                assigned_group = random.choice(existing_groups)
                 
                 customer_doc = frappe.get_doc({
                     "doctype": "Customer",
                     "customer_name": name,
                     "customer_code": customer_code,
                     "customer_group": assigned_group,
-                    "territory": "All Territories",
+                    "territory": default_territory,
                     "customer_type": "Company"
                 })
                 customer_doc.insert(ignore_permissions=True)
@@ -327,12 +409,29 @@ def create_test_customers():
             except Exception as e:
                 print(f"[iderp] ✗ Errore creazione cliente {name}: {e}")
         else:
+            # Cliente già esistente, ottieni info
+            existing_customer = frappe.get_doc("Customer", customer_code)
+            created_customers.append({
+                "code": customer_code,
+                "name": name,
+                "group": existing_customer.customer_group
+            })
             print(f"[iderp] - Cliente {customer_code} già esistente")
     
     return created_customers
 
 def create_sample_customer_group_rules():
     """Crea regole di esempio per i 4 gruppi con minimi diversi"""
+    
+    # Verifica che i gruppi esistano
+    existing_groups = []
+    for group in ["Finale", "Bronze", "Gold", "Diamond"]:
+        if frappe.db.exists("Customer Group", group):
+            existing_groups.append(group)
+    
+    if not existing_groups:
+        print("[iderp] ✗ Nessun gruppo cliente disponibile per creare regole")
+        return []
     
     # Trova un item di esempio per le regole
     sample_item = frappe.db.get_value("Item", 
@@ -372,8 +471,11 @@ def create_sample_customer_group_rules():
     created_rules = []
     
     for rule_config in rules_config:
-        rule_name = f"{rule_config['group']}-{sample_item}"
-        
+        # Salta se il gruppo non esiste
+        if rule_config["group"] not in existing_groups:
+            print(f"[iderp] - Saltando regola per gruppo inesistente: {rule_config['group']}")
+            continue
+            
         if not frappe.db.exists("Customer Group Price Rule", 
                               {"customer_group": rule_config["group"], "item_code": sample_item}):
             try:
@@ -399,6 +501,11 @@ def create_sample_customer_group_rules():
             except Exception as e:
                 print(f"[iderp] ✗ Errore creazione regola {rule_config['group']}: {e}")
         else:
+            created_rules.append({
+                "group": rule_config["group"], 
+                "item": sample_item,
+                "min_sqm": rule_config["min_sqm"]
+            })
             print(f"[iderp] - Regola per {rule_config['group']} già esistente")
     
     return created_rules
@@ -453,7 +560,7 @@ def setup_complete_customer_groups():
         # 2. Crea gruppi
         groups = create_customer_groups()
         
-        # 3. Crea clienti
+        # 3. Crea clienti  
         customers = create_test_customers()
         
         # 4. Installa campi
