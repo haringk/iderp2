@@ -2,6 +2,7 @@
 """
 Utility functions per gestione scaglioni prezzo
 AGGIORNATO: Supporto gruppi cliente e minimi
+FIXED: Validazione scaglioni contigui e valore 0
 """
 
 import frappe
@@ -198,6 +199,7 @@ def get_customer_group_min_sqm(customer, item_code):
 def validate_pricing_tiers(doc, method=None):
     """
     Valida scaglioni prezzo quando si salva un Item
+    FIXED: Permette scaglioni contigui e valore 0
     """
     if not getattr(doc, 'supports_custom_measurement', 0):
         return
@@ -212,8 +214,9 @@ def validate_pricing_tiers(doc, method=None):
     
     for i, tier in enumerate(tiers):
         # Valida singolo scaglione
+        # FIXED: Permette valore 0
         if tier.from_sqm < 0:
-            errors.append(f"Riga {i+1}: 'Da m²' non può essere negativo")
+            errors.append(f"Riga {i+1}: 'Da m²' non può essere negativo (0 è permesso)")
         
         if tier.to_sqm and tier.from_sqm >= tier.to_sqm:
             errors.append(f"Riga {i+1}: 'A m²' deve essere maggiore di 'Da m²'")
@@ -222,10 +225,12 @@ def validate_pricing_tiers(doc, method=None):
             errors.append(f"Riga {i+1}: 'Prezzo €/m²' deve essere maggiore di 0")
         
         # Valida sovrapposizioni
+        # FIXED: Scaglioni contigui sono permessi
         if i > 0:
             prev_tier = tiers[i-1]
-            if prev_tier.to_sqm and tier.from_sqm <= prev_tier.to_sqm:
-                errors.append(f"Riga {i+1}: Sovrapposizione con scaglione precedente")
+            # VERA sovrapposizione: inizia PRIMA che finisca il precedente
+            if prev_tier.to_sqm and tier.from_sqm < prev_tier.to_sqm:
+                errors.append(f"Riga {i+1}: Sovrapposizione - inizia a {tier.from_sqm} ma il precedente finisce a {prev_tier.to_sqm}")
     
     if errors:
         frappe.throw(_("Errori negli scaglioni prezzo:\n" + "\n".join(errors)))
