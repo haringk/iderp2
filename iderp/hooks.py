@@ -30,41 +30,28 @@ web_include_css = [
 ]
 
 
-# Server-side hooks per minimi gruppo cliente
-doc_events = {
-    "Quotation": {
-        "before_save": "iderp.server_side_minimums.apply_customer_group_minimums_server_side",
-        "validate": "iderp.server_side_minimums.calculate_standard_square_meters_server_side"
-    },
-    "Sales Order": {
-        "before_save": "iderp.server_side_minimums.apply_customer_group_minimums_server_side",
-        "validate": "iderp.server_side_minimums.calculate_standard_square_meters_server_side"
-    },
-    "Sales Invoice": {
-        "before_save": "iderp.server_side_minimums.apply_customer_group_minimums_server_side", 
-        "validate": "iderp.server_side_minimums.calculate_standard_square_meters_server_side"
-    }
-}
-
-# Eventi server-side AGGIORNATI per Customer Group Pricing
+# UNICA SEZIONE doc_events - UNIFICATA E CORRETTA
 doc_events = {
     "Quotation": {
         "before_submit": "iderp.copy_fields.copy_custom_fields",
-        "before_save": "iderp.customer_group_pricing.apply_customer_group_rules"
+        "before_save": "iderp.server_side_minimums.apply_customer_group_minimums_server_side",
+        "validate": "iderp.server_side_minimums.calculate_standard_square_meters_server_side"
     },
     "Sales Order": {
         "before_submit": "iderp.copy_fields.copy_custom_fields", 
-        "before_save": "iderp.customer_group_pricing.apply_customer_group_rules"
-    },
-    "Delivery Note": {
-        "before_submit": "iderp.copy_fields.copy_custom_fields",
-        "before_save": "iderp.customer_group_pricing.apply_customer_group_rules"
+        "before_save": "iderp.server_side_minimums.apply_customer_group_minimums_server_side",
+        "validate": "iderp.server_side_minimums.calculate_standard_square_meters_server_side"
     },
     "Sales Invoice": {
         "before_submit": "iderp.copy_fields.copy_custom_fields",
-        "before_save": "iderp.customer_group_pricing.apply_customer_group_rules"
+        "before_save": "iderp.server_side_minimums.apply_customer_group_minimums_server_side",
+        "validate": "iderp.server_side_minimums.calculate_standard_square_meters_server_side"
     },
-    # Validazione Item per scaglioni
+    "Delivery Note": {
+        "before_submit": "iderp.copy_fields.copy_custom_fields",
+        "before_save": "iderp.server_side_minimums.apply_customer_group_minimums_server_side",
+        "validate": "iderp.server_side_minimums.calculate_standard_square_meters_server_side"
+    },
     "Item": {
         "validate": "iderp.pricing_utils.validate_pricing_tiers"
     }
