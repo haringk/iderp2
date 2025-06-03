@@ -38,6 +38,91 @@ def install_customer_group_pricing_system():
     setup_complete_customer_groups()
     
     print("[iderp] ✓ Customer Group Pricing installato")
+    
+
+def setup_universal_pricing_demo():
+    """Setup demo completo per tutti i tipi di vendita"""
+    print("[iderp] === Setup demo pricing universale ===")
+    
+    # Trova item di test
+    test_item = frappe.db.get_value("Item", {"supports_custom_measurement": 1}, "item_code")
+    
+    if not test_item:
+        print("[iderp] ❌ Nessun item configurato")
+        return False
+    
+    try:
+        item_doc = frappe.get_doc("Item", test_item)
+        
+        # SCAGLIONI PER TUTTI I TIPI
+        item_doc.pricing_tiers = []
+        
+        # Metro Quadrato
+        mq_tiers = [
+            {"selling_type": "Metro Quadrato", "from_qty": 0, "to_qty": 0.5, "price_per_unit": 20.0, "tier_name": "Micro m²"},
+            {"selling_type": "Metro Quadrato", "from_qty": 0.5, "to_qty": 2, "price_per_unit": 15.0, "tier_name": "Piccolo m²"},
+            {"selling_type": "Metro Quadrato", "from_qty": 2, "to_qty": None, "price_per_unit": 10.0, "tier_name": "Grande m²", "is_default": 1}
+        ]
+        
+        # Metro Lineare  
+        ml_tiers = [
+            {"selling_type": "Metro Lineare", "from_qty": 0, "to_qty": 5, "price_per_unit": 8.0, "tier_name": "Piccolo ml"},
+            {"selling_type": "Metro Lineare", "from_qty": 5, "to_qty": 20, "price_per_unit": 6.0, "tier_name": "Medio ml"},
+            {"selling_type": "Metro Lineare", "from_qty": 20, "to_qty": None, "price_per_unit": 4.0, "tier_name": "Grande ml", "is_default": 1}
+        ]
+        
+        # Pezzo
+        pz_tiers = [
+            {"selling_type": "Pezzo", "from_qty": 1, "to_qty": 10, "price_per_unit": 5.0, "tier_name": "Retail"},
+            {"selling_type": "Pezzo", "from_qty": 10, "to_qty": 100, "price_per_unit": 3.0, "tier_name": "Wholesale"},
+            {"selling_type": "Pezzo", "from_qty": 100, "to_qty": None, "price_per_unit": 2.0, "tier_name": "Bulk", "is_default": 1}
+        ]
+        
+        # Aggiungi tutti gli scaglioni
+        for tier_data in mq_tiers + ml_tiers + pz_tiers:
+            item_doc.append("pricing_tiers", tier_data)
+        
+        # MINIMI PER GRUPPI
+        item_doc.customer_group_minimums = []
+        
+        # Minimi diversi per tipo vendita
+        minimums = [
+            # Finale
+            {"customer_group": "Finale", "selling_type": "Metro Quadrato", "min_qty": 0.5, "calculation_mode": "Globale Preventivo", "fixed_cost": 5.0, "fixed_cost_mode": "Per Preventivo"},
+            {"customer_group": "Finale", "selling_type": "Metro Lineare", "min_qty": 2.0, "calculation_mode": "Per Riga", "fixed_cost": 3.0, "fixed_cost_mode": "Per Riga"},
+            {"customer_group": "Finale", "selling_type": "Pezzo", "min_qty": 5, "calculation_mode": "Per Riga", "fixed_cost": 0},
+            
+            # Bronze
+            {"customer_group": "Bronze", "selling_type": "Metro Quadrato", "min_qty": 0.25, "calculation_mode": "Globale Preventivo", "fixed_cost": 3.0, "fixed_cost_mode": "Per Preventivo"},
+            {"customer_group": "Bronze", "selling_type": "Metro Lineare", "min_qty": 1.0, "calculation_mode": "Per Riga", "fixed_cost": 2.0, "fixed_cost_mode": "Per Riga"},
+            {"customer_group": "Bronze", "selling_type": "Pezzo", "min_qty": 3, "calculation_mode": "Per Riga", "fixed_cost": 0},
+            
+            # Gold  
+            {"customer_group": "Gold", "selling_type": "Metro Quadrato", "min_qty": 0.1, "calculation_mode": "Globale Preventivo", "fixed_cost": 0},
+            {"customer_group": "Gold", "selling_type": "Metro Lineare", "min_qty": 0.5, "calculation_mode": "Per Riga", "fixed_cost": 0},
+            {"customer_group": "Gold", "selling_type": "Pezzo", "min_qty": 1, "calculation_mode": "Per Riga", "fixed_cost": 0},
+            
+            # Diamond
+            {"customer_group": "Diamond", "selling_type": "Metro Quadrato", "min_qty": 0, "calculation_mode": "Per Riga", "fixed_cost": 0},
+            {"customer_group": "Diamond", "selling_type": "Metro Lineare", "min_qty": 0, "calculation_mode": "Per Riga", "fixed_cost": 0},
+            {"customer_group": "Diamond", "selling_type": "Pezzo", "min_qty": 0, "calculation_mode": "Per Riga", "fixed_cost": 0}
+        ]
+        
+        for min_data in minimums:
+            item_doc.append("customer_group_minimums", min_data)
+        
+        item_doc.save(ignore_permissions=True)
+        
+        print(f"[iderp] ✅ Demo universale configurato per {test_item}")
+        print("[iderp] 📊 3 tipi vendita × 4 gruppi cliente = 12 configurazioni")
+        print("[iderp] 💰 Scaglioni + Minimi + Costi fissi")
+        
+        return True
+        
+    except Exception as e:
+        print(f"[iderp] ❌ Errore setup demo: {e}")
+        return False
+
 
 def install_sales_custom_fields():
     """Installa campi custom per documenti di vendita"""
