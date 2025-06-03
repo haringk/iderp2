@@ -475,41 +475,42 @@ def add_pricing_table_to_item():
     print("[iderp] Aggiungendo tabella scaglioni all'Item...")
     
     item_fields = [
-        {
-            "fieldname": "pricing_section",
-            "fieldtype": "Section Break",
-            "label": "Scaglioni Prezzo m²",
-            "insert_after": "larghezza_materiale_default",
-            "collapsible": 1,
-            "depends_on": "eval:doc.supports_custom_measurement && doc.tipo_vendita_default=='Metro Quadrato'",
-            "description": "Configura prezzi diversi in base ai metri quadri totali dell'ordine"
-        },
-        {
-            "fieldname": "pricing_tiers",
-            "fieldtype": "Table",
-            "label": "Scaglioni Prezzo",
-            "insert_after": "pricing_section",
-            "options": "Item Pricing Tier",
-            "depends_on": "eval:doc.supports_custom_measurement && doc.tipo_vendita_default=='Metro Quadrato'",
-            "description": "Definisci prezzi per fasce di metri quadri"
-        },
-        {
-            "fieldname": "pricing_help",
-            "fieldtype": "HTML",
-            "label": "",
-            "insert_after": "pricing_tiers",
-            "options": """
-            <div class="alert alert-info">
-                <strong>💡 Come funzionano gli scaglioni:</strong><br>
-                • I prezzi si applicano in base ai <strong>metri quadri totali</strong> dell'ordine<br>
-                • Esempio: 0-10m² = €10/m², 10-50m² = €8/m², oltre 50m² = €6/m²<br>
-                • Il sistema sceglierà automaticamente il prezzo giusto<br>
-                • Lascia "A m²" vuoto per indicare "oltre X metri quadri"<br>
-                • Spunta "Default" per il prezzo di fallback
-            </div>
-            """,
-            "depends_on": "eval:doc.supports_custom_measurement && doc.tipo_vendita_default=='Metro Quadrato'"
-        }
+{
+    "fieldname": "pricing_section",
+    "fieldtype": "Section Break",
+    "label": "Scaglioni Prezzo Universali",  # <-- Cambia anche il label
+    "insert_after": "larghezza_materiale_default",
+    "collapsible": 1,
+    "depends_on": "eval:doc.supports_custom_measurement",  # <-- Rimuovi la condizione Metro Quadrato
+    "description": "Configura prezzi per tutti i tipi di vendita: m², ml, pezzi"
+},
+{
+    "fieldname": "pricing_tiers",
+    "fieldtype": "Table",
+    "label": "Scaglioni Prezzo",
+    "insert_after": "pricing_section",
+    "options": "Item Pricing Tier",
+    "depends_on": "eval:doc.supports_custom_measurement",  # <-- Rimuovi la condizione Metro Quadrato
+    "description": "Definisci prezzi per tutti i tipi di vendita"
+},
+{
+    "fieldname": "pricing_help",
+    "fieldtype": "HTML",
+    "label": "",
+    "insert_after": "pricing_tiers",
+    "options": """
+    <div class="alert alert-info">
+        <strong>💡 Come funzionano gli scaglioni universali:</strong><br>
+        • <strong>Metro Quadrato</strong>: Prezzi in base ai m² totali dell'ordine<br>
+        • <strong>Metro Lineare</strong>: Prezzi in base ai metri lineari totali<br>
+        • <strong>Pezzo</strong>: Prezzi in base al numero di pezzi<br>
+        • Il sistema sceglierà automaticamente il prezzo giusto per tipo<br>
+        • Usa il campo "Tipo Vendita" per differenziare gli scaglioni<br>
+        • Spunta "Default" per il prezzo di fallback per ogni tipo
+    </div>
+    """,
+    "depends_on": "eval:doc.supports_custom_measurement"  # <-- Rimuovi la condizione Metro Quadrato
+},
     ]
     
     for field in item_fields:
