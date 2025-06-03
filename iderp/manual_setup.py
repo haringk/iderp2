@@ -164,6 +164,226 @@ def quick_universal_test():
 tuc = test_universal_system_complete
 qut = quick_universal_test
 
+def diagnose_item_pricing_tiers(item_code="AM"):
+    """
+    Diagnosi dettagliata degli scaglioni salvati
+    """
+    print(f"\n🔍 DIAGNOSI SCAGLIONI ITEM {item_code}")
+    print("="*60)
+    
+    try:
+        item_doc = frappe.get_doc("Item", item_code)
+        
+        if not hasattr(item_doc, 'pricing_tiers') or not item_doc.pricing_tiers:
+            print("❌ Nessuno scaglione trovato!")
+            return False
+        
+        print(f"📊 Trovati {len(item_doc.pricing_tiers)} scaglioni:")
+        print("")
+        
+        # Raggruppa per tipo
+        by_type = {}
+        for i, tier in enumerate(item_doc.pricing_tiers):
+            # Determina il tipo
+            if hasattr(tier, 'selling_type') and tier.selling_type:
+                tipo = tier.selling_type
+                formato = "NUOVO"
+                from_val = getattr(tier, 'from_qty', 0)
+                to_val = getattr(tier, 'to_qty', None)
+                price_val = getattr(tier, 'price_per_unit', 0)
+            elif hasattr(tier, 'from_sqm'):
+                tipo = "Metro Quadrato"
+                formato = "LEGACY"
+                from_val = getattr(tier, 'from_sqm', 0)
+                to_val = getattr(tier, 'to_sqm', None)
+                price_val = getattr(tier, 'price_per_sqm', 0)
+            else:
+                tipo = "SCONOSCIUTO"
+                formato = "???"
+                from_val = "???"
+                to_val = "???"
+                price_val = "???"
+            
+            if tipo not in by_type:
+                by_type[tipo] = []
+            
+            by_type[tipo].append({
+                'idx': i+1,
+                'formato': formato,
+                'from': from_val,
+                'to': to_val,
+                'price': price_val,
+                'name': getattr(tier, 'tier_name', 'N/A'),
+                'default': getattr(tier, 'is_default', 0)
+            })
+        
+        # Mostra per tipo
+        for tipo, tiers in by_type.items():
+            print(f"🏷️  {tipo.upper()} ({len(tiers)} scaglioni):")
+            for tier in tiers:
+                to_str = f"{tier['to']}" if tier['to'] is not None else "∞"
+                default_str = " [DEFAULT]" if tier['default'] else ""
+                print(f"   {tier['idx']}. {tier['from']} → {to_str} = €{tier['price']} ({tier['formato']}){default_str}")
+                print(f"      Nome: {tier['name']}")
+            print("")
+        
+        # Analisi problemi
+        print("🔧 ANALISI PROBLEMI:")
+        
+        missing_types = []
+        if "Metro Lineare" not in by_type:
+            missing_types.append("Metro Lineare")
+        if "Pezzo" not in by_type:
+            missing_types.append("Pezzo")
+        
+        if missing_types:
+            print(f"❌ Tipi mancanti: {', '.join(missing_types)}")
+        else:
+            print("✅ Tutti i tipi presenti")
+        
+        # Verifica formato misto
+        has_legacy = any(tier['formato'] == 'LEGACY' for tiers in by_type.values() for tier in tiers)
+        has_new = any(tier['formato'] == 'NUOVO' for tiers in by_type.values() for tier in tiers)
+        
+        if has_legacy and has_new:
+            print("⚠️  Formato MISTO rilevato (legacy + nuovo)")
+            print("💡 Questo può causare problemi nella ricerca scaglioni")
+        elif has_legacy:
+            print("📜 Solo formato LEGACY (compatibilità)")
+        elif has_new:
+            print("🆕 Solo formato NUOVO")
+        
+        return True
+        
+    except Exception as e:
+        print(f"❌ Errore diagnosi: {e}")
+        return False
+
+def fix_missing_pricing_tiers(item_code="AM"):
+    """
+    Fix aggiungendo solo gli scaglioni mancanti
+    """
+    print(f"\n🔧 FIX SCAGLIONI MANCANTI - {item_code}")
+    print("="*50)
+    
+    try:
+        item_doc = frappe.get_doc("Item", item_code)
+        
+        # Determina cosa manca
+        existing_types = set()
+        if hasattr(item_doc, 'pricing_tiers') and item_doc.pricing_tiers:
+            for tier in item_doc.pricing_tiers:
+                if hasattr(tier, 'selling_type') and tier.selling_type:
+                    existing_types.add(tier.selling_type)
+                elif hasattr(tier, 'from_sqm'):
+                    existing_types.add("Metro Quadrato")
+        
+        print(f"✓ Tipi esistenti: {list(existing_types)}")
+        
+        # Scaglioni da aggiungere
+        missing_tiers = []
+        
+        if "Metro Lineare" not in existing_types:
+            print("➕ Aggiungendo scaglioni Metro Lineare...")
+            missing_tiers.extend([
+                {"selling_type": "Metro Lineare", "from_qty": 0.0, "to_qty": 5.0, "price_per_unit": 8.0, "tier_name": "Piccolo ml"},
+                {"selling_type": "Metro Lineare", "from_qty": 5.0, "to_qty": 20.0, "price_per_unit": 6.0, "tier_name": "Medio ml"},
+                {"selling_type": "Metro Lineare", "from_qty": 20.0, "to_qty": None, "price_per_unit": 4.0, "tier_name": "Grande ml", "is_default": 1}
+            ])
+        
+        if "Pezzo" not in existing_types:
+            print("➕ Aggiungendo scaglioni Pezzo...")
+            missing_tiers.extend([
+                {"selling_type": "Pezzo", "from_qty": 1.0, "to_qty": 10.0, "price_per_unit": 5.0, "tier_name": "Retail"},
+                {"selling_type": "Pezzo", "from_qty": 10.0, "to_qty": 100.0, "price_per_unit": 3.0, "tier_name": "Wholesale"},
+                {"selling_type": "Pezzo", "from_qty": 100.0, "to_qty": None, "price_per_unit": 2.0, "tier_name": "Bulk", "is_default": 1}
+            ])
+        
+        if not missing_tiers:
+            print("✅ Nessuno scaglione mancante!")
+            return True
+        
+        # Aggiungi i mancanti UNO alla volta
+        added_count = 0
+        for tier_config in missing_tiers:
+            try:
+                item_doc.append("pricing_tiers", tier_config)
+                added_count += 1
+                print(f"   ✓ {tier_config['tier_name']}")
+                
+                # Salva ogni 2 scaglioni per evitare timeout
+                if added_count % 2 == 0:
+                    item_doc.save(ignore_permissions=True)
+                    frappe.db.commit()
+                    time.sleep(0.5)
+                    item_doc.reload()
+                    
+            except Exception as e:
+                print(f"   ❌ Errore {tier_config['tier_name']}: {e}")
+        
+        # Salvataggio finale
+        try:
+            item_doc.save(ignore_permissions=True)
+            frappe.db.commit()
+            print(f"✅ {added_count} scaglioni aggiunti e salvati!")
+            return True
+        except Exception as e:
+            print(f"❌ Errore salvataggio finale: {e}")
+            return False
+            
+    except Exception as e:
+        print(f"❌ Errore fix: {e}")
+        return False
+
+def complete_universal_setup(item_code="AM"):
+    """
+    Setup universale completo: diagnosi + fix + test
+    """
+    print(f"\n🚀 SETUP UNIVERSALE COMPLETO - {item_code}")
+    print("="*60)
+    
+    # 1. Diagnosi
+    print("STEP 1: Diagnosi stato attuale")
+    diagnose_item_pricing_tiers(item_code)
+    
+    # 2. Fix
+    print("\nSTEP 2: Fix scaglioni mancanti")
+    fix_success = fix_missing_pricing_tiers(item_code)
+    
+    # 3. Test finale
+    if fix_success:
+        print("\nSTEP 3: Test universale finale")
+        test_success = test_universal_system_complete(item_code)
+        
+        if test_success:
+            print("\n🎉 SETUP UNIVERSALE COMPLETATO CON SUCCESSO!")
+            print("🚀 Tutti e 3 i tipi di vendita sono ora operativi!")
+            return True
+        else:
+            print("\n⚠️ Fix applicato ma test ancora fallisce")
+            return False
+    else:
+        print("\n❌ Fix fallito")
+        return False
+
+# Comandi rapidi
+def diag():
+    """Diagnosi scaglioni"""
+    return diagnose_item_pricing_tiers("AM")
+
+def fix_missing():
+    """Fix scaglioni mancanti"""
+    return fix_missing_pricing_tiers("AM")
+
+def complete_setup():
+    """Setup completo"""
+    return complete_universal_setup("AM")
+
+# Alias
+d = diag
+fm = fix_missing
+cs = complete_setup
+
 def setup_manual_universal_item_robust(item_code="AM"):
     """
     Setup manuale ULTRA-ROBUSTO anti-concorrenza
