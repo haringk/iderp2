@@ -14,7 +14,7 @@ doctype_js = {
     "Sales Invoice": "public/js/item_dimension.js",
     "Delivery Note": "public/js/item_dimension.js",
     "Work Order": "public/js/item_dimension.js",
-    "Item": "public/js/item_config.js"
+#    "Item": "public/js/item_config.js"
 }
 
 # CSS per backend
