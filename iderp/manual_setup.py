@@ -1859,3 +1859,84 @@ def complete_cf():
 fcf = fix_cf
 vcf = verify_cf
 ccf = complete_cf
+
+
+def fix_custom_fields_sql_direct():
+    """
+    Fix custom fields usando SQL diretto per evitare timeout
+    """
+    print(f"\n⚡ FIX CUSTOM FIELDS SQL DIRETTO")
+    print("="*50)
+    
+    try:
+        # Aggiornamenti SQL diretti
+        updates = [
+            {
+                "field": "pricing_section",
+                "new_depends_on": "eval:doc.supports_custom_measurement",
+                "new_label": "Scaglioni Prezzo Universali"
+            },
+            {
+                "field": "pricing_tiers", 
+                "new_depends_on": "eval:doc.supports_custom_measurement",
+                "new_description": "Definisci prezzi per tutti i tipi di vendita"
+            },
+            {
+                "field": "pricing_help",
+                "new_depends_on": "eval:doc.supports_custom_measurement",
+                "new_options": "<div class=\"alert alert-info\"><strong>💡 Scaglioni universali per tutti i tipi vendita</strong></div>"
+            }
+        ]
+        
+        success_count = 0
+        
+        for update in updates:
+            try:
+                print(f"🔄 SQL update per {update['field']}...")
+                
+                # SQL UPDATE diretto
+                sql = """
+                UPDATE `tabCustom Field` 
+                SET depends_on = %s, modified = NOW()
+                WHERE dt = 'Item' AND fieldname = %s
+                """
+                
+                frappe.db.sql(sql, [update["new_depends_on"], update["field"]])
+                frappe.db.commit()
+                
+                # Aggiorna label se presente
+                if "new_label" in update:
+                    sql_label = """
+                    UPDATE `tabCustom Field` 
+                    SET label = %s, modified = NOW()
+                    WHERE dt = 'Item' AND fieldname = %s
+                    """
+                    frappe.db.sql(sql_label, [update["new_label"], update["field"]])
+                    frappe.db.commit()
+                
+                print(f"   ✅ {update['field']} aggiornato via SQL")
+                success_count += 1
+                time.sleep(0.5)
+                
+            except Exception as e:
+                print(f"   ❌ {update['field']}: {e}")
+        
+        print(f"\n✅ {success_count}/{len(updates)} campi aggiornati via SQL")
+        
+        if success_count > 0:
+            print("\n🎯 SQL UPDATE COMPLETATO!")
+            print("💡 Ora ricarica una pagina Item (F5)")
+            print("📊 La tabella scaglioni dovrebbe apparire per tutti i tipi!")
+        
+        return success_count > 0
+        
+    except Exception as e:
+        print(f"❌ Errore SQL diretto: {e}")
+        return False
+
+def quick_sql_fix():
+    """Fix SQL rapido"""
+    return fix_custom_fields_sql_direct()
+
+# Alias
+qsf = quick_sql_fix
