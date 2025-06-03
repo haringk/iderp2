@@ -1,3 +1,5 @@
+# iderp/hooks.py
+
 app_name = "iderp"
 app_title = "iderp"
 app_publisher = "idstudio AI"
@@ -29,10 +31,34 @@ web_include_css = [
     "/assets/iderp/css/ecommerce_styles.css"
 ]
 
+# HOOK VALIDAZIONE TEMPORANEAMENTE DISABILITATO
+# doc_events = {
+#     "Quotation": {
+#         "before_submit": "iderp.copy_fields.copy_custom_fields",
+#         "before_save": "iderp.universal_pricing.apply_universal_pricing_server_side",
+#         "validate": "iderp.server_side_minimums.calculate_standard_square_meters_server_side"
+#     },
+#     "Sales Order": {
+#         "before_submit": "iderp.copy_fields.copy_custom_fields", 
+#         "before_save": "iderp.universal_pricing.apply_universal_pricing_server_side",
+#         "validate": "iderp.server_side_minimums.calculate_standard_square_meters_server_side"
+#     },
+#     "Sales Invoice": {
+#         "before_submit": "iderp.copy_fields.copy_custom_fields",
+#         "before_save": "iderp.universal_pricing.apply_universal_pricing_server_side",
+#         "validate": "iderp.server_side_minimums.calculate_standard_square_meters_server_side"
+#     },
+#     "Delivery Note": {
+#         "before_submit": "iderp.copy_fields.copy_custom_fields",
+#         "before_save": "iderp.universal_pricing.apply_universal_pricing_server_side",
+#         "validate": "iderp.server_side_minimums.calculate_standard_square_meters_server_side"
+#     },
+#     "Item": {
+#         "validate": "iderp.pricing_utils.validate_pricing_tiers"  # <-- QUESTO BLOCCA IL SALVATAGGIO
+#     }
+# }
 
-# UNICA SEZIONE doc_events - UNIFICATA E CORRETTA
-# Server-side hooks per minimi gruppo cliente
-# Server-side hooks per pricing universale
+# VERSIONE RIDOTTA SENZA VALIDAZIONE ITEM
 doc_events = {
     "Quotation": {
         "before_submit": "iderp.copy_fields.copy_custom_fields",
@@ -53,10 +79,8 @@ doc_events = {
         "before_submit": "iderp.copy_fields.copy_custom_fields",
         "before_save": "iderp.universal_pricing.apply_universal_pricing_server_side",
         "validate": "iderp.server_side_minimums.calculate_standard_square_meters_server_side"
-    },
-    "Item": {
-        "validate": "iderp.pricing_utils.validate_pricing_tiers"
     }
+    # ITEM VALIDATION RIMOSSA TEMPORANEAMENTE
 }
 
 # Whitelist API methods per Customer Group Pricing
@@ -70,67 +94,3 @@ whitelisted_methods = [
 
 # Installazione automatica
 after_install = "iderp.install.after_install"
-
-# ===== SEZIONE E-COMMERCE (DA ABILITARE GRADUALMENTE) =====
-
-# Questi hook verranno abilitati man mano che implementiamo le funzionalità
-
-# Eventi per e-commerce (commentati per ora)
-# doc_events.update({
-#     "Shopping Cart": {"validate": "iderp.ecommerce.validate_cart_item"},
-#     "Website Item": {"on_update": "iderp.ecommerce.extend_website_item_context"}
-# })
-
-# Hook per estendere contesto website
-# website_context = {
-#     "extend_website_context": ["iderp.ecommerce.extend_website_item_context"]
-# }
-
-# Override template per pagina prodotto
-# website_route_rules = [
-#     {
-#         "from_route": "/shop/product/<item_code>",
-#         "to_route": "iderp_product_page"
-#     }
-# ]
-
-# Jinja helpers per template
-# jinja = {
-#     "methods": [
-#         "iderp.ecommerce.get_measurement_options",
-#         "iderp.ecommerce.format_price_with_measurement"
-#     ]
-# }
-
-# Custom print formats
-# fixtures = [
-#     {
-#         "doctype": "Print Format",
-#         "filters": {"name": ["in", ["IDERP Sales Order", "IDERP Quotation", "IDERP Invoice"]]}
-#     }
-# ]
-
-# Portal menu items per clienti
-# standard_portal_menu_items = [
-#     {
-#         "title": "I Miei Ordini Personalizzati",
-#         "route": "/my-custom-orders",
-#         "reference_doctype": "Sales Order",
-#         "role": "Customer"
-#     }
-# ]
-
-# Scheduler per e-commerce
-# scheduler_events = {
-#     "hourly": [
-#         "iderp.ecommerce.cleanup_abandoned_carts"
-#     ],
-#     "daily": [
-#         "iderp.ecommerce.update_product_configurations"
-#     ]
-# }
-
-# Permessi per guest users
-# has_website_permission = {
-#     "Item": "iderp.ecommerce.has_website_permission_for_item"
-# }
