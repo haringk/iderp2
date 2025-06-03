@@ -1940,3 +1940,221 @@ def quick_sql_fix():
 
 # Alias
 qsf = quick_sql_fix
+
+
+def fix_customer_minimums_custom_fields():
+    """
+    Fix custom fields per minimi cliente - devono apparire per tutti i tipi
+    """
+    print(f"\n🔧 FIX MINIMI CLIENTE CUSTOM FIELDS")
+    print("="*50)
+    
+    try:
+        # Campi minimi cliente da aggiornare
+        minimum_fields = [
+            "customer_group_minimums_section",
+            "customer_group_minimums", 
+            "customer_group_minimums_help"
+        ]
+        
+        success_count = 0
+        
+        for fieldname in minimum_fields:
+            try:
+                print(f"🔄 Aggiornando {fieldname}...")
+                
+                # SQL UPDATE diretto per evitare timeout
+                sql = """
+                UPDATE `tabCustom Field` 
+                SET depends_on = %s, modified = NOW()
+                WHERE dt = 'Item' AND fieldname = %s
+                """
+                
+                new_depends_on = "eval:doc.supports_custom_measurement"
+                frappe.db.sql(sql, [new_depends_on, fieldname])
+                frappe.db.commit()
+                
+                print(f"   ✅ {fieldname} aggiornato")
+                success_count += 1
+                time.sleep(0.3)
+                
+            except Exception as e:
+                print(f"   ❌ {fieldname}: {e}")
+        
+        print(f"\n✅ {success_count}/{len(minimum_fields)} campi minimi aggiornati")
+        
+        if success_count > 0:
+            print("💡 Ora i minimi cliente dovrebbero apparire per tutti i tipi!")
+        
+        return success_count > 0
+        
+    except Exception as e:
+        print(f"❌ Errore fix minimi: {e}")
+        return False
+
+def check_items_visibility():
+    """
+    Verifica visibilità prodotti - controlla se sono stati nascosti per qualche motivo
+    """
+    print(f"\n🔍 VERIFICA VISIBILITÀ PRODOTTI")
+    print("="*50)
+    
+    try:
+        # Conta totale item
+        total_items = frappe.db.count("Item")
+        print(f"📊 Totale item nel database: {total_items}")
+        
+        # Conta item abilitati
+        enabled_items = frappe.db.count("Item", {"disabled": 0})
+        print(f"✅ Item abilitati: {enabled_items}")
+        
+        # Conta item disabilitati  
+        disabled_items = frappe.db.count("Item", {"disabled": 1})
+        print(f"❌ Item disabilitati: {disabled_items}")
+        
+        # Conta item con misure personalizzate
+        custom_measurement_items = frappe.db.count("Item", {"supports_custom_measurement": 1})
+        print(f"📏 Item con misure personalizzate: {custom_measurement_items}")
+        
+        # Mostra alcuni item di esempio
+        print(f"\n📋 ESEMPI ITEM DISPONIBILI:")
+        sample_items = frappe.db.sql("""
+            SELECT item_code, item_name, disabled, supports_custom_measurement, tipo_vendita_default
+            FROM `tabItem` 
+            WHERE disabled = 0
+            ORDER BY creation DESC
+            LIMIT 10
+        """, as_dict=True)
+        
+        for item in sample_items:
+            disabled_status = "❌ DISABILITATO" if item.disabled else "✅ ABILITATO"
+            custom_status = "📏" if item.supports_custom_measurement else "📦"
+            tipo_vendita = item.tipo_vendita_default or "Standard"
+            
+            print(f"   {custom_status} {item.item_code}: {item.item_name}")
+            print(f"      Status: {disabled_status} | Tipo: {tipo_vendita}")
+        
+        # Suggerimenti se non si vedono item
+        if total_items == 0:
+            print("\n⚠️ PROBLEMA: Nessun item nel database!")
+            print("💡 Potrebbe essere necessario creare nuovi item")
+        elif enabled_items == 0:
+            print("\n⚠️ PROBLEMA: Tutti gli item sono disabilitati!")
+            print("💡 Controlla i filtri nella lista Item")
+        elif custom_measurement_items == 0:
+            print("\n💡 SUGGERIMENTO: Nessun item configurato per misure personalizzate")
+            print("   Vai su un item e abilita 'Supporta Misure Personalizzate'")
+        
+        return {
+            "total": total_items,
+            "enabled": enabled_items,
+            "custom_measurement": custom_measurement_items
+        }
+        
+    except Exception as e:
+        print(f"❌ Errore verifica item: {e}")
+        return None
+
+def restore_items_visibility():
+    """
+    Ripristina visibilità item se sono stati disabilitati accidentalmente
+    """
+    print(f"\n🔄 RIPRISTINO VISIBILITÀ ITEM")
+    print("="*40)
+    
+    try:
+        # Controlla se ci sono item disabilitati di recente
+        recently_disabled = frappe.db.sql("""
+            SELECT item_code, item_name, modified
+            FROM `tabItem`
+            WHERE disabled = 1
+            AND modified >= DATE_SUB(NOW(), INTERVAL 1 DAY)
+            ORDER BY modified DESC
+            LIMIT 5
+        """, as_dict=True)
+        
+        if recently_disabled:
+            print(f"⚠️ Trovati {len(recently_disabled)} item disabilitati di recente:")
+            for item in recently_disabled:
+                print(f"   • {item.item_code}: {item.item_name} (modificato: {item.modified})")
+            
+            print(f"\n💡 Vuoi riabilitarli automaticamente?")
+            print(f"   Usa: enable_recent_items()")
+        else:
+            print("✅ Nessun item disabilitato di recente")
+        
+        return len(recently_disabled) if recently_disabled else 0
+        
+    except Exception as e:
+        print(f"❌ Errore controllo item disabilitati: {e}")
+        return 0
+
+def enable_recent_items():
+    """
+    Riabilita item disabilitati di recente
+    """
+    try:
+        sql = """
+        UPDATE `tabItem` 
+        SET disabled = 0, modified = NOW()
+        WHERE disabled = 1 
+        AND modified >= DATE_SUB(NOW(), INTERVAL 1 DAY)
+        """
+        
+        result = frappe.db.sql(sql)
+        frappe.db.commit()
+        
+        print(f"✅ Item disabilitati di recente sono stati riabilitati")
+        return True
+        
+    except Exception as e:
+        print(f"❌ Errore riabilitazione: {e}")
+        return False
+
+def complete_visibility_check():
+    """
+    Check completo visibilità: minimi + item
+    """
+    print(f"\n🔍 CHECK COMPLETO VISIBILITÀ")
+    print("="*60)
+    
+    # 1. Fix minimi cliente
+    print("STEP 1: Fix minimi cliente per tutti i tipi")
+    fix_customer_minimums_custom_fields()
+    
+    # 2. Check visibilità item
+    print("\nSTEP 2: Verifica visibilità item")
+    item_stats = check_items_visibility()
+    
+    # 3. Check item disabilitati di recente
+    print("\nSTEP 3: Controllo item disabilitati di recente")
+    recent_disabled = restore_items_visibility()
+    
+    print(f"\n📊 RIEPILOGO:")
+    if item_stats:
+        print(f"   • Item totali: {item_stats['total']}")
+        print(f"   • Item abilitati: {item_stats['enabled']}")
+        print(f"   • Item con misure personalizzate: {item_stats['custom_measurement']}")
+    
+    print(f"\n💡 AZIONI CONSIGLIATE:")
+    print(f"   • Ricarica pagina Item (F5)")
+    print(f"   • Controlla filtri nella lista Item")
+    print(f"   • Se necessario: enable_recent_items()")
+
+# Comandi rapidi
+def fix_minimums():
+    """Fix minimi cliente"""
+    return fix_customer_minimums_custom_fields()
+
+def check_items():
+    """Check visibilità item"""
+    return check_items_visibility()
+
+def complete_check():
+    """Check completo"""
+    complete_visibility_check()
+
+# Alias
+fm_cf = fix_minimums
+ci = check_items
+cc_vis = complete_check
