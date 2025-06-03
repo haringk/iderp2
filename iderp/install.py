@@ -225,12 +225,14 @@ def install_item_config_fields():
         create_custom_field("Item", cf)
 
 def create_item_pricing_tier_child_table():
-    """Crea Child Table per scaglioni prezzo"""
-    print("[iderp] Creando Child Table per scaglioni...")
+    """Crea Child Table per scaglioni prezzo MULTI-TIPO VENDITA"""
+    print("[iderp] Creando Child Table per scaglioni universali...")
     
     # Verifica se esiste già
     if frappe.db.exists("DocType", "Item Pricing Tier"):
         print("[iderp] - Child Table già esistente")
+        # Aggiungi nuovi campi se mancano
+        add_multi_type_pricing_fields()
         return True
     
     child_doctype = {
@@ -244,32 +246,42 @@ def create_item_pricing_tier_child_table():
         "engine": "InnoDB",
         "fields": [
             {
-                "fieldname": "from_sqm",
+                "fieldname": "selling_type",
+                "fieldtype": "Select",
+                "label": "Tipo Vendita",
+                "options": "\nMetro Quadrato\nMetro Lineare\nPezzo",
+                "reqd": 1,
+                "in_list_view": 1,
+                "columns": 2,
+                "description": "Tipo di vendita per questo scaglione"
+            },
+            {
+                "fieldname": "from_qty",
                 "fieldtype": "Float",
-                "label": "Da m²",
+                "label": "Da Quantità",
                 "precision": 3,
                 "reqd": 1,
                 "in_list_view": 1,
                 "columns": 2,
-                "description": "Metri quadri minimi"
+                "description": "Quantità minima (m², ml, o pezzi)"
             },
             {
-                "fieldname": "to_sqm",
+                "fieldname": "to_qty",
                 "fieldtype": "Float", 
-                "label": "A m²",
+                "label": "A Quantità",
                 "precision": 3,
                 "in_list_view": 1,
                 "columns": 2,
-                "description": "Metri quadri massimi (vuoto = illimitato)"
+                "description": "Quantità massima (vuoto = illimitato)"
             },
             {
-                "fieldname": "price_per_sqm",
+                "fieldname": "price_per_unit",
                 "fieldtype": "Currency",
-                "label": "€/m²",
+                "label": "Prezzo/Unità",
                 "reqd": 1,
                 "in_list_view": 1,
                 "columns": 2,
-                "description": "Prezzo per metro quadrato"
+                "description": "€/m², €/ml, o €/pezzo"
             },
             {
                 "fieldname": "tier_name",
@@ -277,14 +289,14 @@ def create_item_pricing_tier_child_table():
                 "label": "Nome Scaglione",
                 "in_list_view": 1,
                 "columns": 3,
-                "description": "Es: Piccole tirature, Industriale, ecc."
+                "description": "Es: Piccole tirature, Industriale, Retail, ecc."
             },
             {
                 "fieldname": "is_default",
                 "fieldtype": "Check",
                 "label": "Default",
                 "columns": 1,
-                "description": "Prezzo di fallback"
+                "description": "Prezzo di fallback per questo tipo vendita"
             }
         ],
         "permissions": [
@@ -314,10 +326,63 @@ def create_item_pricing_tier_child_table():
     try:
         child_doc = frappe.get_doc(child_doctype)
         child_doc.insert(ignore_permissions=True)
-        print("[iderp] ✓ Child Table 'Item Pricing Tier' creata")
+        print("[iderp] ✓ Child Table 'Item Pricing Tier' multi-tipo creata")
         return True
     except Exception as e:
         print(f"[iderp] ✗ Errore creazione Child Table: {e}")
+        return False
+
+def add_multi_type_pricing_fields():
+    """Aggiungi campi per multi-tipo se mancanti"""
+    
+    try:
+        doctype_doc = frappe.get_doc("DocType", "Item Pricing Tier")
+        
+        # Verifica se selling_type esiste già
+        has_selling_type = any(field.fieldname == "selling_type" for field in doctype_doc.fields)
+        
+        if not has_selling_type:
+            print("[iderp] Aggiungendo campi multi-tipo...")
+            
+            # Rinomina campi esistenti
+            for field in doctype_doc.fields:
+                if field.fieldname == "from_sqm":
+                    field.fieldname = "from_qty"
+                    field.label = "Da Quantità"
+                    field.description = "Quantità minima (m², ml, o pezzi)"
+                elif field.fieldname == "to_sqm":
+                    field.fieldname = "to_qty"
+                    field.label = "A Quantità"
+                    field.description = "Quantità massima (vuoto = illimitato)"
+                elif field.fieldname == "price_per_sqm":
+                    field.fieldname = "price_per_unit"
+                    field.label = "Prezzo/Unità"
+                    field.description = "€/m², €/ml, o €/pezzo"
+            
+            # Aggiungi campo selling_type all'inizio
+            new_field = {
+                "fieldname": "selling_type",
+                "fieldtype": "Select",
+                "label": "Tipo Vendita",
+                "options": "\nMetro Quadrato\nMetro Lineare\nPezzo",
+                "reqd": 1,
+                "in_list_view": 1,
+                "columns": 2,
+                "description": "Tipo di vendita per questo scaglione",
+                "idx": 1
+            }
+            
+            doctype_doc.insert(0, "fields", new_field)
+            doctype_doc.save()
+            
+            print("[iderp] ✓ Campi multi-tipo aggiunti")
+        else:
+            print("[iderp] - Campi multi-tipo già presenti")
+            
+        return True
+        
+    except Exception as e:
+        print(f"[iderp] ✗ Errore aggiunta campi: {e}")
         return False
 
 def add_pricing_table_to_item():

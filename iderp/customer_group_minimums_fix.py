@@ -25,14 +25,13 @@ def install_customer_group_minimums_child_table():
     print("[iderp] ✅ Fix Customer Group Minimums completato!")
 
 def create_customer_group_minimum_child_doctype():
-    """Crea il Child DocType per Customer Group Minimum con minimi globali"""
+    """Crea Child DocType per minimi MULTI-TIPO con costi fissi"""
     
     doctype_name = "Customer Group Minimum"
     
     if frappe.db.exists("DocType", doctype_name):
         print(f"[iderp] - Child DocType '{doctype_name}' già esistente")
-        # Aggiungi nuovo campo se non esiste
-        add_global_minimum_fields()
+        add_multi_type_minimum_fields()
         return True
     
     child_doctype = {
@@ -52,18 +51,32 @@ def create_customer_group_minimum_child_doctype():
                 "options": "Customer Group",
                 "reqd": 1,
                 "in_list_view": 1,
-                "columns": 2,
-                "description": "Gruppo cliente per cui si applica il minimo"
+                "columns": 2
             },
             {
-                "fieldname": "min_sqm",
+                "fieldname": "selling_type",
+                "fieldtype": "Select",
+                "label": "Tipo Vendita",
+                "options": "\nMetro Quadrato\nMetro Lineare\nPezzo",
+                "reqd": 1,
+                "in_list_view": 1,
+                "columns": 2,
+                "description": "Tipo vendita per cui si applica questa regola"
+            },
+            {
+                "fieldname": "section_break_qty",
+                "fieldtype": "Section Break",
+                "label": "Quantità Minime"
+            },
+            {
+                "fieldname": "min_qty",
                 "fieldtype": "Float",
-                "label": "Minimo m²",
+                "label": "Quantità Minima",
                 "precision": 3,
                 "reqd": 1,
                 "in_list_view": 1,
                 "columns": 2,
-                "description": "Metri quadri minimi fatturabili per questo gruppo"
+                "description": "m², ml, o pezzi minimi fatturabili"
             },
             {
                 "fieldname": "calculation_mode",
@@ -72,33 +85,51 @@ def create_customer_group_minimum_child_doctype():
                 "options": "\nPer Riga\nGlobale Preventivo",
                 "default": "Per Riga",
                 "in_list_view": 1,
-                "columns": 2,
-                "description": "Come applicare il minimo: per singola riga o globalmente sul preventivo"
+                "columns": 2
+            },
+            {
+                "fieldname": "section_break_fixed",
+                "fieldtype": "Section Break",
+                "label": "Costi Fissi Aggiuntivi"
+            },
+            {
+                "fieldname": "fixed_cost",
+                "fieldtype": "Currency",
+                "label": "Costo Fisso €",
+                "precision": 2,
+                "description": "Costo fisso aggiuntivo (es. setup, trasporto, gestione ordine)"
+            },
+            {
+                "fieldname": "fixed_cost_mode",
+                "fieldtype": "Select",
+                "label": "Modalità Costo Fisso",
+                "options": "\nPer Riga\nPer Preventivo\nPer Item Totale",
+                "default": "Per Preventivo",
+                "depends_on": "eval:doc.fixed_cost > 0",
+                "description": "Come applicare il costo fisso"
+            },
+            {
+                "fieldname": "column_break_1",
+                "fieldtype": "Column Break"
             },
             {
                 "fieldname": "enabled",
                 "fieldtype": "Check",
                 "label": "Abilitato",
                 "default": 1,
-                "in_list_view": 1,
-                "columns": 1,
-                "description": "Abilita questa regola"
-            },
-            {
-                "fieldname": "description",
-                "fieldtype": "Data",
-                "label": "Descrizione",
-                "in_list_view": 1,
-                "columns": 3,
-                "description": "Descrizione del minimo (es: 'Costi fissi setup')"
+                "in_list_view": 1
             },
             {
                 "fieldname": "priority",
                 "fieldtype": "Int",
                 "label": "Priorità",
-                "default": 10,
-                "columns": 1,
-                "description": "Priorità applicazione (maggiore = prima)"
+                "default": 10
+            },
+            {
+                "fieldname": "description",
+                "fieldtype": "Text",
+                "label": "Descrizione",
+                "description": "Descrizione regola (es: Setup stampa, Gestione ordine, ecc.)"
             }
         ],
         "permissions": [
@@ -128,10 +159,74 @@ def create_customer_group_minimum_child_doctype():
     try:
         child_doc = frappe.get_doc(child_doctype)
         child_doc.insert(ignore_permissions=True)
-        print(f"[iderp] ✓ Child DocType '{doctype_name}' creato con minimi globali")
+        print(f"[iderp] ✓ Child DocType '{doctype_name}' multi-tipo con costi fissi creato")
         return True
     except Exception as e:
         print(f"[iderp] ✗ Errore creazione Child DocType: {e}")
+        return False
+
+def add_multi_type_minimum_fields():
+    """Aggiungi campi multi-tipo e costi fissi se mancanti"""
+    
+    try:
+        doctype_doc = frappe.get_doc("DocType", "Customer Group Minimum")
+        
+        # Verifica se selling_type esiste già
+        has_selling_type = any(field.fieldname == "selling_type" for field in doctype_doc.fields)
+        
+        if not has_selling_type:
+            print("[iderp] Aggiungendo campi multi-tipo e costi fissi...")
+            
+            # Rinomina campo esistente
+            for field in doctype_doc.fields:
+                if field.fieldname == "min_sqm":
+                    field.fieldname = "min_qty"
+                    field.label = "Quantità Minima"
+                    field.description = "m², ml, o pezzi minimi fatturabili"
+            
+            # Aggiungi nuovi campi
+            new_fields = [
+                {
+                    "fieldname": "selling_type",
+                    "fieldtype": "Select",
+                    "label": "Tipo Vendita",
+                    "options": "\nMetro Quadrato\nMetro Lineare\nPezzo",
+                    "reqd": 1,
+                    "in_list_view": 1,
+                    "columns": 2,
+                    "idx": 2
+                },
+                {
+                    "fieldname": "fixed_cost",
+                    "fieldtype": "Currency",
+                    "label": "Costo Fisso €",
+                    "precision": 2,
+                    "description": "Costo fisso aggiuntivo",
+                    "idx": 10
+                },
+                {
+                    "fieldname": "fixed_cost_mode",
+                    "fieldtype": "Select",
+                    "label": "Modalità Costo Fisso",
+                    "options": "\nPer Riga\nPer Preventivo\nPer Item Totale",
+                    "default": "Per Preventivo",
+                    "depends_on": "eval:doc.fixed_cost > 0",
+                    "idx": 11
+                }
+            ]
+            
+            for field in new_fields:
+                doctype_doc.append("fields", field)
+            
+            doctype_doc.save()
+            print("[iderp] ✓ Campi multi-tipo e costi fissi aggiunti")
+        else:
+            print("[iderp] - Campi multi-tipo già presenti")
+            
+        return True
+        
+    except Exception as e:
+        print(f"[iderp] ✗ Errore aggiunta campi: {e}")
         return False
 
 def add_global_minimum_fields():
