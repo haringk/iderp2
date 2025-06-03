@@ -7,6 +7,277 @@ FIXED: Import circolari e funzioni mancanti
 import frappe
 from frappe import _
 
+def get_hardcoded_pricing_fallback(tipo_vendita, quantity):
+    """
+    Scaglioni hard-coded quando il database non ha dati
+    FALLBACK per Metro Lineare e Pezzo
+    """
+    try:
+        if tipo_vendita == "Metro Lineare":
+            # Scaglioni Metro Lineare hard-coded
+            if quantity <= 5.0:
+                return {
+                    "price_per_unit": 8.0,
+                    "tier_name": "Piccolo ml (fallback)",
+                    "from_qty": 0.0,
+                    "to_qty": 5.0
+                }
+            elif quantity <= 20.0:
+                return {
+                    "price_per_unit": 6.0,
+                    "tier_name": "Medio ml (fallback)",
+                    "from_qty": 5.0,
+                    "to_qty": 20.0
+                }
+            else:
+                return {
+                    "price_per_unit": 4.0,
+                    "tier_name": "Grande ml (fallback)",
+                    "from_qty": 20.0,
+                    "to_qty": None
+                }
+        
+        elif tipo_vendita == "Pezzo":
+            # Scaglioni Pezzo hard-coded
+            if quantity <= 10:
+                return {
+                    "price_per_unit": 5.0,
+                    "tier_name": "Retail (fallback)",
+                    "from_qty": 1,
+                    "to_qty": 10
+                }
+            elif quantity <= 100:
+                return {
+                    "price_per_unit": 3.0,
+                    "tier_name": "Wholesale (fallback)",
+                    "from_qty": 10,
+                    "to_qty": 100
+                }
+            else:
+                return {
+                    "price_per_unit": 2.0,
+                    "tier_name": "Bulk (fallback)",
+                    "from_qty": 100,
+                    "to_qty": None
+                }
+        
+        return None
+        
+    except Exception as e:
+        print(f"[FALLBACK] Errore: {e}")
+        return None
+
+def get_price_for_type_enhanced(item_code, tipo_vendita, quantity):
+    """
+    Versione enhanced che usa fallback hard-coded
+    """
+    try:
+        # 1. Prova prima con database (per Metro Quadrato funziona)
+        db_result = get_price_for_type(item_code, tipo_vendita, quantity)
+        
+        if db_result:
+            print(f"[PRICING] {tipo_vendita}: Usando scaglioni DATABASE")
+            return db_result
+        
+        # 2. Se fallisce, usa fallback hard-coded
+        print(f"[PRICING] {tipo_vendita}: Database vuoto, uso FALLBACK hard-coded")
+        fallback_result = get_hardcoded_pricing_fallback(tipo_vendita, quantity)
+        
+        if fallback_result:
+            print(f"[PRICING] {tipo_vendita}: Fallback trovato - €{fallback_result['price_per_unit']}")
+            return fallback_result
+        
+        # 3. Nessuna opzione disponibile
+        print(f"[PRICING] {tipo_vendita}: Nessun prezzo disponibile")
+        return None
+        
+    except Exception as e:
+        print(f"[PRICING] Errore enhanced: {e}")
+        return get_hardcoded_pricing_fallback(tipo_vendita, quantity)
+
+def get_customer_specific_price_for_type_enhanced(customer, item_code, tipo_vendita, quantity):
+    """
+    Versione enhanced con fallback per customer specifico
+    """
+    if not customer:
+        return get_price_for_type_enhanced(item_code, tipo_vendita, quantity)
+    
+    try:
+        # Ottieni gruppo cliente
+        customer_group = frappe.db.get_value("Customer", customer, "customer_group")
+        if not customer_group:
+            return get_price_for_type_enhanced(item_code, tipo_vendita, quantity)
+        
+        # Cerca minimi hard-coded per tipo vendita
+        minimum_applied = False
+        effective_qty = quantity
+        
+        # Minimi hard-coded per gruppo cliente
+        hardcoded_minimums = {
+            "Metro Quadrato": {
+                "Finale": 0.5,
+                "Bronze": 0.25, 
+                "Gold": 0.1,
+                "Diamond": 0
+            },
+            "Metro Lineare": {
+                "Finale": 2.0,
+                "Bronze": 1.0,
+                "Gold": 0.5,
+                "Diamond": 0
+            },
+            "Pezzo": {
+                "Finale": 5,
+                "Bronze": 3,
+                "Gold": 1,
+                "Diamond": 0
+            }
+        }
+        
+        if tipo_vendita in hardcoded_minimums and customer_group in hardcoded_minimums[tipo_vendita]:
+            min_qty = hardcoded_minimums[tipo_vendita][customer_group]
+            if quantity < min_qty:
+                effective_qty = min_qty
+                minimum_applied = True
+                print(f"[PRICING] Minimo {tipo_vendita} per {customer_group}: {quantity:.3f} → {effective_qty:.3f}")
+        
+        # Usa quantità effettiva per trovare prezzo
+        standard_price = get_price_for_type_enhanced(item_code, tipo_vendita, effective_qty)
+        
+        if standard_price and minimum_applied:
+            standard_price["min_applied"] = True
+            standard_price["original_qty"] = quantity
+            standard_price["effective_qty"] = effective_qty
+            standard_price["customer_group"] = customer_group
+            standard_price["min_qty"] = effective_qty
+        
+        return standard_price
+        
+    except Exception as e:
+        print(f"[PRICING] Errore customer enhanced: {e}")
+        return get_price_for_type_enhanced(item_code, tipo_vendita, quantity)
+
+# Aggiorna la funzione principale per usare la versione enhanced
+def calculate_universal_item_pricing_fixed(item_code, tipo_vendita, base=0, altezza=0, lunghezza=0, qty=1, customer=None):
+    """
+    API universale FIXED con fallback hard-coded
+    """
+    try:
+        print(f"[API FIXED] Input: {item_code}, {tipo_vendita}, customer={customer}")
+        
+        qty = float(qty) if qty else 1
+        
+        # Calcola quantità base per tipo
+        if tipo_vendita == "Metro Quadrato":
+            base = float(base) if base else 0
+            altezza = float(altezza) if altezza else 0
+            
+            if not base or not altezza or base <= 0 or altezza <= 0:
+                return {"error": "Base e altezza devono essere maggiori di 0"}
+            
+            unit_qty = (base * altezza) / 10000
+            total_qty = unit_qty * qty
+            qty_label = "m²"
+            
+        elif tipo_vendita == "Metro Lineare":
+            lunghezza = float(lunghezza) if lunghezza else 0
+            
+            if not lunghezza or lunghezza <= 0:
+                return {"error": "Lunghezza deve essere maggiore di 0"}
+            
+            unit_qty = lunghezza / 100  # da cm a metri
+            total_qty = unit_qty * qty
+            qty_label = "ml"
+            
+        elif tipo_vendita == "Pezzo":
+            unit_qty = 1
+            total_qty = qty
+            qty_label = "pz"
+            
+        else:
+            return {"error": f"Tipo vendita non supportato: {tipo_vendita}"}
+        
+        print(f"[API FIXED] Quantità calcolate: unit={unit_qty:.4f}, total={total_qty:.3f} {qty_label}")
+        
+        # Ottieni pricing con ENHANCED version (include fallback)
+        if customer:
+            pricing_info = get_customer_specific_price_for_type_enhanced(customer, item_code, tipo_vendita, total_qty)
+        else:
+            pricing_info = get_price_for_type_enhanced(item_code, tipo_vendita, total_qty)
+        
+        if not pricing_info:
+            return {
+                "error": f"Nessun prezzo disponibile per {tipo_vendita} (né database né fallback)",
+                "unit_qty": unit_qty,
+                "total_qty": total_qty
+            }
+        
+        # Calcola rate
+        price_per_unit = pricing_info["price_per_unit"]
+        rate_unitario = unit_qty * price_per_unit
+        
+        # Se ci sono minimi applicati, ricalcola
+        if pricing_info.get("min_applied"):
+            effective_qty = pricing_info.get("effective_qty", total_qty)
+            rate_unitario = (effective_qty / qty) * price_per_unit
+        
+        # Note
+        note_parts = [
+            f"Tipo: {tipo_vendita}",
+            f"Scaglione: {pricing_info.get('tier_name', 'Standard')}",
+            f"Prezzo: €{price_per_unit}/{qty_label.rstrip('z')}"
+        ]
+        
+        if pricing_info.get("tier_name", "").endswith("(fallback)"):
+            note_parts.append("💾 Usato fallback hard-coded")
+        
+        if tipo_vendita == "Metro Quadrato":
+            note_parts.extend([
+                f"Dimensioni: {base}×{altezza}cm",
+                f"{qty_label} singolo: {unit_qty:.4f} {qty_label}",
+                f"{qty_label} totali: {total_qty:.3f} {qty_label}"
+            ])
+        elif tipo_vendita == "Metro Lineare":
+            note_parts.extend([
+                f"Lunghezza: {lunghezza}cm",
+                f"{qty_label} singolo: {unit_qty:.2f} {qty_label}",
+                f"{qty_label} totali: {total_qty:.2f} {qty_label}"
+            ])
+        elif tipo_vendita == "Pezzo":
+            note_parts.append(f"Quantità: {qty} pezzi")
+        
+        if pricing_info.get("min_applied"):
+            note_parts.append(f"⚠️ Minimo {pricing_info.get('customer_group', '')}: {pricing_info.get('min_qty', 0)} {qty_label}")
+        
+        note_parts.append(f"Prezzo unitario: €{rate_unitario:.2f}")
+        
+        return {
+            "success": True,
+            "item_code": item_code,
+            "tipo_vendita": tipo_vendita,
+            "customer": customer,
+            "unit_qty": round(unit_qty, 4),
+            "total_qty": round(total_qty, 3),
+            "price_per_unit": price_per_unit,
+            "rate": round(rate_unitario, 2),
+            "tier_info": pricing_info,
+            "note_calcolo": "\n".join(note_parts)
+        }
+        
+    except Exception as e:
+        print(f"[API FIXED] ❌ ERRORE: {e}")
+        import traceback
+        traceback.print_exc()
+        return {"error": f"Errore calcolo: {str(e)}"}
+
+# Alias per compatibilità
+@frappe.whitelist()
+def calculate_universal_item_pricing_with_fallback(item_code, tipo_vendita, base=0, altezza=0, lunghezza=0, qty=1, customer=None):
+    """API pubblica con fallback"""
+    return calculate_universal_item_pricing_fixed(item_code, tipo_vendita, base, altezza, lunghezza, qty, customer)
+
+
+
 @frappe.whitelist()
 def calculate_universal_item_pricing(item_code, tipo_vendita, base=0, altezza=0, lunghezza=0, qty=1, customer=None):
     """

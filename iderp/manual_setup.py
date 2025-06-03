@@ -8,6 +8,105 @@ import frappe
 import time
 
 
+
+def test_hybrid_universal_system(item_code="AM"):
+    """
+    Test sistema ibrido: database + fallback
+    """
+    print(f"\n🔬 TEST SISTEMA IBRIDO - {item_code}")
+    print("="*60)
+    
+    from iderp.pricing_utils import calculate_universal_item_pricing_fixed
+    
+    test_scenarios = [
+        {
+            "nome": "🟦 Metro Quadrato (DATABASE)",
+            "args": {
+                "item_code": item_code,
+                "tipo_vendita": "Metro Quadrato",
+                "base": 30,
+                "altezza": 40,
+                "qty": 1,
+                "customer": None
+            }
+        },
+        {
+            "nome": "🟩 Metro Lineare (FALLBACK)",
+            "args": {
+                "item_code": item_code,
+                "tipo_vendita": "Metro Lineare",
+                "lunghezza": 300,  # 3ml
+                "qty": 2,          # 6ml totali = scaglione medio
+                "customer": None
+            }
+        },
+        {
+            "nome": "🟨 Pezzo (FALLBACK)",
+            "args": {
+                "item_code": item_code,
+                "tipo_vendita": "Pezzo",
+                "qty": 50,  # scaglione wholesale
+                "customer": None
+            }
+        },
+        {
+            "nome": "🟦 Metro Quadrato + Cliente Finale",
+            "args": {
+                "item_code": item_code,
+                "tipo_vendita": "Metro Quadrato",
+                "base": 20,
+                "altezza": 20,  # 0.04 m² (sotto minimo)
+                "qty": 1,
+                "customer": "CUST-001"
+            }
+        }
+    ]
+    
+    successi = 0
+    
+    for i, scenario in enumerate(test_scenarios, 1):
+        print(f"\n{i}. {scenario['nome']}")
+        print("   " + "-" * 40)
+        
+        try:
+            result = calculate_universal_item_pricing_fixed(**scenario['args'])
+            
+            if result.get("success"):
+                print(f"   ✅ SUCCESSO!")
+                print(f"   💰 Prezzo: €{result['rate']}")
+                print(f"   🏷️  Scaglione: {result.get('tier_info', {}).get('tier_name', 'N/A')}")
+                
+                if "fallback" in result.get('tier_info', {}).get('tier_name', ''):
+                    print(f"   💾 Fonte: FALLBACK hard-coded")
+                else:
+                    print(f"   🗄️  Fonte: DATABASE")
+                
+                successi += 1
+            else:
+                print(f"   ❌ ERRORE: {result.get('error')}")
+                
+        except Exception as e:
+            print(f"   💥 ECCEZIONE: {e}")
+    
+    print(f"\n📊 RISULTATO SISTEMA IBRIDO: {successi}/{len(test_scenarios)} test superati")
+    
+    if successi == len(test_scenarios):
+        print("🎉 SISTEMA IBRIDO COMPLETAMENTE FUNZIONANTE!")
+        print("✅ Metro Quadrato: Database")
+        print("✅ Metro Lineare: Fallback hard-coded")  
+        print("✅ Pezzo: Fallback hard-coded")
+        return True
+    else:
+        print("⚠️ Sistema ibrido parzialmente funzionante")
+        return False
+
+def hybrid_fix():
+    """Test rapido sistema ibrido"""
+    return test_hybrid_universal_system("AM")
+
+# Alias
+hf = hybrid_fix
+
 def clean_duplicate_fields_and_add_universal():
     """
     Pulisce campi duplicati e aggiunge supporto universale
