@@ -1673,3 +1673,189 @@ def complete_fix():
 ds = diag_structure
 fs = fix_structure
 cf = complete_fix
+
+
+def fix_custom_fields_depends_on():
+    """
+    Aggiorna i custom fields esistenti per mostrare scaglioni per tutti i tipi
+    """
+    print(f"\n🔧 FIX CUSTOM FIELDS DEPENDS_ON")
+    print("="*50)
+    
+    try:
+        # Campi da aggiornare
+        fields_to_update = [
+            {
+                "dt": "Item",
+                "fieldname": "pricing_section",
+                "new_depends_on": "eval:doc.supports_custom_measurement",
+                "new_label": "Scaglioni Prezzo Universali",
+                "new_description": "Configura prezzi per tutti i tipi di vendita: m², ml, pezzi"
+            },
+            {
+                "dt": "Item", 
+                "fieldname": "pricing_tiers",
+                "new_depends_on": "eval:doc.supports_custom_measurement",
+                "new_description": "Definisci prezzi per tutti i tipi di vendita"
+            },
+            {
+                "dt": "Item",
+                "fieldname": "pricing_help", 
+                "new_depends_on": "eval:doc.supports_custom_measurement",
+                "new_options": """
+                <div class="alert alert-info">
+                    <strong>💡 Come funzionano gli scaglioni universali:</strong><br>
+                    • <strong>Metro Quadrato</strong>: Prezzi in base ai m² totali dell'ordine<br>
+                    • <strong>Metro Lineare</strong>: Prezzi in base ai metri lineari totali<br>
+                    • <strong>Pezzo</strong>: Prezzi in base al numero di pezzi<br>
+                    • Il sistema sceglierà automaticamente il prezzo giusto per tipo<br>
+                    • Usa il campo "Tipo Vendita" per differenziare gli scaglioni<br>
+                    • Spunta "Default" per il prezzo di fallback per ogni tipo
+                </div>
+                """
+            }
+        ]
+        
+        updated_count = 0
+        
+        for field_info in fields_to_update:
+            try:
+                # Cerca il custom field esistente
+                cf_name = frappe.db.get_value("Custom Field", 
+                    {"dt": field_info["dt"], "fieldname": field_info["fieldname"]}, 
+                    "name"
+                )
+                
+                if cf_name:
+                    print(f"🔄 Aggiornando {field_info['fieldname']}...")
+                    
+                    # Carica e aggiorna
+                    cf_doc = frappe.get_doc("Custom Field", cf_name)
+                    
+                    # Aggiorna depends_on
+                    if "new_depends_on" in field_info:
+                        old_depends = cf_doc.depends_on
+                        cf_doc.depends_on = field_info["new_depends_on"]
+                        print(f"   • depends_on: '{old_depends}' → '{field_info['new_depends_on']}'")
+                    
+                    # Aggiorna altri campi se presenti
+                    if "new_label" in field_info:
+                        cf_doc.label = field_info["new_label"]
+                        print(f"   • label: '{field_info['new_label']}'")
+                    
+                    if "new_description" in field_info:
+                        cf_doc.description = field_info["new_description"]
+                        print(f"   • description aggiornata")
+                    
+                    if "new_options" in field_info:
+                        cf_doc.options = field_info["new_options"]
+                        print(f"   • options aggiornate")
+                    
+                    # Salva
+                    cf_doc.save()
+                    frappe.db.commit()
+                    
+                    print(f"   ✅ {field_info['fieldname']} aggiornato")
+                    updated_count += 1
+                    
+                else:
+                    print(f"⚠️ Custom Field {field_info['fieldname']} non trovato")
+                    
+            except Exception as e:
+                print(f"❌ Errore aggiornamento {field_info['fieldname']}: {e}")
+        
+        print(f"\n✅ {updated_count}/{len(fields_to_update)} custom fields aggiornati")
+        
+        if updated_count > 0:
+            print("\n💡 IMPORTANTE:")
+            print("   • Ricarica la pagina Item per vedere le modifiche")
+            print("   • La tabella scaglioni ora apparirà per tutti i tipi vendita")
+            print("   • Basta abilitare 'Supporta Misure Personalizzate'")
+        
+        return updated_count > 0
+        
+    except Exception as e:
+        print(f"❌ Errore fix custom fields: {e}")
+        return False
+
+def verify_custom_fields_status():
+    """
+    Verifica stato corrente dei custom fields
+    """
+    print(f"\n🔍 VERIFICA STATO CUSTOM FIELDS")
+    print("="*50)
+    
+    fields_to_check = ["pricing_section", "pricing_tiers", "pricing_help"]
+    
+    for fieldname in fields_to_check:
+        try:
+            cf_info = frappe.db.get_value("Custom Field",
+                {"dt": "Item", "fieldname": fieldname},
+                ["depends_on", "label", "description"], 
+                as_dict=True
+            )
+            
+            if cf_info:
+                print(f"\n📋 {fieldname}:")
+                print(f"   • Label: {cf_info.get('label', 'N/A')}")
+                print(f"   • Depends on: {cf_info.get('depends_on', 'N/A')}")
+                
+                # Controlla se ha la vecchia condizione problematica
+                if "Metro Quadrato" in str(cf_info.get('depends_on', '')):
+                    print(f"   ❌ PROBLEMA: Condizione vecchia (solo Metro Quadrato)")
+                else:
+                    print(f"   ✅ OK: Condizione universale")
+            else:
+                print(f"\n❌ {fieldname}: Custom Field non trovato")
+                
+        except Exception as e:
+            print(f"\n❌ {fieldname}: Errore verifica - {e}")
+
+def complete_custom_fields_fix():
+    """
+    Fix completo: verifica + aggiornamento + test
+    """
+    print(f"\n🚀 FIX COMPLETO CUSTOM FIELDS")
+    print("="*60)
+    
+    # 1. Verifica stato attuale
+    print("STEP 1: Verifica stato attuale")
+    verify_custom_fields_status()
+    
+    # 2. Applica fix
+    print("\nSTEP 2: Aggiornamento custom fields")
+    fix_success = fix_custom_fields_depends_on()
+    
+    # 3. Verifica finale
+    if fix_success:
+        print("\nSTEP 3: Verifica post-fix")
+        verify_custom_fields_status()
+        
+        print("\n🎉 FIX CUSTOM FIELDS COMPLETATO!")
+        print("💡 Ora ricarica una pagina Item e dovresti vedere:")
+        print("   • Tabella scaglioni per TUTTI i tipi vendita")
+        print("   • Basta abilitare 'Supporta Misure Personalizzate'")
+        print("   • Non serve più impostare 'Metro Quadrato'")
+        
+    else:
+        print("\n❌ Fix custom fields fallito")
+    
+    return fix_success
+
+# Comandi rapidi
+def fix_cf():
+    """Fix custom fields"""
+    return fix_custom_fields_depends_on()
+
+def verify_cf():
+    """Verifica custom fields"""
+    verify_custom_fields_status()
+
+def complete_cf():
+    """Fix completo custom fields"""
+    return complete_custom_fields_fix()
+
+# Alias
+fcf = fix_cf
+vcf = verify_cf
+ccf = complete_cf
