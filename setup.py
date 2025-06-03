@@ -8,5 +8,5 @@ setup(
     author_email="ai@idstudio.org",
     packages=find_packages(),
     include_package_data=True,
-    install_requires=[],
+    install_requires=["frappe>=14,<15", "erpnext>=14,<15"],
 )
