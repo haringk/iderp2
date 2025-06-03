@@ -41,7 +41,7 @@ function calculate_universal_pricing(frm, cdt, cdn, force_recalc = false) {
     
     // Chiamata API universale
     frappe.call({
-        method: 'iderp.pricing_utils.calculate_universal_item_pricing',
+	    method: 'iderp.pricing_utils.calculate_universal_item_pricing_with_fallback',
         args: {
             item_code: row.item_code,
             tipo_vendita: tipo_vendita,
