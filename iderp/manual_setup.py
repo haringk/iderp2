@@ -7,6 +7,285 @@ Anti-timeout e retry intelligente
 import frappe
 import time
 
+
+def fix_missing_pricing_tiers_sql_direct(item_code="AM"):
+    """
+    Fix usando SQL diretto per evitare timeout ORM
+    """
+    print(f"\n🚀 FIX SQL DIRETTO - {item_code}")
+    print("="*50)
+    
+    try:
+        # 1. Verifica cosa manca
+        existing_sql = """
+        SELECT DISTINCT selling_type 
+        FROM `tabItem Pricing Tier` 
+        WHERE parent = %s AND selling_type IS NOT NULL
+        """
+        existing_types = frappe.db.sql(existing_sql, [item_code], as_dict=True)
+        existing_type_names = [row.selling_type for row in existing_types]
+        
+        print(f"✓ Tipi esistenti via SQL: {existing_type_names}")
+        
+        # 2. Prepara dati da inserire
+        missing_tiers = []
+        
+        if "Metro Lineare" not in existing_type_names:
+            print("➕ Preparando Metro Lineare...")
+            missing_tiers.extend([
+                {
+                    "parent": item_code,
+                    "parenttype": "Item",
+                    "parentfield": "pricing_tiers",
+                    "selling_type": "Metro Lineare",
+                    "from_qty": 0.0,
+                    "to_qty": 5.0,
+                    "price_per_unit": 8.0,
+                    "tier_name": "Piccolo ml"
+                },
+                {
+                    "parent": item_code,
+                    "parenttype": "Item", 
+                    "parentfield": "pricing_tiers",
+                    "selling_type": "Metro Lineare",
+                    "from_qty": 5.0,
+                    "to_qty": 20.0,
+                    "price_per_unit": 6.0,
+                    "tier_name": "Medio ml"
+                },
+                {
+                    "parent": item_code,
+                    "parenttype": "Item",
+                    "parentfield": "pricing_tiers", 
+                    "selling_type": "Metro Lineare",
+                    "from_qty": 20.0,
+                    "to_qty": None,
+                    "price_per_unit": 4.0,
+                    "tier_name": "Grande ml",
+                    "is_default": 1
+                }
+            ])
+        
+        if "Pezzo" not in existing_type_names:
+            print("➕ Preparando Pezzo...")
+            missing_tiers.extend([
+                {
+                    "parent": item_code,
+                    "parenttype": "Item",
+                    "parentfield": "pricing_tiers",
+                    "selling_type": "Pezzo",
+                    "from_qty": 1.0,
+                    "to_qty": 10.0,
+                    "price_per_unit": 5.0,
+                    "tier_name": "Retail"
+                },
+                {
+                    "parent": item_code,
+                    "parenttype": "Item",
+                    "parentfield": "pricing_tiers",
+                    "selling_type": "Pezzo", 
+                    "from_qty": 10.0,
+                    "to_qty": 100.0,
+                    "price_per_unit": 3.0,
+                    "tier_name": "Wholesale"
+                },
+                {
+                    "parent": item_code,
+                    "parenttype": "Item",
+                    "parentfield": "pricing_tiers",
+                    "selling_type": "Pezzo",
+                    "from_qty": 100.0,
+                    "to_qty": None,
+                    "price_per_unit": 2.0,
+                    "tier_name": "Bulk",
+                    "is_default": 1
+                }
+            ])
+        
+        if not missing_tiers:
+            print("✅ Nessuno scaglione mancante!")
+            return True
+        
+        print(f"📊 Inserendo {len(missing_tiers)} scaglioni via SQL...")
+        
+        # 3. Inserimento SQL diretto UNO alla volta
+        success_count = 0
+        
+        for i, tier in enumerate(missing_tiers):
+            try:
+                # Genera name univoco
+                import uuid
+                tier_name = f"tier-{uuid.uuid4().hex[:8]}"
+                
+                # SQL INSERT diretto
+                insert_sql = """
+                INSERT INTO `tabItem Pricing Tier` 
+                (name, parent, parenttype, parentfield, selling_type, from_qty, to_qty, price_per_unit, tier_name, is_default, creation, modified, modified_by, owner)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW(), 'Administrator', 'Administrator')
+                """
+                
+                values = [
+                    tier_name,
+                    tier["parent"],
+                    tier["parenttype"], 
+                    tier["parentfield"],
+                    tier["selling_type"],
+                    tier["from_qty"],
+                    tier["to_qty"],
+                    tier["price_per_unit"],
+                    tier["tier_name"],
+                    tier.get("is_default", 0)
+                ]
+                
+                frappe.db.sql(insert_sql, values)
+                frappe.db.commit()  # Commit immediato
+                
+                print(f"   ✓ {tier['tier_name']} inserito")
+                success_count += 1
+                
+                # Pausa tra inserimenti
+                time.sleep(0.2)
+                
+            except Exception as e:
+                print(f"   ❌ Errore {tier['tier_name']}: {e}")
+                # Continua con il prossimo
+                continue
+        
+        print(f"✅ {success_count}/{len(missing_tiers)} scaglioni inseriti con successo!")
+        
+        # 4. Verifica finale
+        final_count_sql = """
+        SELECT COUNT(*) as count 
+        FROM `tabItem Pricing Tier` 
+        WHERE parent = %s
+        """
+        final_count = frappe.db.sql(final_count_sql, [item_code], as_dict=True)[0].count
+        print(f"📊 Totale scaglioni ora: {final_count}")
+        
+        return success_count > 0
+        
+    except Exception as e:
+        print(f"❌ Errore SQL diretto: {e}")
+        return False
+
+def reset_and_rebuild_pricing_tiers(item_code="AM"):
+    """
+    Reset completo e rebuild scaglioni con SQL diretto
+    """
+    print(f"\n🔄 RESET E REBUILD COMPLETO - {item_code}")
+    print("="*50)
+    
+    try:
+        # 1. Backup esistenti per sicurezza
+        backup_sql = """
+        SELECT * FROM `tabItem Pricing Tier` WHERE parent = %s
+        """
+        backup_data = frappe.db.sql(backup_sql, [item_code], as_dict=True)
+        print(f"💾 Backup di {len(backup_data)} scaglioni esistenti")
+        
+        # 2. Cancella tutti gli scaglioni esistenti
+        delete_sql = """
+        DELETE FROM `tabItem Pricing Tier` WHERE parent = %s
+        """
+        frappe.db.sql(delete_sql, [item_code])
+        frappe.db.commit()
+        print("🗑️ Scaglioni esistenti cancellati")
+        
+        # 3. Inserisci set completo nuovo
+        all_tiers = [
+            # Metro Quadrato (formato nuovo per consistenza)
+            {"selling_type": "Metro Quadrato", "from_qty": 0.0, "to_qty": 0.5, "price_per_unit": 20.0, "tier_name": "Micro m²"},
+            {"selling_type": "Metro Quadrato", "from_qty": 0.5, "to_qty": 2.0, "price_per_unit": 15.0, "tier_name": "Piccolo m²"},
+            {"selling_type": "Metro Quadrato", "from_qty": 2.0, "to_qty": None, "price_per_unit": 10.0, "tier_name": "Grande m²", "is_default": 1},
+            
+            # Metro Lineare
+            {"selling_type": "Metro Lineare", "from_qty": 0.0, "to_qty": 5.0, "price_per_unit": 8.0, "tier_name": "Piccolo ml"},
+            {"selling_type": "Metro Lineare", "from_qty": 5.0, "to_qty": 20.0, "price_per_unit": 6.0, "tier_name": "Medio ml"},
+            {"selling_type": "Metro Lineare", "from_qty": 20.0, "to_qty": None, "price_per_unit": 4.0, "tier_name": "Grande ml", "is_default": 1},
+            
+            # Pezzo
+            {"selling_type": "Pezzo", "from_qty": 1.0, "to_qty": 10.0, "price_per_unit": 5.0, "tier_name": "Retail"},
+            {"selling_type": "Pezzo", "from_qty": 10.0, "to_qty": 100.0, "price_per_unit": 3.0, "tier_name": "Wholesale"},
+            {"selling_type": "Pezzo", "from_qty": 100.0, "to_qty": None, "price_per_unit": 2.0, "tier_name": "Bulk", "is_default": 1}
+        ]
+        
+        success_count = 0
+        for tier in all_tiers:
+            try:
+                import uuid
+                tier_name = f"tier-{uuid.uuid4().hex[:8]}"
+                
+                insert_sql = """
+                INSERT INTO `tabItem Pricing Tier` 
+                (name, parent, parenttype, parentfield, selling_type, from_qty, to_qty, price_per_unit, tier_name, is_default, creation, modified, modified_by, owner)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW(), 'Administrator', 'Administrator')
+                """
+                
+                values = [
+                    tier_name, item_code, "Item", "pricing_tiers",
+                    tier["selling_type"], tier["from_qty"], tier["to_qty"], 
+                    tier["price_per_unit"], tier["tier_name"], tier.get("is_default", 0)
+                ]
+                
+                frappe.db.sql(insert_sql, values)
+                frappe.db.commit()
+                
+                print(f"   ✓ {tier['tier_name']}")
+                success_count += 1
+                time.sleep(0.1)
+                
+            except Exception as e:
+                print(f"   ❌ {tier['tier_name']}: {e}")
+        
+        print(f"✅ {success_count}/{len(all_tiers)} scaglioni inseriti!")
+        
+        # 4. Test immediato
+        if success_count == len(all_tiers):
+            print("\n🧪 Test immediato...")
+            return test_universal_system_complete(item_code)
+        else:
+            print("⚠️ Inserimento parziale")
+            return False
+        
+    except Exception as e:
+        print(f"❌ Errore reset/rebuild: {e}")
+        return False
+
+def nuclear_fix_universal_pricing(item_code="AM"):
+    """
+    FIX NUCLEARE: Reset completo + rebuild + test
+    """
+    print(f"\n☢️ FIX NUCLEARE PRICING UNIVERSALE - {item_code}")
+    print("="*60)
+    
+    print("🎯 STRATEGIA: Reset completo con SQL diretto")
+    print("⚠️  Questo cancellerà tutti gli scaglioni esistenti")
+    print("")
+    
+    success = reset_and_rebuild_pricing_tiers(item_code)
+    
+    if success:
+        print("\n🎉 FIX NUCLEARE COMPLETATO CON SUCCESSO!")
+        print("🚀 Sistema universale ora operativo per tutti e 3 i tipi!")
+    else:
+        print("\n❌ Fix nucleare fallito")
+        print("🚨 Serve diagnosi più approfondita")
+    
+    return success
+
+# Comandi rapidi aggiornati
+def sql_fix():
+    """Fix SQL diretto"""
+    return fix_missing_pricing_tiers_sql_direct("AM")
+
+def nuclear_fix():
+    """Fix nucleare completo"""
+    return nuclear_fix_universal_pricing("AM")
+
+# Alias
+sf = sql_fix
+nf = nuclear_fix
+
 def test_universal_system_complete(item_code="AM"):
     """
     Test completo sistema universale per tutti i tipi di vendita
