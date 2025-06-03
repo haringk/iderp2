@@ -25,12 +25,14 @@ def install_customer_group_minimums_child_table():
     print("[iderp] ✅ Fix Customer Group Minimums completato!")
 
 def create_customer_group_minimum_child_doctype():
-    """Crea il Child DocType per Customer Group Minimum"""
+    """Crea il Child DocType per Customer Group Minimum con minimi globali"""
     
     doctype_name = "Customer Group Minimum"
     
     if frappe.db.exists("DocType", doctype_name):
         print(f"[iderp] - Child DocType '{doctype_name}' già esistente")
+        # Aggiungi nuovo campo se non esiste
+        add_global_minimum_fields()
         return True
     
     child_doctype = {
@@ -50,7 +52,7 @@ def create_customer_group_minimum_child_doctype():
                 "options": "Customer Group",
                 "reqd": 1,
                 "in_list_view": 1,
-                "columns": 3,
+                "columns": 2,
                 "description": "Gruppo cliente per cui si applica il minimo"
             },
             {
@@ -62,6 +64,16 @@ def create_customer_group_minimum_child_doctype():
                 "in_list_view": 1,
                 "columns": 2,
                 "description": "Metri quadri minimi fatturabili per questo gruppo"
+            },
+            {
+                "fieldname": "calculation_mode",
+                "fieldtype": "Select",
+                "label": "Modalità Calcolo",
+                "options": "\nPer Riga\nGlobale Preventivo",
+                "default": "Per Riga",
+                "in_list_view": 1,
+                "columns": 2,
+                "description": "Come applicare il minimo: per singola riga o globalmente sul preventivo"
             },
             {
                 "fieldname": "enabled",
@@ -77,7 +89,7 @@ def create_customer_group_minimum_child_doctype():
                 "fieldtype": "Data",
                 "label": "Descrizione",
                 "in_list_view": 1,
-                "columns": 4,
+                "columns": 3,
                 "description": "Descrizione del minimo (es: 'Costi fissi setup')"
             },
             {
@@ -116,10 +128,58 @@ def create_customer_group_minimum_child_doctype():
     try:
         child_doc = frappe.get_doc(child_doctype)
         child_doc.insert(ignore_permissions=True)
-        print(f"[iderp] ✓ Child DocType '{doctype_name}' creato")
+        print(f"[iderp] ✓ Child DocType '{doctype_name}' creato con minimi globali")
         return True
     except Exception as e:
         print(f"[iderp] ✗ Errore creazione Child DocType: {e}")
+        return False
+
+def add_global_minimum_fields():
+    """Aggiungi campo calculation_mode se non esiste"""
+    
+    # Verifica se il campo esiste già
+    existing_field = frappe.db.sql("""
+        SELECT fieldname FROM `tabDocField` 
+        WHERE parent = 'Customer Group Minimum' 
+        AND fieldname = 'calculation_mode'
+    """)
+    
+    if existing_field:
+        print("[iderp] - Campo 'calculation_mode' già presente")
+        return True
+    
+    try:
+        # Aggiungi il campo al DocType esistente
+        doctype_doc = frappe.get_doc("DocType", "Customer Group Minimum")
+        
+        # Trova posizione dopo min_sqm
+        insert_idx = 0
+        for i, field in enumerate(doctype_doc.fields):
+            if field.fieldname == "min_sqm":
+                insert_idx = i + 1
+                break
+        
+        # Aggiungi nuovo campo
+        new_field = {
+            "fieldname": "calculation_mode",
+            "fieldtype": "Select",
+            "label": "Modalità Calcolo",
+            "options": "\nPer Riga\nGlobale Preventivo",
+            "default": "Per Riga",
+            "in_list_view": 1,
+            "columns": 2,
+            "description": "Come applicare il minimo: per singola riga o globalmente sul preventivo",
+            "idx": insert_idx + 1
+        }
+        
+        doctype_doc.insert(insert_idx, "fields", new_field)
+        doctype_doc.save()
+        
+        print("[iderp] ✓ Campo 'calculation_mode' aggiunto")
+        return True
+        
+    except Exception as e:
+        print(f"[iderp] ✗ Errore aggiunta campo: {e}")
         return False
 
 def add_customer_group_minimums_table_to_item():

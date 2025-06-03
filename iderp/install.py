@@ -547,3 +547,71 @@ def get_installation_status():
         print(f"[iderp]   - {item.item_code}")
     
     print("[iderp] === Fine stato ===")
+    
+def setup_global_minimums_demo():
+    """Setup demo per minimi globali"""
+    print("[iderp] Configurando demo minimi globali...")
+    
+    # Aggiorna campo se necessario
+    from iderp.customer_group_minimums_fix import add_global_minimum_fields
+    add_global_minimum_fields()
+    
+    # Trova item di test
+    test_item = frappe.db.get_value("Item", {"supports_custom_measurement": 1}, "item_code")
+    
+    if test_item:
+        try:
+            item_doc = frappe.get_doc("Item", test_item)
+            
+            # Configura minimi misti: alcuni per riga, altri globali
+            item_doc.customer_group_minimums = []
+            
+            # Finale: Globale (più vantaggioso)
+            item_doc.append("customer_group_minimums", {
+                "customer_group": "Finale",
+                "min_sqm": 0.5,
+                "calculation_mode": "Globale Preventivo",
+                "enabled": 1,
+                "description": "Setup UNA volta per preventivo",
+                "priority": 10
+            })
+            
+            # Bronze: Per riga (standard)
+            item_doc.append("customer_group_minimums", {
+                "customer_group": "Bronze", 
+                "min_sqm": 0.25,
+                "calculation_mode": "Per Riga",
+                "enabled": 1,
+                "description": "Minimo per ogni riga",
+                "priority": 20
+            })
+            
+            # Gold: Globale
+            item_doc.append("customer_group_minimums", {
+                "customer_group": "Gold",
+                "min_sqm": 0.1,
+                "calculation_mode": "Globale Preventivo",
+                "enabled": 1,
+                "description": "Minimo globale preferenziale",
+                "priority": 30
+            })
+            
+            # Diamond: Nessun minimo
+            item_doc.append("customer_group_minimums", {
+                "customer_group": "Diamond",
+                "min_sqm": 0,
+                "calculation_mode": "Per Riga",
+                "enabled": 1,
+                "description": "Nessun minimo",
+                "priority": 40
+            })
+            
+            item_doc.save(ignore_permissions=True)
+            
+            print(f"[iderp] ✅ Demo minimi globali configurato per {test_item}")
+            print("[iderp] 🎯 Finale/Gold: minimi globali")
+            print("[iderp] 📄 Bronze: minimi per riga")
+            print("[iderp] 💎 Diamond: nessun minimo")
+            
+        except Exception as e:
+            print(f"[iderp] ❌ Errore setup demo: {e}")

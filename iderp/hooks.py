@@ -31,25 +31,26 @@ web_include_css = [
 
 
 # UNICA SEZIONE doc_events - UNIFICATA E CORRETTA
+# Server-side hooks per minimi gruppo cliente
 doc_events = {
     "Quotation": {
         "before_submit": "iderp.copy_fields.copy_custom_fields",
-        "before_save": "iderp.server_side_minimums.apply_customer_group_minimums_server_side",
+        "before_save": "iderp.global_minimums.apply_global_minimums_server_side",
         "validate": "iderp.server_side_minimums.calculate_standard_square_meters_server_side"
     },
     "Sales Order": {
         "before_submit": "iderp.copy_fields.copy_custom_fields", 
-        "before_save": "iderp.server_side_minimums.apply_customer_group_minimums_server_side",
+        "before_save": "iderp.global_minimums.apply_global_minimums_server_side",
         "validate": "iderp.server_side_minimums.calculate_standard_square_meters_server_side"
     },
     "Sales Invoice": {
         "before_submit": "iderp.copy_fields.copy_custom_fields",
-        "before_save": "iderp.server_side_minimums.apply_customer_group_minimums_server_side",
+        "before_save": "iderp.global_minimums.apply_global_minimums_server_side",
         "validate": "iderp.server_side_minimums.calculate_standard_square_meters_server_side"
     },
     "Delivery Note": {
         "before_submit": "iderp.copy_fields.copy_custom_fields",
-        "before_save": "iderp.server_side_minimums.apply_customer_group_minimums_server_side",
+        "before_save": "iderp.global_minimums.apply_global_minimums_server_side",
         "validate": "iderp.server_side_minimums.calculate_standard_square_meters_server_side"
     },
     "Item": {
