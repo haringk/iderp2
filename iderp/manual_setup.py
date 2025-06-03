@@ -7,6 +7,163 @@ Anti-timeout e retry intelligente
 import frappe
 import time
 
+def test_universal_system_complete(item_code="AM"):
+    """
+    Test completo sistema universale per tutti i tipi di vendita
+    """
+    print(f"\n🧪 TEST SISTEMA UNIVERSALE COMPLETO - {item_code}")
+    print("="*60)
+    
+    from iderp.pricing_utils import calculate_universal_item_pricing
+    
+    # Test scenarios realistici
+    test_scenarios = [
+        {
+            "nome": "🟦 Metro Quadrato - Biglietto da visita",
+            "args": {
+                "item_code": item_code,
+                "tipo_vendita": "Metro Quadrato",
+                "base": 9,      # 9cm (biglietto da visita)
+                "altezza": 5,   # 5cm = 0.0045 m² (molto piccolo)
+                "qty": 1000,    # 1000 biglietti = 4.5 m² totali
+                "customer": None  # Test senza cliente prima
+            },
+            "aspettato": "Scaglione Grande m² (2+ m²)"
+        },
+        {
+            "nome": "🟩 Metro Lineare - Banner",
+            "args": {
+                "item_code": item_code,
+                "tipo_vendita": "Metro Lineare", 
+                "lunghezza": 300,  # 3 metri lineari
+                "qty": 2,          # 2 banner = 6 ml totali
+                "customer": None
+            },
+            "aspettato": "Scaglione Medio ml (5-20 ml)"
+        },
+        {
+            "nome": "🟨 Pezzo - Depliant",
+            "args": {
+                "item_code": item_code,
+                "tipo_vendita": "Pezzo",
+                "qty": 50,         # 50 depliant
+                "customer": None
+            },
+            "aspettato": "Scaglione Wholesale (10-100 pz)"
+        },
+        {
+            "nome": "🟦 Metro Quadrato + Cliente Finale",
+            "args": {
+                "item_code": item_code,
+                "tipo_vendita": "Metro Quadrato",
+                "base": 30,     # 30cm
+                "altezza": 40,  # 40cm = 0.12 m² (sotto minimo Finale 0.5m²)
+                "qty": 1,
+                "customer": "CUST-001"  # Cliente finale (se esiste)
+            },
+            "aspettato": "Minimo Finale applicato (0.5 m²)"
+        }
+    ]
+    
+    risultati = []
+    
+    for i, scenario in enumerate(test_scenarios, 1):
+        print(f"\n{i}. {scenario['nome']}")
+        print("   " + "-" * 40)
+        
+        try:
+            # Mostra input
+            args = scenario['args']
+            if args['tipo_vendita'] == "Metro Quadrato":
+                print(f"   📐 Input: {args['base']}×{args['altezza']}cm × {args['qty']} pz")
+                mq_totali = (args['base'] * args['altezza'] * args['qty']) / 10000
+                print(f"   📊 m² totali: {mq_totali:.4f} m²")
+            elif args['tipo_vendita'] == "Metro Lineare":
+                print(f"   📏 Input: {args['lunghezza']}cm × {args['qty']} pz")
+                ml_totali = (args['lunghezza'] * args['qty']) / 100
+                print(f"   📊 ml totali: {ml_totali:.2f} ml")
+            elif args['tipo_vendita'] == "Pezzo":
+                print(f"   📦 Input: {args['qty']} pezzi")
+            
+            if args['customer']:
+                print(f"   👤 Cliente: {args['customer']}")
+            
+            # Chiamata API
+            result = calculate_universal_item_pricing(**args)
+            
+            if result.get("success"):
+                print(f"   ✅ SUCCESSO!")
+                print(f"   💰 Prezzo unitario: €{result['rate']}")
+                print(f"   🏷️  Scaglione: {result.get('tier_info', {}).get('tier_name', 'Standard')}")
+                print(f"   📝 Prezzo/unità: €{result.get('price_per_unit', 0)}")
+                
+                if result.get('tier_info', {}).get('min_applied'):
+                    print(f"   ⚠️  MINIMO APPLICATO: {result['tier_info']['customer_group']}")
+                    print(f"   📈 Quantità effettiva: {result['tier_info']['effective_qty']}")
+                
+                risultati.append({
+                    "scenario": scenario['nome'],
+                    "successo": True,
+                    "rate": result['rate'],
+                    "tier": result.get('tier_info', {}).get('tier_name', 'N/A')
+                })
+                
+            else:
+                print(f"   ❌ ERRORE: {result.get('error', 'Errore sconosciuto')}")
+                risultati.append({
+                    "scenario": scenario['nome'],
+                    "successo": False,
+                    "errore": result.get('error', 'Errore sconosciuto')
+                })
+                
+        except Exception as e:
+            print(f"   💥 ECCEZIONE: {e}")
+            risultati.append({
+                "scenario": scenario['nome'],
+                "successo": False,
+                "errore": str(e)
+            })
+    
+    # Riepilogo finale
+    print("\n" + "="*60)
+    print("📊 RIEPILOGO TEST UNIVERSALE")
+    print("="*60)
+    
+    successi = sum(1 for r in risultati if r['successo'])
+    totali = len(risultati)
+    
+    print(f"\n🎯 RISULTATO: {successi}/{totali} test superati")
+    
+    for risultato in risultati:
+        if risultato['successo']:
+            print(f"✅ {risultato['scenario']}")
+            print(f"   💰 €{risultato['rate']} - {risultato['tier']}")
+        else:
+            print(f"❌ {risultato['scenario']}")
+            print(f"   🚫 {risultato['errore']}")
+    
+    if successi == totali:
+        print(f"\n🎉 SISTEMA UNIVERSALE COMPLETAMENTE FUNZIONANTE!")
+        print("🚀 Tutti e 3 i tipi di vendita operativi!")
+    elif successi > 0:
+        print(f"\n⚠️  Sistema parzialmente funzionante ({successi}/{totali})")
+        print("🔧 Alcuni tipi necessitano fix")
+    else:
+        print(f"\n❌ Sistema non funzionante")
+        print("🚨 Necessaria revisione completa")
+    
+    print("="*60)
+    return successi == totali
+
+def quick_universal_test():
+    """Test rapido sistema universale"""
+    return test_universal_system_complete("AM")
+
+# Aggiungi alla fine del file
+# Alias
+tuc = test_universal_system_complete
+qut = quick_universal_test
+
 def setup_manual_universal_item_robust(item_code="AM"):
     """
     Setup manuale ULTRA-ROBUSTO anti-concorrenza
