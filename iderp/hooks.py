@@ -54,9 +54,9 @@ doc_events = {
         "before_save": "iderp.universal_pricing.apply_universal_pricing_server_side",
         "validate": "iderp.server_side_minimums.calculate_standard_square_meters_server_side"
     },
-#    "Item": {
-#        "validate": "iderp.pricing_utils.validate_pricing_tiers"
-#    }
+    "Item": {
+        "validate": "iderp.pricing_utils.validate_pricing_tiers"
+    }
 }
 
 # Whitelist API methods per Customer Group Pricing
