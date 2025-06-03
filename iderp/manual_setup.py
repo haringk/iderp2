@@ -947,3 +947,355 @@ def help_manual_setup():
     print("="*50)
 
 h = help_manual_setup
+
+def diagnose_doctype_structure():
+    """
+    Diagnosi struttura DocType Item Pricing Tier
+    """
+    print(f"\n🔍 DIAGNOSI STRUTTURA DOCTYPE")
+    print("="*50)
+    
+    try:
+        # 1. Verifica esistenza DocType
+        if not frappe.db.exists("DocType", "Item Pricing Tier"):
+            print("❌ DocType 'Item Pricing Tier' non esiste!")
+            return False
+        
+        # 2. Verifica campi nel database
+        print("📊 Campi nel database:")
+        describe_sql = "DESCRIBE `tabItem Pricing Tier`"
+        columns = frappe.db.sql(describe_sql, as_dict=True)
+        
+        field_names = [col.Field for col in columns]
+        print(f"   Trovati {len(field_names)} campi:")
+        
+        # Campi che dovrebbero esserci
+        expected_legacy = ["from_sqm", "to_sqm", "price_per_sqm"]
+        expected_universal = ["selling_type", "from_qty", "to_qty", "price_per_unit"]
+        
+        legacy_present = [f for f in expected_legacy if f in field_names]
+        universal_present = [f for f in expected_universal if f in field_names]
+        
+        print(f"\n🏷️  CAMPI LEGACY: {len(legacy_present)}/{len(expected_legacy)}")
+        for field in expected_legacy:
+            status = "✅" if field in field_names else "❌"
+            print(f"   {status} {field}")
+        
+        print(f"\n🆕 CAMPI UNIVERSALI: {len(universal_present)}/{len(expected_universal)}")
+        for field in expected_universal:
+            status = "✅" if field in field_names else "❌"
+            print(f"   {status} {field}")
+        
+        # 3. Verifica DocType meta
+        print(f"\n📋 DocType Meta:")
+        doctype_doc = frappe.get_doc("DocType", "Item Pricing Tier")
+        print(f"   Campi nel DocType: {len(doctype_doc.fields)}")
+        
+        for field in doctype_doc.fields:
+            print(f"   • {field.fieldname} ({field.fieldtype})")
+        
+        # 4. Raccomandazioni
+        print(f"\n💡 RACCOMANDAZIONI:")
+        if len(universal_present) == 0:
+            print("❌ DocType ha solo struttura legacy")
+            print("🔧 Necessario aggiornare DocType per supporto universale")
+        elif len(universal_present) < len(expected_universal):
+            print("⚠️  DocType parzialmente aggiornato")
+            print("🔧 Necessario completare aggiornamento campi")
+        else:
+            print("✅ DocType ha supporto universale completo")
+        
+        return {
+            "has_legacy": len(legacy_present) > 0,
+            "has_universal": len(universal_present) == len(expected_universal),
+            "fields": field_names
+        }
+        
+    except Exception as e:
+        print(f"❌ Errore diagnosi: {e}")
+        return False
+
+def fix_doctype_structure():
+    """
+    Fix struttura DocType per supporto universale
+    """
+    print(f"\n🔧 FIX STRUTTURA DOCTYPE UNIVERSALE")
+    print("="*50)
+    
+    try:
+        # 1. Carica DocType
+        doctype_doc = frappe.get_doc("DocType", "Item Pricing Tier")
+        print(f"✓ DocType caricato: {len(doctype_doc.fields)} campi esistenti")
+        
+        # 2. Verifica campi necessari
+        existing_fieldnames = [f.fieldname for f in doctype_doc.fields]
+        
+        # Campi da aggiungere
+        new_fields = []
+        
+        if "selling_type" not in existing_fieldnames:
+            new_fields.append({
+                "fieldname": "selling_type",
+                "fieldtype": "Select",
+                "label": "Tipo Vendita",
+                "options": "\nMetro Quadrato\nMetro Lineare\nPezzo",
+                "in_list_view": 1,
+                "columns": 2,
+                "idx": 1
+            })
+        
+        if "from_qty" not in existing_fieldnames:
+            new_fields.append({
+                "fieldname": "from_qty",
+                "fieldtype": "Float",
+                "label": "Da Quantità",
+                "precision": 3,
+                "in_list_view": 1,
+                "columns": 2,
+                "idx": 2
+            })
+        
+        if "to_qty" not in existing_fieldnames:
+            new_fields.append({
+                "fieldname": "to_qty",
+                "fieldtype": "Float",
+                "label": "A Quantità", 
+                "precision": 3,
+                "in_list_view": 1,
+                "columns": 2,
+                "idx": 3
+            })
+        
+        if "price_per_unit" not in existing_fieldnames:
+            new_fields.append({
+                "fieldname": "price_per_unit",
+                "fieldtype": "Currency",
+                "label": "Prezzo/Unità",
+                "in_list_view": 1,
+                "columns": 2,
+                "idx": 4
+            })
+        
+        if not new_fields:
+            print("✅ Tutti i campi universali già presenti")
+            return True
+        
+        print(f"➕ Aggiungendo {len(new_fields)} campi universali:")
+        
+        # 3. Aggiungi campi UNO alla volta
+        for field_data in new_fields:
+            try:
+                print(f"   + {field_data['fieldname']}")
+                doctype_doc.append("fields", field_data)
+            except Exception as e:
+                print(f"   ❌ Errore campo {field_data['fieldname']}: {e}")
+        
+        # 4. Salva DocType (questo aggiornerà il database)
+        print("💾 Salvando DocType...")
+        try:
+            doctype_doc.save()
+            frappe.db.commit()
+            print("✅ DocType salvato - struttura database aggiornata")
+            
+            # 5. Verifica aggiornamento
+            time.sleep(2)
+            describe_sql = "DESCRIBE `tabItem Pricing Tier`"
+            new_columns = frappe.db.sql(describe_sql, as_dict=True)
+            new_field_names = [col.Field for col in new_columns]
+            
+            print(f"🔍 Verifica: ora {len(new_field_names)} campi nel database")
+            
+            # Verifica campi universali
+            universal_fields = ["selling_type", "from_qty", "to_qty", "price_per_unit"]
+            found_universal = [f for f in universal_fields if f in new_field_names]
+            
+            print(f"✅ Campi universali: {len(found_universal)}/{len(universal_fields)}")
+            
+            return len(found_universal) == len(universal_fields)
+            
+        except Exception as e:
+            print(f"❌ Errore salvataggio DocType: {e}")
+            return False
+        
+    except Exception as e:
+        print(f"❌ Errore fix struttura: {e}")
+        return False
+
+def insert_universal_pricing_data_correct_structure(item_code="AM"):
+    """
+    Inserisci dati usando la struttura corretta (legacy + universale)
+    """
+    print(f"\n📊 INSERIMENTO DATI STRUTTURA CORRETTA - {item_code}")
+    print("="*60)
+    
+    try:
+        # 1. Verifica struttura disponibile
+        describe_sql = "DESCRIBE `tabItem Pricing Tier`"
+        columns = frappe.db.sql(describe_sql, as_dict=True)
+        field_names = [col.Field for col in columns]
+        
+        has_universal = all(f in field_names for f in ["selling_type", "from_qty", "price_per_unit"])
+        has_legacy = all(f in field_names for f in ["from_sqm", "price_per_sqm"])
+        
+        print(f"🔍 Struttura disponibile:")
+        print(f"   Legacy: {has_legacy}")
+        print(f"   Universale: {has_universal}")
+        
+        if not (has_universal or has_legacy):
+            print("❌ Nessuna struttura valida trovata!")
+            return False
+        
+        # 2. Cancella dati esistenti
+        delete_sql = "DELETE FROM `tabItem Pricing Tier` WHERE parent = %s"
+        frappe.db.sql(delete_sql, [item_code])
+        frappe.db.commit()
+        print("🗑️ Dati esistenti cancellati")
+        
+        # 3. Prepara dati in base alla struttura disponibile
+        success_count = 0
+        
+        if has_universal:
+            print("🆕 Usando struttura UNIVERSALE")
+            tiers_data = [
+                # Metro Quadrato
+                {"selling_type": "Metro Quadrato", "from_qty": 0.0, "to_qty": 0.5, "price_per_unit": 20.0, "tier_name": "Micro m²"},
+                {"selling_type": "Metro Quadrato", "from_qty": 0.5, "to_qty": 2.0, "price_per_unit": 15.0, "tier_name": "Piccolo m²"},
+                {"selling_type": "Metro Quadrato", "from_qty": 2.0, "to_qty": None, "price_per_unit": 10.0, "tier_name": "Grande m²", "is_default": 1},
+                
+                # Metro Lineare
+                {"selling_type": "Metro Lineare", "from_qty": 0.0, "to_qty": 5.0, "price_per_unit": 8.0, "tier_name": "Piccolo ml"},
+                {"selling_type": "Metro Lineare", "from_qty": 5.0, "to_qty": 20.0, "price_per_unit": 6.0, "tier_name": "Medio ml"},
+                {"selling_type": "Metro Lineare", "from_qty": 20.0, "to_qty": None, "price_per_unit": 4.0, "tier_name": "Grande ml", "is_default": 1},
+                
+                # Pezzo
+                {"selling_type": "Pezzo", "from_qty": 1.0, "to_qty": 10.0, "price_per_unit": 5.0, "tier_name": "Retail"},
+                {"selling_type": "Pezzo", "from_qty": 10.0, "to_qty": 100.0, "price_per_unit": 3.0, "tier_name": "Wholesale"},
+                {"selling_type": "Pezzo", "from_qty": 100.0, "to_qty": None, "price_per_unit": 2.0, "tier_name": "Bulk", "is_default": 1}
+            ]
+            
+            # SQL per struttura universale
+            for tier in tiers_data:
+                try:
+                    import uuid
+                    record_name = f"tier-{uuid.uuid4().hex[:8]}"
+                    
+                    insert_sql = """
+                    INSERT INTO `tabItem Pricing Tier` 
+                    (name, parent, parenttype, parentfield, selling_type, from_qty, to_qty, price_per_unit, tier_name, is_default, creation, modified, modified_by, owner)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW(), 'Administrator', 'Administrator')
+                    """
+                    
+                    frappe.db.sql(insert_sql, [
+                        record_name, item_code, "Item", "pricing_tiers",
+                        tier["selling_type"], tier["from_qty"], tier["to_qty"],
+                        tier["price_per_unit"], tier["tier_name"], tier.get("is_default", 0)
+                    ])
+                    
+                    frappe.db.commit()
+                    print(f"   ✓ {tier['tier_name']}")
+                    success_count += 1
+                    time.sleep(0.1)
+                    
+                except Exception as e:
+                    print(f"   ❌ {tier['tier_name']}: {e}")
+        
+        elif has_legacy:
+            print("📜 Usando struttura LEGACY (solo Metro Quadrato)")
+            legacy_tiers = [
+                {"from_sqm": 0.0, "to_sqm": 0.5, "price_per_sqm": 20.0, "tier_name": "Micro m²"},
+                {"from_sqm": 0.5, "to_sqm": 2.0, "price_per_sqm": 15.0, "tier_name": "Piccolo m²"},
+                {"from_sqm": 2.0, "to_sqm": None, "price_per_sqm": 10.0, "tier_name": "Grande m²", "is_default": 1}
+            ]
+            
+            # SQL per struttura legacy
+            for tier in legacy_tiers:
+                try:
+                    import uuid
+                    record_name = f"tier-{uuid.uuid4().hex[:8]}"
+                    
+                    insert_sql = """
+                    INSERT INTO `tabItem Pricing Tier` 
+                    (name, parent, parenttype, parentfield, from_sqm, to_sqm, price_per_sqm, tier_name, is_default, creation, modified, modified_by, owner)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW(), 'Administrator', 'Administrator')
+                    """
+                    
+                    frappe.db.sql(insert_sql, [
+                        record_name, item_code, "Item", "pricing_tiers",
+                        tier["from_sqm"], tier["to_sqm"], tier["price_per_sqm"], 
+                        tier["tier_name"], tier.get("is_default", 0)
+                    ])
+                    
+                    frappe.db.commit()
+                    print(f"   ✓ {tier['tier_name']}")
+                    success_count += 1
+                    time.sleep(0.1)
+                    
+                except Exception as e:
+                    print(f"   ❌ {tier['tier_name']}: {e}")
+        
+        print(f"✅ {success_count} scaglioni inseriti con successo!")
+        return success_count > 0
+        
+    except Exception as e:
+        print(f"❌ Errore inserimento dati: {e}")
+        return False
+
+def complete_universal_fix_full_process(item_code="AM"):
+    """
+    Fix completo: diagnosi → struttura → dati → test
+    """
+    print(f"\n🚀 FIX UNIVERSALE PROCESSO COMPLETO - {item_code}")
+    print("="*70)
+    
+    # Step 1: Diagnosi
+    print("STEP 1: Diagnosi struttura DocType")
+    structure_info = diagnose_doctype_structure()
+    
+    if not structure_info:
+        print("❌ Diagnosi fallita")
+        return False
+    
+    # Step 2: Fix struttura se necessario
+    if not structure_info.get("has_universal", False):
+        print("\nSTEP 2: Fix struttura DocType")
+        if not fix_doctype_structure():
+            print("❌ Fix struttura fallito")
+            return False
+    else:
+        print("\nSTEP 2: ✅ Struttura già corretta")
+    
+    # Step 3: Inserimento dati
+    print("\nSTEP 3: Inserimento dati corretti")
+    if not insert_universal_pricing_data_correct_structure(item_code):
+        print("❌ Inserimento dati fallito")
+        return False
+    
+    # Step 4: Test finale
+    print("\nSTEP 4: Test sistema universale")
+    test_success = test_universal_system_complete(item_code)
+    
+    if test_success:
+        print("\n🎉 FIX UNIVERSALE COMPLETATO CON SUCCESSO!")
+        print("🚀 Sistema universale operativo per tutti e 3 i tipi!")
+    else:
+        print("\n⚠️ Fix applicato ma test parzialmente fallito")
+    
+    return test_success
+
+# Comandi rapidi
+def diag_structure():
+    """Diagnosi struttura DocType"""
+    return diagnose_doctype_structure()
+
+def fix_structure():
+    """Fix struttura DocType"""
+    return fix_doctype_structure()
+
+def complete_fix():
+    """Fix completo processo"""
+    return complete_universal_fix_full_process("AM")
+
+# Alias
+ds = diag_structure
+fs = fix_structure
+cf = complete_fix
