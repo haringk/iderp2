@@ -480,7 +480,7 @@ def get_customer_group_min_sqm(customer, item_code):
 def validate_pricing_tiers(doc, method=None):
     """
     Valida scaglioni prezzo quando si salva un Item
-    FIXED: Supporta nomi campi nuovi (from_qty) e vecchi (from_sqm)
+    FIXED: Valida per tipo di vendita separatamente
     """
     if not getattr(doc, 'supports_custom_measurement', 0):
         return
@@ -490,70 +490,99 @@ def validate_pricing_tiers(doc, method=None):
     
     errors = []
     
-    # Ordina per from_qty/from_sqm - gestisce entrambi i nomi
+    # Funzioni helper per campi compatibili
     def get_from_value(tier):
-        # Prova prima from_qty (nuovo), poi from_sqm (vecchio)
         from_value = getattr(tier, 'from_qty', None)
         if from_value is None:
             from_value = getattr(tier, 'from_sqm', None)
         return from_value if from_value is not None else 0
     
     def get_to_value(tier):
-        # Prova prima to_qty (nuovo), poi to_sqm (vecchio)
         to_value = getattr(tier, 'to_qty', None)
         if to_value is None:
             to_value = getattr(tier, 'to_sqm', None)
         return to_value
     
     def get_price_value(tier):
-        # Prova prima price_per_unit (nuovo), poi price_per_sqm (vecchio)
         price_value = getattr(tier, 'price_per_unit', None)
         if price_value is None:
             price_value = getattr(tier, 'price_per_sqm', None)
         return price_value if price_value is not None else 0
     
-    # Ordina usando la funzione safe
-    try:
-        tiers = sorted(doc.pricing_tiers, key=get_from_value)
-    except Exception as e:
-        frappe.throw(_("Errore ordinamento scaglioni: " + str(e)))
-        return
+    def get_selling_type(tier):
+        # Determina tipo vendita
+        selling_type = getattr(tier, 'selling_type', None)
+        if not selling_type:
+            # Se manca selling_type, usa logica legacy
+            if hasattr(tier, 'from_sqm') or hasattr(tier, 'to_sqm') or hasattr(tier, 'price_per_sqm'):
+                return "Metro Quadrato"
+            else:
+                return "Pezzo"
+        return selling_type
     
-    for i, tier in enumerate(tiers):
-        row_num = i + 1
+    # RAGGRUPPA PER TIPO DI VENDITA
+    tiers_by_type = {}
+    for i, tier in enumerate(doc.pricing_tiers):
+        selling_type = get_selling_type(tier)
+        if selling_type not in tiers_by_type:
+            tiers_by_type[selling_type] = []
+        tiers_by_type[selling_type].append((i, tier))
+    
+    print(f"[VALIDATE] Validando scaglioni per {len(tiers_by_type)} tipi: {list(tiers_by_type.keys())}")
+    
+    # VALIDA OGNI TIPO SEPARATAMENTE
+    for selling_type, tier_list in tiers_by_type.items():
+        print(f"[VALIDATE] Validando {len(tier_list)} scaglioni per {selling_type}")
         
-        # Ottieni valori usando funzioni safe
-        from_value = get_from_value(tier)
-        to_value = get_to_value(tier)
-        price_value = get_price_value(tier)
+        # Ordina per from_value per questo tipo
+        try:
+            tier_list.sort(key=lambda x: get_from_value(x[1]))
+        except Exception as e:
+            errors.append(f"Errore ordinamento {selling_type}: {str(e)}")
+            continue
         
-        # Validazioni base
-        if from_value < 0:
-            errors.append(f"Riga {row_num}: 'Da Quantità' non può essere negativo")
-        
-        if to_value is not None and to_value < 0:
-            errors.append(f"Riga {row_num}: 'A Quantità' non può essere negativo")
-        
-        if to_value is not None and from_value >= to_value:
-            errors.append(f"Riga {row_num}: 'A Quantità' ({to_value}) deve essere maggiore di 'Da Quantità' ({from_value})")
-        
-        if price_value <= 0:
-            errors.append(f"Riga {row_num}: 'Prezzo/Unità' deve essere maggiore di 0")
-        
-        # Validazioni sovrapposizioni
-        if i > 0:
-            prev_tier = tiers[i-1]
-            prev_to_value = get_to_value(prev_tier)
+        # Valida scaglioni di questo tipo
+        for j, (original_idx, tier) in enumerate(tier_list):
+            display_row = original_idx + 1  # Riga originale nel form
             
-            # VERA sovrapposizione: il nuovo inizia PRIMA che finisca il precedente
-            if prev_to_value is not None and from_value < prev_to_value:
-                errors.append(
-                    f"Riga {row_num}: VERA sovrapposizione - inizia a {from_value} "
-                    f"ma il precedente finisce a {prev_to_value}"
-                )
+            # Ottieni valori
+            from_value = get_from_value(tier)
+            to_value = get_to_value(tier)
+            price_value = get_price_value(tier)
+            
+            # Validazioni base
+            if from_value < 0:
+                errors.append(f"Riga {display_row} ({selling_type}): 'Da Quantità' non può essere negativo")
+            
+            if to_value is not None and to_value < 0:
+                errors.append(f"Riga {display_row} ({selling_type}): 'A Quantità' non può essere negativo")
+            
+            if to_value is not None and from_value >= to_value:
+                errors.append(f"Riga {display_row} ({selling_type}): 'A Quantità' ({to_value}) deve essere maggiore di 'Da Quantità' ({from_value})")
+            
+            if price_value <= 0:
+                errors.append(f"Riga {display_row} ({selling_type}): 'Prezzo/Unità' deve essere maggiore di 0")
+            
+            # Validazioni sovrapposizioni DENTRO LO STESSO TIPO
+            if j > 0:
+                prev_original_idx, prev_tier = tier_list[j-1]
+                prev_to_value = get_to_value(prev_tier)
+                prev_display_row = prev_original_idx + 1
+                
+                # VERA sovrapposizione nello stesso tipo
+                if prev_to_value is not None and from_value < prev_to_value:
+                    errors.append(
+                        f"Riga {display_row} ({selling_type}): Sovrapposizione con riga {prev_display_row} - "
+                        f"inizia a {from_value} ma il precedente finisce a {prev_to_value}"
+                    )
     
     if errors:
+        print(f"[VALIDATE] ❌ {len(errors)} errori trovati:")
+        for error in errors:
+            print(f"[VALIDATE]   - {error}")
         frappe.throw(_("Errori negli scaglioni prezzo:\n" + "\n".join(errors)))
+    else:
+        print(f"[VALIDATE] ✅ Validazione superata per tutti i tipi")
 
 def get_item_price_info(item_code):
     """
