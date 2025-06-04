@@ -1,2 +1,2 @@
-frappe==14.*
-erpnext==14.*
+frappe>=15.0.0
+erpnext>=15.0.0

@@ -1,6 +1,7 @@
 # iderp
 Custom app per ERPNext che gestisce prodotti venduti al metro quadro, aggiungendo campi “base” e “altezza” su tutti i documenti vendita.
 
+Per le istruzioni complete consulta info-id.md
 
 ## Funzionalità
 - Campi “base” e “altezza” (da aggiungere via Custom Field su Quotation Item, Sales Order Item, ecc.)
