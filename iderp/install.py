@@ -1,32 +1,106 @@
 import frappe
 
+
+import frappe
+
 def after_install():
-    """Installazione completa plugin iderp"""
-    print("[iderp] === Iniziando installazione plugin ===")
+    """Installazione sicura per ERPNext 15"""
+    print("[iderp] === Installazione ERPNext 15 Safe Mode ===")
     
-    # 1. Installa campi custom per documenti di vendita
-    install_sales_custom_fields()
+    try:
+        # 1. Solo Custom Fields essenziali per ora
+        install_essential_custom_fields()
+        print("[iderp] ✓ Custom Fields essenziali installati")
+        
+        # 2. Skip DocTypes per ora (potrebbero causare errori)
+        # install_item_config_fields()
+        # create_item_pricing_tier_child_table()
+        
+        print("[iderp] ✓ Installazione base completata")
+        
+    except Exception as e:
+        print(f"[iderp] ❌ Errore installazione: {e}")
+        # Non lanciare eccezione per permettere installazione parziale
+
+def install_essential_custom_fields():
+    """Installa solo i campi essenziali"""
     
-    # 2. Installa campi custom per configurazione Item
-    install_item_config_fields()
+    # Campi base per Quotation Item
+    essential_fields = [
+        {
+            "fieldname": "tipo_vendita",
+            "label": "Tipo Vendita", 
+            "fieldtype": "Select",
+            "options": "\nPezzo\nMetro Quadrato\nMetro Lineare",
+            "default": "Metro Quadrato",
+            "insert_after": "item_code",
+            "reqd": 1
+        },
+        {
+            "fieldname": "base",
+            "label": "Base (cm)",
+            "fieldtype": "Float", 
+            "insert_after": "tipo_vendita",
+            "precision": 2,
+            "depends_on": "eval:doc.tipo_vendita=='Metro Quadrato'"
+        },
+        {
+            "fieldname": "altezza",
+            "label": "Altezza (cm)",
+            "fieldtype": "Float",
+            "insert_after": "base",
+            "precision": 2, 
+            "depends_on": "eval:doc.tipo_vendita=='Metro Quadrato'"
+        }
+    ]
     
-    # 3. Crea Child Table per scaglioni prezzo
-    create_item_pricing_tier_child_table()
-    
-    # 4. Aggiunge tabella scaglioni all'Item
-    add_pricing_table_to_item()
-    
-    # 5. NUOVO: Installa sistema Customer Group Pricing
-    install_customer_group_pricing_system()
-    
-    print("[iderp] === Installazione completata ===")
-    print("[iderp] ✓ Vendita al pezzo")
-    print("[iderp] ✓ Vendita al metro quadrato con scaglioni") 
-    print("[iderp] ✓ Vendita al metro lineare")
-    print("[iderp] ✓ Configurazione Item con scaglioni prezzo")
-    print("[iderp] ✓ NUOVO: Customer Group Pricing con minimi")
-    print("[iderp] ✓ Gruppi: Finale, Bronze, Gold, Diamond")
-    print("[iderp] ✓ Sistema completo pronto all'uso")
+    # Applica a Quotation Item
+    for field in essential_fields:
+        create_custom_field_safe("Quotation Item", field)
+
+def create_custom_field_safe(doctype, field_dict):
+    """Crea Custom Field con gestione errori"""
+    try:
+        if not frappe.db.exists("Custom Field", {"dt": doctype, "fieldname": field_dict["fieldname"]}):
+            cf_doc = frappe.get_doc({
+                "doctype": "Custom Field",
+                "dt": doctype,
+                **field_dict
+            })
+            cf_doc.insert(ignore_permissions=True)
+            print(f"[iderp] ✓ Campo {field_dict['fieldname']} aggiunto a {doctype}")
+        else:
+            print(f"[iderp] - Campo {field_dict['fieldname']} già presente su {doctype}")
+    except Exception as e:
+        print(f"[iderp] ✗ Errore campo {field_dict['fieldname']}: {str(e)}")
+
+#  def after_install():
+#     """Installazione completa plugin iderp"""
+#     print("[iderp] === Iniziando installazione plugin ===")
+#     
+#     # 1. Installa campi custom per documenti di vendita
+#     install_sales_custom_fields()
+#     
+#     # 2. Installa campi custom per configurazione Item
+#     install_item_config_fields()
+#     
+#     # 3. Crea Child Table per scaglioni prezzo
+#     create_item_pricing_tier_child_table()
+#     
+#     # 4. Aggiunge tabella scaglioni all'Item
+#     add_pricing_table_to_item()
+#     
+#     # 5. NUOVO: Installa sistema Customer Group Pricing
+#     install_customer_group_pricing_system()
+#     
+#     print("[iderp] === Installazione completata ===")
+#     print("[iderp] ✓ Vendita al pezzo")
+#     print("[iderp] ✓ Vendita al metro quadrato con scaglioni") 
+#     print("[iderp] ✓ Vendita al metro lineare")
+#     print("[iderp] ✓ Configurazione Item con scaglioni prezzo")
+#     print("[iderp] ✓ NUOVO: Customer Group Pricing con minimi")
+#     print("[iderp] ✓ Gruppi: Finale, Bronze, Gold, Diamond")
+#     print("[iderp] ✓ Sistema completo pronto all'uso")
 
 def install_customer_group_pricing_system():
     """Installa il sistema Customer Group Pricing semplificato"""

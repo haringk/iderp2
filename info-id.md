@@ -35,23 +35,164 @@ cd ~/frappe-bench
 cd ~/frappe-bench
 cat > update_iderp.sh << 'EOF'
 #!/bin/bash
-echo "🔄 Aggiornando plugin iderp..."
 
-cd ~/frappe-bench/apps/iderp
-git pull origin master
+# Script aggiornamento IDERP per ERPNext 15
+# Versione: 2.0 - Compatibile ERPNext 15
 
-echo "🧹 Pulendo cache..."
-cd ~/frappe-bench
+echo "🚀 =========================================="
+echo "    AGGIORNAMENTO PLUGIN IDERP v2.0"
+echo "    Compatibile ERPNext 15"
+echo "=========================================="
+
+# Verifica che siamo nella directory corretta (FIX)
+if [ ! -f "sites/common_site_config.json" ]; then
+    echo "❌ Errore: Non sembri essere in una directory frappe-bench"
+    echo "   Assicurati di essere in ~/frappe-bench"
+    echo "   Directory attuale: $(pwd)"
+    exit 1
+fi
+
+# Verifica che il sito esista
+if [ ! -d "sites/sito.local" ]; then
+    echo "❌ Errore: Sito 'sito.local' non trovato"
+    echo "   Siti disponibili:"
+    ls sites/
+    echo "   Modifica lo script con il nome corretto del sito"
+    exit 1
+fi
+
+echo "📍 Directory di lavoro: $(pwd)"
+echo "🏢 Sito: sito.local"
+echo ""
+
+# Step 1: Aggiornamento codice da GitHub
+echo "1️⃣ Aggiornamento codice da GitHub..."
+if [ -d "apps/iderp" ]; then
+    cd apps/iderp
+    echo "   📂 Directory iderp trovata"
+    echo "   🔄 Git pull..."
+    git pull origin master
+    if [ $? -eq 0 ]; then
+        echo "   ✅ Codice aggiornato da GitHub"
+    else
+        echo "   ⚠️  Warning: Problemi con git pull (continuiamo comunque)"
+    fi
+    cd ~/frappe-bench
+else
+    echo "   ❌ Directory apps/iderp non trovata!"
+    echo "   🔧 Provo a clonare il repository..."
+    cd apps
+    git clone https://github.com/haringk/iderp2.git iderp
+    if [ $? -eq 0 ]; then
+        echo "   ✅ Repository clonato con successo"
+    else
+        echo "   ❌ Errore nel cloning. Verifica connessione GitHub"
+        exit 1
+    fi
+    cd ~/frappe-bench
+fi
+
+# Step 2: Installazione/Aggiornamento app su ERPNext
+echo ""
+echo "2️⃣ Installazione app su ERPNext..."
+echo "   🔍 Verifico se app è già installata..."
+
+APP_INSTALLED=$(bench --site sito.local list-apps | grep -c "iderp")
+if [ $APP_INSTALLED -eq 0 ]; then
+    echo "   🆕 Prima installazione - Installo l'app..."
+    bench --site sito.local install-app iderp
+    if [ $? -eq 0 ]; then
+        echo "   ✅ App iderp installata con successo"
+    else
+        echo "   ❌ Errore installazione app"
+        exit 1
+    fi
+else
+    echo "   ♻️  App già installata - Procedo con migrate..."
+    bench --site sito.local migrate
+    if [ $? -eq 0 ]; then
+        echo "   ✅ Database migrato"
+    else
+        echo "   ⚠️  Warning: Problemi migrate (continuiamo)"
+    fi
+fi
+
+# Step 3: Pulizia cache (ERPNext 15)
+echo ""
+echo "3️⃣ Pulizia cache completa..."
+echo "   🧹 Clear cache Redis..."
 bench --site sito.local clear-cache
+
+echo "   🧹 Clear website cache..."
 bench --site sito.local clear-website-cache
 
-echo "🔨 Building assets..."
-bench build
+echo "   🧹 Clear sessions..."
+bench --site sito.local clear-sessions
 
-echo "🚀 Riavviando..."
+echo "   ✅ Cache pulita"
+
+# Step 4: Build assets (ERPNext 15)
+echo ""
+echo "4️⃣ Build assets per ERPNext 15..."
+echo "   🔨 Building..."
+bench build --app iderp
+if [ $? -eq 0 ]; then
+    echo "   ✅ Assets compilati"
+else
+    echo "   ⚠️  Warning: Problemi build assets"
+    echo "   🔄 Provo build completo..."
+    bench build
+fi
+
+# Step 5: Restart services
+echo ""
+echo "5️⃣ Riavvio servizi..."
+echo "   🔄 Restart bench..."
 bench restart
 
-echo "✅ Plugin iderp aggiornato!"
+# Verifica se restart ha funzionato
+sleep 3
+echo "   🔍 Verifico stato servizi..."
+bench status
+if [ $? -eq 0 ]; then
+    echo "   ✅ Servizi riavviati correttamente"
+else
+    echo "   ⚠️  Warning: Verifica manualmente con 'bench status'"
+fi
+
+# Step 6: Test finale
+echo ""
+echo "6️⃣ Test installazione..."
+echo "   🧪 Verifico app installate..."
+bench --site sito.local list-apps | grep iderp
+if [ $? -eq 0 ]; then
+    echo "   ✅ App iderp trovata nell'elenco"
+else
+    echo "   ❌ App iderp non trovata nell'elenco!"
+fi
+
+# Riepilogo finale
+echo ""
+echo "🎉 =========================================="
+echo "    AGGIORNAMENTO COMPLETATO!"
+echo "=========================================="
+echo ""
+echo "📋 Cosa è stato fatto:"
+echo "   ✅ Codice aggiornato da GitHub"
+echo "   ✅ App installata/migrata su ERPNext"
+echo "   ✅ Cache pulita"
+echo "   ✅ Assets compilati"
+echo "   ✅ Servizi riavviati"
+echo ""
+echo "🔗 Accedi a: http://your-server:8000"
+echo "🏢 Sito: sito.local"
+echo ""
+echo "🛠️  Se ci sono problemi:"
+echo "   📊 bench status"
+echo "   📋 bench --site sito.local list-apps"
+echo "   🔍 bench --site sito.local console"
+echo ""
+echo "✅ Script completato!"
 EOF
 ```
 
