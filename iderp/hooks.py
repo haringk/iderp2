@@ -15,7 +15,7 @@ app_license = "MIT"
 #    "Delivery Note": "public/js/item_dimension.js",
 #    "Work Order": "public/js/item_dimension.js"
     # "Item": "public/js/item_config.js"  # GIÀ COMMENTATO
-}
+#}
 
 # CSS
 #app_include_css = [
