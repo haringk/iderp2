@@ -1,373 +1,71 @@
 # iderp/pricing_utils.py
 """
-Utility functions per gestione scaglioni prezzo
-FIXED: Import circolari e funzioni mancanti
+Utility functions per gestione scaglioni prezzo IDERP
+ERPNext 15 Compatible - Sistema Universale Metro Quadrato/Lineare/Pezzo
 """
 
 import frappe
 from frappe import _
+import json
 
-def get_hardcoded_pricing_fallback(tipo_vendita, quantity):
-    """
-    Scaglioni hard-coded quando il database non ha dati
-    FALLBACK per Metro Lineare e Pezzo
-    """
-    try:
-        if tipo_vendita == "Metro Lineare":
-            # Scaglioni Metro Lineare hard-coded
-            if quantity <= 5.0:
-                return {
-                    "price_per_unit": 8.0,
-                    "tier_name": "Piccolo ml (fallback)",
-                    "from_qty": 0.0,
-                    "to_qty": 5.0
-                }
-            elif quantity <= 20.0:
-                return {
-                    "price_per_unit": 6.0,
-                    "tier_name": "Medio ml (fallback)",
-                    "from_qty": 5.0,
-                    "to_qty": 20.0
-                }
-            else:
-                return {
-                    "price_per_unit": 4.0,
-                    "tier_name": "Grande ml (fallback)",
-                    "from_qty": 20.0,
-                    "to_qty": None
-                }
-        
-        elif tipo_vendita == "Pezzo":
-            # Scaglioni Pezzo hard-coded
-            if quantity <= 10:
-                return {
-                    "price_per_unit": 5.0,
-                    "tier_name": "Retail (fallback)",
-                    "from_qty": 1,
-                    "to_qty": 10
-                }
-            elif quantity <= 100:
-                return {
-                    "price_per_unit": 3.0,
-                    "tier_name": "Wholesale (fallback)",
-                    "from_qty": 10,
-                    "to_qty": 100
-                }
-            else:
-                return {
-                    "price_per_unit": 2.0,
-                    "tier_name": "Bulk (fallback)",
-                    "from_qty": 100,
-                    "to_qty": None
-                }
-        
-        return None
-        
-    except Exception as e:
-        print(f"[FALLBACK] Errore: {e}")
-        return None
-
-def get_price_for_type_enhanced(item_code, tipo_vendita, quantity):
-    """
-    Versione enhanced che usa fallback hard-coded
-    """
-    try:
-        # 1. Prova prima con database (per Metro Quadrato funziona)
-        db_result = get_price_for_type(item_code, tipo_vendita, quantity)
-        
-        if db_result:
-            print(f"[PRICING] {tipo_vendita}: Usando scaglioni DATABASE")
-            return db_result
-        
-        # 2. Se fallisce, usa fallback hard-coded
-        print(f"[PRICING] {tipo_vendita}: Database vuoto, uso FALLBACK hard-coded")
-        fallback_result = get_hardcoded_pricing_fallback(tipo_vendita, quantity)
-        
-        if fallback_result:
-            print(f"[PRICING] {tipo_vendita}: Fallback trovato - €{fallback_result['price_per_unit']}")
-            return fallback_result
-        
-        # 3. Nessuna opzione disponibile
-        print(f"[PRICING] {tipo_vendita}: Nessun prezzo disponibile")
-        return None
-        
-    except Exception as e:
-        print(f"[PRICING] Errore enhanced: {e}")
-        return get_hardcoded_pricing_fallback(tipo_vendita, quantity)
-
-def get_customer_specific_price_for_type_enhanced(customer, item_code, tipo_vendita, quantity):
-    """
-    Versione enhanced con fallback per customer specifico
-    """
-    if not customer:
-        return get_price_for_type_enhanced(item_code, tipo_vendita, quantity)
-    
-    try:
-        # Ottieni gruppo cliente
-        customer_group = frappe.db.get_value("Customer", customer, "customer_group")
-        if not customer_group:
-            return get_price_for_type_enhanced(item_code, tipo_vendita, quantity)
-        
-        # Cerca minimi hard-coded per tipo vendita
-        minimum_applied = False
-        effective_qty = quantity
-        
-        # Minimi hard-coded per gruppo cliente
-        hardcoded_minimums = {
-            "Metro Quadrato": {
-                "Finale": 0.5,
-                "Bronze": 0.25, 
-                "Gold": 0.1,
-                "Diamond": 0
-            },
-            "Metro Lineare": {
-                "Finale": 2.0,
-                "Bronze": 1.0,
-                "Gold": 0.5,
-                "Diamond": 0
-            },
-            "Pezzo": {
-                "Finale": 5,
-                "Bronze": 3,
-                "Gold": 1,
-                "Diamond": 0
-            }
-        }
-        
-        if tipo_vendita in hardcoded_minimums and customer_group in hardcoded_minimums[tipo_vendita]:
-            min_qty = hardcoded_minimums[tipo_vendita][customer_group]
-            if quantity < min_qty:
-                effective_qty = min_qty
-                minimum_applied = True
-                print(f"[PRICING] Minimo {tipo_vendita} per {customer_group}: {quantity:.3f} → {effective_qty:.3f}")
-        
-        # Usa quantità effettiva per trovare prezzo
-        standard_price = get_price_for_type_enhanced(item_code, tipo_vendita, effective_qty)
-        
-        if standard_price and minimum_applied:
-            standard_price["min_applied"] = True
-            standard_price["original_qty"] = quantity
-            standard_price["effective_qty"] = effective_qty
-            standard_price["customer_group"] = customer_group
-            standard_price["min_qty"] = effective_qty
-        
-        return standard_price
-        
-    except Exception as e:
-        print(f"[PRICING] Errore customer enhanced: {e}")
-        return get_price_for_type_enhanced(item_code, tipo_vendita, quantity)
-
-# Aggiorna la funzione principale per usare la versione enhanced
-def calculate_universal_item_pricing_fixed(item_code, tipo_vendita, base=0, altezza=0, lunghezza=0, qty=1, customer=None):
-    """
-    API universale FIXED con fallback hard-coded
-    """
-    try:
-        print(f"[API FIXED] Input: {item_code}, {tipo_vendita}, customer={customer}")
-        
-        qty = float(qty) if qty else 1
-        
-        # Calcola quantità base per tipo
-        if tipo_vendita == "Metro Quadrato":
-            base = float(base) if base else 0
-            altezza = float(altezza) if altezza else 0
-            
-            if not base or not altezza or base <= 0 or altezza <= 0:
-                return {"error": "Base e altezza devono essere maggiori di 0"}
-            
-            unit_qty = (base * altezza) / 10000
-            total_qty = unit_qty * qty
-            qty_label = "m²"
-            
-        elif tipo_vendita == "Metro Lineare":
-            lunghezza = float(lunghezza) if lunghezza else 0
-            
-            if not lunghezza or lunghezza <= 0:
-                return {"error": "Lunghezza deve essere maggiore di 0"}
-            
-            unit_qty = lunghezza / 100  # da cm a metri
-            total_qty = unit_qty * qty
-            qty_label = "ml"
-            
-        elif tipo_vendita == "Pezzo":
-            unit_qty = 1
-            total_qty = qty
-            qty_label = "pz"
-            
-        else:
-            return {"error": f"Tipo vendita non supportato: {tipo_vendita}"}
-        
-        print(f"[API FIXED] Quantità calcolate: unit={unit_qty:.4f}, total={total_qty:.3f} {qty_label}")
-        
-        # Ottieni pricing con ENHANCED version (include fallback)
-        if customer:
-            pricing_info = get_customer_specific_price_for_type_enhanced(customer, item_code, tipo_vendita, total_qty)
-        else:
-            pricing_info = get_price_for_type_enhanced(item_code, tipo_vendita, total_qty)
-        
-        if not pricing_info:
-            return {
-                "error": f"Nessun prezzo disponibile per {tipo_vendita} (né database né fallback)",
-                "unit_qty": unit_qty,
-                "total_qty": total_qty
-            }
-        
-        # Calcola rate
-        price_per_unit = pricing_info["price_per_unit"]
-        rate_unitario = unit_qty * price_per_unit
-        
-        # Se ci sono minimi applicati, ricalcola
-        if pricing_info.get("min_applied"):
-            effective_qty = pricing_info.get("effective_qty", total_qty)
-            rate_unitario = (effective_qty / qty) * price_per_unit
-        
-        # Note
-        note_parts = [
-            f"Tipo: {tipo_vendita}",
-            f"Scaglione: {pricing_info.get('tier_name', 'Standard')}",
-            f"Prezzo: €{price_per_unit}/{qty_label.rstrip('z')}"
-        ]
-        
-        if pricing_info.get("tier_name", "").endswith("(fallback)"):
-            note_parts.append("💾 Usato fallback hard-coded")
-        
-        if tipo_vendita == "Metro Quadrato":
-            note_parts.extend([
-                f"Dimensioni: {base}×{altezza}cm",
-                f"{qty_label} singolo: {unit_qty:.4f} {qty_label}",
-                f"{qty_label} totali: {total_qty:.3f} {qty_label}"
-            ])
-        elif tipo_vendita == "Metro Lineare":
-            note_parts.extend([
-                f"Lunghezza: {lunghezza}cm",
-                f"{qty_label} singolo: {unit_qty:.2f} {qty_label}",
-                f"{qty_label} totali: {total_qty:.2f} {qty_label}"
-            ])
-        elif tipo_vendita == "Pezzo":
-            note_parts.append(f"Quantità: {qty} pezzi")
-        
-        if pricing_info.get("min_applied"):
-            note_parts.append(f"⚠️ Minimo {pricing_info.get('customer_group', '')}: {pricing_info.get('min_qty', 0)} {qty_label}")
-        
-        note_parts.append(f"Prezzo unitario: €{rate_unitario:.2f}")
-        
-        return {
-            "success": True,
-            "item_code": item_code,
-            "tipo_vendita": tipo_vendita,
-            "customer": customer,
-            "unit_qty": round(unit_qty, 4),
-            "total_qty": round(total_qty, 3),
-            "price_per_unit": price_per_unit,
-            "rate": round(rate_unitario, 2),
-            "tier_info": pricing_info,
-            "note_calcolo": "\n".join(note_parts)
-        }
-        
-    except Exception as e:
-        print(f"[API FIXED] ❌ ERRORE: {e}")
-        import traceback
-        traceback.print_exc()
-        return {"error": f"Errore calcolo: {str(e)}"}
-
-# Alias per compatibilità
-@frappe.whitelist()
-def calculate_universal_item_pricing_with_fallback(item_code, tipo_vendita, base=0, altezza=0, lunghezza=0, qty=1, customer=None):
-    """API pubblica con fallback"""
-    return calculate_universal_item_pricing_fixed(item_code, tipo_vendita, base, altezza, lunghezza, qty, customer)
-
-
+# ================================
+# API PRINCIPALI WHITELISTED
+# ================================
 
 @frappe.whitelist()
 def calculate_universal_item_pricing(item_code, tipo_vendita, base=0, altezza=0, lunghezza=0, qty=1, customer=None):
     """
     API universale per calcolare prezzo per tutti i tipi di vendita
+    Compatibile ERPNext 15 - Chiamata da JavaScript
     """
     try:
-        print(f"[API UNIVERSAL] Input: {item_code}, {tipo_vendita}, customer={customer}")
+        # Log della chiamata per debug
+        frappe.logger().info(f"[IDERP API] calculate_universal_item_pricing: {item_code}, {tipo_vendita}, customer={customer}")
+        
+        # Validazione parametri base
+        if not item_code:
+            return {"error": "Item code richiesto", "success": False}
+        
+        if not frappe.db.exists("Item", item_code):
+            return {"error": f"Item '{item_code}' non trovato", "success": False}
         
         qty = float(qty) if qty else 1
         
-        # Calcola quantità base per tipo
-        if tipo_vendita == "Metro Quadrato":
-            base = float(base) if base else 0
-            altezza = float(altezza) if altezza else 0
-            
-            if not base or not altezza or base <= 0 or altezza <= 0:
-                return {"error": "Base e altezza devono essere maggiori di 0"}
-            
-            unit_qty = (base * altezza) / 10000
-            total_qty = unit_qty * qty
-            qty_label = "m²"
-            
-        elif tipo_vendita == "Metro Lineare":
-            lunghezza = float(lunghezza) if lunghezza else 0
-            
-            if not lunghezza or lunghezza <= 0:
-                return {"error": "Lunghezza deve essere maggiore di 0"}
-            
-            unit_qty = lunghezza / 100  # da cm a metri
-            total_qty = unit_qty * qty
-            qty_label = "ml"
-            
-        elif tipo_vendita == "Pezzo":
-            unit_qty = 1
-            total_qty = qty
-            qty_label = "pz"
-            
-        else:
-            return {"error": f"Tipo vendita non supportato: {tipo_vendita}"}
+        # Calcola quantità base per tipo vendita
+        qty_result = calculate_base_quantities_for_type(tipo_vendita, base, altezza, lunghezza, qty)
+        if not qty_result["success"]:
+            return qty_result
         
-        print(f"[API UNIVERSAL] Quantità calcolate: unit={unit_qty:.4f}, total={total_qty:.3f} {qty_label}")
+        unit_qty = qty_result["unit_qty"]
+        total_qty = qty_result["total_qty"]
+        qty_label = qty_result["qty_label"]
         
-        # Ottieni pricing con customer group se disponibile
+        # Ottieni pricing considerando customer group se disponibile
         if customer:
-            pricing_info = get_customer_specific_price_for_type(customer, item_code, tipo_vendita, total_qty)
+            pricing_info = get_customer_specific_pricing_for_type(customer, item_code, tipo_vendita, total_qty)
         else:
-            pricing_info = get_price_for_type(item_code, tipo_vendita, total_qty)
+            pricing_info = get_item_pricing_for_type(item_code, tipo_vendita, total_qty)
         
         if not pricing_info:
             return {
                 "error": f"Nessuno scaglione configurato per {tipo_vendita}",
+                "success": False,
                 "unit_qty": unit_qty,
-                "total_qty": total_qty
+                "total_qty": total_qty,
+                "qty_label": qty_label
             }
         
-        # Calcola rate
+        # Calcola rate unitario
         price_per_unit = pricing_info["price_per_unit"]
         rate_unitario = unit_qty * price_per_unit
         
-        # Se ci sono minimi applicati, ricalcola
+        # Applica minimi se configurati
         if pricing_info.get("min_applied"):
             effective_qty = pricing_info.get("effective_qty", total_qty)
             rate_unitario = (effective_qty / qty) * price_per_unit
         
-        # Note
-        note_parts = [
-            f"Tipo: {tipo_vendita}",
-            f"Scaglione: {pricing_info.get('tier_name', 'Standard')}",
-            f"Prezzo: €{price_per_unit}/{qty_label.rstrip('z')}"
-        ]
-        
-        if tipo_vendita == "Metro Quadrato":
-            note_parts.extend([
-                f"Dimensioni: {base}×{altezza}cm",
-                f"{qty_label} singolo: {unit_qty:.4f} {qty_label}",
-                f"{qty_label} totali: {total_qty:.3f} {qty_label}"
-            ])
-        elif tipo_vendita == "Metro Lineare":
-            note_parts.extend([
-                f"Lunghezza: {lunghezza}cm",
-                f"{qty_label} singolo: {unit_qty:.2f} {qty_label}",
-                f"{qty_label} totali: {total_qty:.2f} {qty_label}"
-            ])
-        elif tipo_vendita == "Pezzo":
-            note_parts.append(f"Quantità: {qty} pezzi")
-        
-        if pricing_info.get("min_applied"):
-            note_parts.append(f"⚠️ Minimo {pricing_info.get('customer_group', '')}: {pricing_info.get('min_qty', 0)} {qty_label}")
-        
-        note_parts.append(f"Prezzo unitario: €{rate_unitario:.2f}")
+        # Costruisci note dettagliate
+        note_parts = build_calculation_notes(tipo_vendita, qty_result, pricing_info, price_per_unit, rate_unitario)
         
         return {
             "success": True,
@@ -379,112 +77,72 @@ def calculate_universal_item_pricing(item_code, tipo_vendita, base=0, altezza=0,
             "price_per_unit": price_per_unit,
             "rate": round(rate_unitario, 2),
             "tier_info": pricing_info,
-            "note_calcolo": "\n".join(note_parts)
+            "note_calcolo": "\n".join(note_parts),
+            "qty_label": qty_label
         }
         
     except Exception as e:
-        print(f"[API UNIVERSAL] ❌ ERRORE: {e}")
-        import traceback
-        traceback.print_exc()
-        return {"error": f"Errore calcolo: {str(e)}"}
+        frappe.logger().error(f"[IDERP API] Errore calculate_universal_item_pricing: {str(e)}")
+        return {
+            "error": f"Errore interno: {str(e)}",
+            "success": False
+        }
 
-def get_price_for_type(item_code, tipo_vendita, quantity):
+@frappe.whitelist()
+def calculate_universal_item_pricing_with_fallback(item_code, tipo_vendita, base=0, altezza=0, lunghezza=0, qty=1, customer=None):
     """
-    Ottieni prezzo per tipo vendita (senza customer group)
+    API con fallback hard-coded per garantire sempre un risultato
+    Usata quando il database non ha scaglioni configurati
     """
     try:
-        item_doc = frappe.get_doc("Item", item_code)
+        # Prima prova con sistema database normale
+        result = calculate_universal_item_pricing(item_code, tipo_vendita, base, altezza, lunghezza, qty, customer)
         
-        if not hasattr(item_doc, 'pricing_tiers') or not item_doc.pricing_tiers:
-            return None
+        if result.get("success"):
+            return result
         
-        # Cerca scaglioni per questo tipo
-        for tier in item_doc.pricing_tiers:
-            tier_type = getattr(tier, 'selling_type', getattr(tier, 'from_sqm', None) is not None and 'Metro Quadrato' or 'Pezzo')
-            
-            if tier_type == tipo_vendita:
-                from_qty = getattr(tier, 'from_qty', getattr(tier, 'from_sqm', 0))
-                to_qty = getattr(tier, 'to_qty', getattr(tier, 'to_sqm', None))
-                
-                if quantity >= from_qty:
-                    if not to_qty or quantity <= to_qty:
-                        return {
-                            "price_per_unit": getattr(tier, 'price_per_unit', getattr(tier, 'price_per_sqm', 0)),
-                            "tier_name": tier.tier_name,
-                            "from_qty": from_qty,
-                            "to_qty": to_qty
-                        }
+        # Se fallisce, usa fallback hard-coded
+        frappe.logger().info(f"[IDERP FALLBACK] Usando prezzi hard-coded per {tipo_vendita}")
         
-        # Cerca default per questo tipo
-        for tier in item_doc.pricing_tiers:
-            tier_type = getattr(tier, 'selling_type', 'Metro Quadrato')
-            if tier_type == tipo_vendita and getattr(tier, 'is_default', 0):
-                return {
-                    "price_per_unit": getattr(tier, 'price_per_unit', getattr(tier, 'price_per_sqm', 0)),
-                    "tier_name": tier.tier_name + " (Default)",
-                    "from_qty": 0,
-                    "to_qty": None
-                }
+        # Calcola quantità
+        qty_result = calculate_base_quantities_for_type(tipo_vendita, base, altezza, lunghezza, qty)
+        if not qty_result["success"]:
+            return qty_result
         
-        return None
+        # Prezzi fallback realistici per stampa digitale
+        fallback_pricing = get_hardcoded_fallback_pricing(tipo_vendita, qty_result["total_qty"])
         
-    except Exception as e:
-        print(f"[PRICING] Errore get_price_for_type: {e}")
-        return None
-
-def get_customer_specific_price_for_type(customer, item_code, tipo_vendita, quantity):
-    """
-    Ottieni prezzo considerando customer group per tipo vendita
-    """
-    if not customer:
-        return get_price_for_type(item_code, tipo_vendita, quantity)
-    
-    try:
-        # Ottieni gruppo cliente
-        customer_group = frappe.db.get_value("Customer", customer, "customer_group")
-        if not customer_group:
-            return get_price_for_type(item_code, tipo_vendita, quantity)
+        if not fallback_pricing:
+            return {"error": f"Nessun fallback disponibile per {tipo_vendita}", "success": False}
         
-        # Cerca minimi per questo tipo
-        item_doc = frappe.get_doc("Item", item_code)
-        minimum_applied = False
-        effective_qty = quantity
+        rate_unitario = qty_result["unit_qty"] * fallback_pricing["price_per_unit"]
         
-        if hasattr(item_doc, 'customer_group_minimums') and item_doc.customer_group_minimums:
-            for min_rule in item_doc.customer_group_minimums:
-                if (min_rule.customer_group == customer_group and 
-                    getattr(min_rule, 'selling_type', 'Metro Quadrato') == tipo_vendita and 
-                    min_rule.enabled):
-                    
-                    min_qty = getattr(min_rule, 'min_qty', getattr(min_rule, 'min_sqm', 0))
-                    if quantity < min_qty:
-                        effective_qty = min_qty
-                        minimum_applied = True
-                        print(f"[PRICING] Minimo {tipo_vendita}: {quantity:.3f} → {effective_qty:.3f}")
-                    break
-        
-        # Usa quantità effettiva per trovare prezzo
-        standard_price = get_price_for_type(item_code, tipo_vendita, effective_qty)
-        
-        if standard_price and minimum_applied:
-            standard_price["min_applied"] = True
-            standard_price["original_qty"] = quantity
-            standard_price["effective_qty"] = effective_qty
-            standard_price["customer_group"] = customer_group
-            standard_price["min_qty"] = effective_qty
-        
-        return standard_price
+        return {
+            "success": True,
+            "item_code": item_code,
+            "tipo_vendita": tipo_vendita,
+            "customer": customer,
+            "unit_qty": round(qty_result["unit_qty"], 4),
+            "total_qty": round(qty_result["total_qty"], 3),
+            "price_per_unit": fallback_pricing["price_per_unit"],
+            "rate": round(rate_unitario, 2),
+            "tier_info": {
+                "tier_name": f"{fallback_pricing['tier_name']} (fallback)",
+                "source": "hardcoded"
+            },
+            "note_calcolo": f"💾 FALLBACK HARD-CODED\n{tipo_vendita}: {qty_result['total_qty']:.3f} {qty_result['qty_label']}\nPrezzo: €{fallback_pricing['price_per_unit']}/{qty_result['qty_label'].rstrip('z')}\nRate: €{rate_unitario:.2f}",
+            "qty_label": qty_result["qty_label"]
+        }
         
     except Exception as e:
-        print(f"[PRICING] Errore customer specific: {e}")
-        return get_price_for_type(item_code, tipo_vendita, quantity)
-        
-        
+        frappe.logger().error(f"[IDERP FALLBACK] Errore: {str(e)}")
+        return {"error": f"Errore fallback: {str(e)}", "success": False}
 
 @frappe.whitelist()
 def get_item_pricing_tiers(item_code):
     """
     API per ottenere scaglioni prezzo di un item (chiamata da JavaScript)
+    ERPNext 15 Compatible
     """
     try:
         if not frappe.db.exists("Item", item_code):
@@ -499,259 +157,375 @@ def get_item_pricing_tiers(item_code):
         if not hasattr(item_doc, 'pricing_tiers') or not item_doc.pricing_tiers:
             return {"tiers": [], "message": "Nessuno scaglione configurato"}
         
-        tiers = []
+        # Raggruppa scaglioni per tipo vendita
+        tiers_by_type = {}
+        
         for tier in item_doc.pricing_tiers:
-            tiers.append({
-                "from_sqm": tier.from_sqm,
-                "to_sqm": tier.to_sqm,
-                "price_per_sqm": tier.price_per_sqm,
-                "tier_name": tier.tier_name or "",
-                "is_default": tier.is_default or 0
-            })
+            # Compatibilità con formato nuovo e legacy
+            selling_type = getattr(tier, 'selling_type', None)
+            if not selling_type:
+                # Formato legacy - assume Metro Quadrato se ha campi sqm
+                if hasattr(tier, 'from_sqm') or hasattr(tier, 'price_per_sqm'):
+                    selling_type = "Metro Quadrato"
+                else:
+                    selling_type = "Pezzo"
+            
+            if selling_type not in tiers_by_type:
+                tiers_by_type[selling_type] = []
+            
+            # Costruisci tier info compatibile
+            tier_info = {
+                "selling_type": selling_type,
+                "from_qty": getattr(tier, 'from_qty', getattr(tier, 'from_sqm', 0)),
+                "to_qty": getattr(tier, 'to_qty', getattr(tier, 'to_sqm', None)),
+                "price_per_unit": getattr(tier, 'price_per_unit', getattr(tier, 'price_per_sqm', 0)),
+                "tier_name": getattr(tier, 'tier_name', ''),
+                "is_default": getattr(tier, 'is_default', 0)
+            }
+            
+            tiers_by_type[selling_type].append(tier_info)
         
-        # Ordina per from_sqm
-        tiers.sort(key=lambda x: x["from_sqm"])
+        # Ordina ogni tipo per from_qty
+        for selling_type in tiers_by_type:
+            tiers_by_type[selling_type].sort(key=lambda x: x["from_qty"])
         
         return {
-            "tiers": tiers,
+            "tiers_by_type": tiers_by_type,
             "item_code": item_code,
-            "supports_tiers": True
+            "supports_tiers": True,
+            "total_tiers": len(item_doc.pricing_tiers)
         }
         
     except Exception as e:
-        frappe.log_error(f"Errore get_item_pricing_tiers per {item_code}: {str(e)}")
+        frappe.logger().error(f"[IDERP API] Errore get_item_pricing_tiers: {str(e)}")
         return {"error": f"Errore caricamento scaglioni: {str(e)}"}
-
-def get_price_for_sqm(item_code, total_sqm):
-    """
-    Ottieni prezzo per m² in base agli scaglioni di un item
-    """
-    try:
-        result = get_item_pricing_tiers(item_code)
-        
-        if "error" in result:
-            return None
-        
-        tiers = result.get("tiers", [])
-        if not tiers:
-            return None
-        
-        # Cerca scaglione appropriato
-        for tier in tiers:
-            if total_sqm >= tier["from_sqm"]:
-                # Se to_sqm è None, significa "oltre X m²"
-                if not tier["to_sqm"] or total_sqm <= tier["to_sqm"]:
-                    return {
-                        "price_per_sqm": tier["price_per_sqm"],
-                        "tier_name": tier["tier_name"],
-                        "from_sqm": tier["from_sqm"],
-                        "to_sqm": tier["to_sqm"]
-                    }
-        
-        # Se non trova scaglione, cerca prezzo default
-        for tier in tiers:
-            if tier["is_default"]:
-                return {
-                    "price_per_sqm": tier["price_per_sqm"],
-                    "tier_name": tier["tier_name"] + " (Default)",
-                    "from_sqm": tier["from_sqm"],
-                    "to_sqm": tier["to_sqm"]
-                }
-        
-        return None
-        
-    except Exception as e:
-        frappe.log_error(f"Errore get_price_for_sqm: {str(e)}")
-        return None
-
-def get_customer_specific_price_for_sqm(customer, item_code, total_sqm):
-    """
-    Ottieni prezzo per m² considerando il gruppo cliente e i minimi
-    """
-    if not customer:
-        # Se non c'è cliente, usa prezzi standard
-        return get_price_for_sqm(item_code, total_sqm)
-    
-    try:
-        # Ottieni gruppo cliente
-        customer_group = frappe.db.get_value("Customer", customer, "customer_group")
-        if not customer_group:
-            return get_price_for_sqm(item_code, total_sqm)
-        
-        print(f"[PRICING] Cliente: {customer}, Gruppo: {customer_group}, m²: {total_sqm}")
-        
-        # Cerca minimi nella configurazione dell'item
-        item_doc = frappe.get_doc("Item", item_code)
-        minimum_applied = False
-        effective_sqm = total_sqm
-        min_sqm = 0
-        
-        if hasattr(item_doc, 'customer_group_minimums') and item_doc.customer_group_minimums:
-            for min_rule in item_doc.customer_group_minimums:
-                if min_rule.customer_group == customer_group and min_rule.enabled:
-                    min_sqm = min_rule.min_sqm
-                    if total_sqm < min_sqm:
-                        effective_sqm = min_sqm
-                        minimum_applied = True
-                        print(f"[PRICING] Minimo applicato: {total_sqm:.3f} → {effective_sqm:.3f} m²")
-                    break
-        
-        # Usa metri quadri effettivi per trovare lo scaglione
-        standard_price = get_price_for_sqm(item_code, effective_sqm)
-        
-        if standard_price and minimum_applied:
-            standard_price["min_applied"] = True
-            standard_price["original_sqm"] = total_sqm
-            standard_price["effective_sqm"] = effective_sqm
-            standard_price["customer_group"] = customer_group
-            standard_price["min_sqm"] = min_sqm
-        
-        return standard_price
-        
-    except Exception as e:
-        print(f"[PRICING] Errore: {e}")
-        frappe.log_error(f"Errore get_customer_specific_price_for_sqm: {str(e)}")
-        return get_price_for_sqm(item_code, total_sqm)
-
-@frappe.whitelist()
-def calculate_item_pricing(item_code, base, altezza, qty=1, customer=None):
-    """
-    API per calcolare prezzo con scaglioni e minimi gruppo cliente
-    FIXED: Rate corretto con minimi applicati
-    """
-    try:
-        print(f"[API] ===== CALCOLO PREZZO =====")
-        print(f"[API] Input: item={item_code}, base={base}, altezza={altezza}, qty={qty}, customer={customer}")
-        
-        base = float(base) if base else 0
-        altezza = float(altezza) if altezza else 0
-        qty = float(qty) if qty else 1
-        
-        if not base or not altezza or base <= 0 or altezza <= 0:
-            return {"error": "Base e altezza devono essere maggiori di 0"}
-        
-        # Calcola m² originali
-        mq_singolo = (base * altezza) / 10000
-        mq_totali_originali = mq_singolo * qty
-        
-        print(f"[API] m² originali: singolo={mq_singolo:.4f}, totali={mq_totali_originali:.3f}")
-        
-        # Ottieni pricing info (con minimi se c'è customer)
-        if customer:
-            print(f"[API] Calcolo con customer group per: {customer}")
-            pricing_info = get_customer_specific_price_for_sqm(customer, item_code, mq_totali_originali)
-        else:
-            print(f"[API] Calcolo standard senza customer")
-            pricing_info = get_price_for_sqm(item_code, mq_totali_originali)
-        
-        if not pricing_info:
-            return {
-                "error": "Nessuno scaglione configurato per questo item",
-                "mq_singolo": mq_singolo,
-                "mq_totali": mq_totali_originali
-            }
-        
-        # Ottieni m² effettivi (con minimi applicati se presenti)
-        mq_effettivi = pricing_info.get("effective_sqm", mq_totali_originali)
-        minimo_applicato = pricing_info.get("min_applied", False)
-        
-        print(f"[API] m² effettivi: {mq_effettivi:.3f} (minimo applicato: {minimo_applicato})")
-        
-        # CALCOLO RATE CORRETTO
-        price_per_sqm = pricing_info["price_per_sqm"]
-        
-        if minimo_applicato:
-            # Se c'è minimo: rate = (m² effettivi / quantità) * prezzo_mq
-            rate_unitario = (mq_effettivi / qty) * price_per_sqm
-            print(f"[API] Rate con minimo: ({mq_effettivi:.3f} / {qty}) * {price_per_sqm} = {rate_unitario:.2f}")
-        else:
-            # Calcolo normale: rate = m² singolo * prezzo_mq  
-            rate_unitario = mq_singolo * price_per_sqm
-            print(f"[API] Rate normale: {mq_singolo:.4f} * {price_per_sqm} = {rate_unitario:.2f}")
-        
-        totale_ordine = rate_unitario * qty
-        
-        print(f"[API] Risultato finale: rate={rate_unitario:.2f}, totale={totale_ordine:.2f}")
-        
-        # Note dettagliate
-        range_text = f"{pricing_info['from_sqm']}-{pricing_info.get('to_sqm', '∞')}"
-        note_calcolo = [
-            f"Scaglione: {pricing_info.get('tier_name', 'Standard')} ({range_text} m²)",
-            f"Prezzo: €{price_per_sqm}/m²",
-            f"Dimensioni: {base}×{altezza}cm",
-            f"m² singolo: {mq_singolo:.4f} m²",
-            f"Quantità: {qty} pz",
-            f"m² originali: {mq_totali_originali:.3f} m²"
-        ]
-        
-        if minimo_applicato:
-            customer_group = pricing_info.get("customer_group", "")
-            min_sqm = pricing_info.get("min_sqm", 0)
-            note_calcolo.extend([
-                f"⚠️ MINIMO GRUPPO {customer_group.upper()}: {min_sqm} m²",
-                f"📊 m² fatturati: {mq_effettivi:.3f} m²",
-                f"💰 Prezzo calcolato su: {mq_effettivi:.3f} m² × €{price_per_sqm}/m²"
-            ])
-        else:
-            note_calcolo.append(f"📊 m² fatturati: {mq_totali_originali:.3f} m²")
-        
-        note_calcolo.extend([
-            f"💵 Prezzo unitario: €{rate_unitario:.2f}",
-            f"💸 Totale riga: €{totale_ordine:.2f}"
-        ])
-        
-        return {
-            "success": True,
-            "item_code": item_code,
-            "customer": customer,
-            "mq_singolo": round(mq_singolo, 4),
-            "mq_totali": round(mq_totali_originali, 3),
-            "mq_effettivi": round(mq_effettivi, 3),
-            "price_per_sqm": price_per_sqm,
-            "rate": round(rate_unitario, 2),
-            "total_amount": round(totale_ordine, 2),
-            "tier_info": pricing_info,
-            "note_calcolo": "\n".join(note_calcolo),
-            "group_info": {
-                "min_applied": minimo_applicato,
-                "customer_group": pricing_info.get("customer_group"),
-                "effective_sqm": mq_effettivi,
-                "original_sqm": mq_totali_originali
-            }
-        }
-        
-    except Exception as e:
-        print(f"[API] ❌ ERRORE: {e}")
-        import traceback
-        traceback.print_exc()
-        return {"error": f"Errore calcolo: {str(e)}"}
 
 @frappe.whitelist()
 def get_customer_group_min_sqm(customer, item_code):
     """
     API per ottenere minimo m² per un cliente (chiamata da JavaScript)
+    ERPNext 15 Compatible
     """
     try:
         if not customer or not item_code:
             return {"min_sqm": 0}
         
         customer_group = frappe.db.get_value("Customer", customer, "customer_group")
+        if not customer_group:
+            return {"min_sqm": 0, "customer_group": None}
+        
+        # Cerca minimo nella configurazione item
+        item_doc = frappe.get_doc("Item", item_code)
+        
+        if hasattr(item_doc, 'customer_group_minimums') and item_doc.customer_group_minimums:
+            for min_rule in item_doc.customer_group_minimums:
+                if (min_rule.customer_group == customer_group and 
+                    getattr(min_rule, 'selling_type', 'Metro Quadrato') == 'Metro Quadrato' and
+                    min_rule.enabled):
+                    
+                    min_qty = getattr(min_rule, 'min_qty', getattr(min_rule, 'min_sqm', 0))
+                    
+                    return {
+                        "customer": customer,
+                        "customer_group": customer_group,
+                        "item_code": item_code,
+                        "min_sqm": min_qty,
+                        "calculation_mode": getattr(min_rule, 'calculation_mode', 'Per Riga'),
+                        "description": getattr(min_rule, 'description', '')
+                    }
         
         return {
             "customer": customer,
             "customer_group": customer_group,
             "item_code": item_code,
-            "min_sqm": 0  # Per ora semplificato
+            "min_sqm": 0
         }
         
     except Exception as e:
-        frappe.log_error(f"Errore get_customer_group_min_sqm: {str(e)}")
+        frappe.logger().error(f"[IDERP API] Errore get_customer_group_min_sqm: {str(e)}")
         return {"min_sqm": 0, "error": str(e)}
+
+# ================================
+# FUNZIONI CORE INTERNE
+# ================================
+
+def calculate_base_quantities_for_type(tipo_vendita, base=0, altezza=0, lunghezza=0, qty=1):
+    """
+    Calcola quantità base per ogni tipo di vendita
+    Utilizzata internamente dalle API
+    """
+    try:
+        qty = float(qty) if qty else 1
+        
+        if tipo_vendita == "Metro Quadrato":
+            base = float(base) if base else 0
+            altezza = float(altezza) if altezza else 0
+            
+            if not base or not altezza or base <= 0 or altezza <= 0:
+                return {
+                    "success": False,
+                    "error": "Base e altezza devono essere maggiori di 0"
+                }
+            
+            unit_qty = (base * altezza) / 10000  # da cm² a m²
+            total_qty = unit_qty * qty
+            
+            return {
+                "success": True,
+                "unit_qty": unit_qty,
+                "total_qty": total_qty,
+                "qty_label": "m²",
+                "dimensions": f"{base}×{altezza}cm"
+            }
+            
+        elif tipo_vendita == "Metro Lineare":
+            lunghezza = float(lunghezza) if lunghezza else 0
+            
+            if not lunghezza or lunghezza <= 0:
+                return {
+                    "success": False,
+                    "error": "Lunghezza deve essere maggiore di 0"
+                }
+            
+            unit_qty = lunghezza / 100  # da cm a metri
+            total_qty = unit_qty * qty
+            
+            return {
+                "success": True,
+                "unit_qty": unit_qty,
+                "total_qty": total_qty,
+                "qty_label": "ml",
+                "dimensions": f"{lunghezza}cm"
+            }
+            
+        elif tipo_vendita == "Pezzo":
+            return {
+                "success": True,
+                "unit_qty": 1,
+                "total_qty": qty,
+                "qty_label": "pz",
+                "dimensions": f"{qty} pezzi"
+            }
+        
+        else:
+            return {
+                "success": False,
+                "error": f"Tipo vendita non supportato: {tipo_vendita}"
+            }
+        
+    except Exception as e:
+        return {
+            "success": False,
+            "error": f"Errore calcolo quantità: {str(e)}"
+        }
+
+def get_item_pricing_for_type(item_code, tipo_vendita, quantity):
+    """
+    Ottieni prezzo per tipo vendita senza customer group
+    Cerca negli scaglioni dell'item
+    """
+    try:
+        item_doc = frappe.get_doc("Item", item_code)
+        
+        if not hasattr(item_doc, 'pricing_tiers') or not item_doc.pricing_tiers:
+            return None
+        
+        # Cerca scaglioni per questo tipo
+        matching_tiers = []
+        for tier in item_doc.pricing_tiers:
+            # Compatibilità formato nuovo e legacy
+            tier_type = getattr(tier, 'selling_type', None)
+            if not tier_type:
+                # Formato legacy
+                if hasattr(tier, 'from_sqm') or hasattr(tier, 'price_per_sqm'):
+                    tier_type = "Metro Quadrato"
+                else:
+                    tier_type = "Pezzo"
+            
+            if tier_type == tipo_vendita:
+                matching_tiers.append(tier)
+        
+        if not matching_tiers:
+            return None
+        
+        # Cerca scaglione appropriato
+        for tier in matching_tiers:
+            from_qty = getattr(tier, 'from_qty', getattr(tier, 'from_sqm', 0))
+            to_qty = getattr(tier, 'to_qty', getattr(tier, 'to_sqm', None))
+            
+            if quantity >= from_qty:
+                if not to_qty or quantity <= to_qty:
+                    return {
+                        "price_per_unit": getattr(tier, 'price_per_unit', getattr(tier, 'price_per_sqm', 0)),
+                        "tier_name": getattr(tier, 'tier_name', 'Standard'),
+                        "from_qty": from_qty,
+                        "to_qty": to_qty,
+                        "source": "database"
+                    }
+        
+        # Cerca default per questo tipo
+        for tier in matching_tiers:
+            if getattr(tier, 'is_default', 0):
+                return {
+                    "price_per_unit": getattr(tier, 'price_per_unit', getattr(tier, 'price_per_sqm', 0)),
+                    "tier_name": f"{getattr(tier, 'tier_name', 'Standard')} (Default)",
+                    "from_qty": 0,
+                    "to_qty": None,
+                    "source": "database"
+                }
+        
+        return None
+        
+    except Exception as e:
+        frappe.logger().error(f"[IDERP] Errore get_item_pricing_for_type: {str(e)}")
+        return None
+
+def get_customer_specific_pricing_for_type(customer, item_code, tipo_vendita, quantity):
+    """
+    Ottieni prezzo considerando customer group e minimi
+    """
+    if not customer:
+        return get_item_pricing_for_type(item_code, tipo_vendita, quantity)
+    
+    try:
+        # Ottieni gruppo cliente
+        customer_group = frappe.db.get_value("Customer", customer, "customer_group")
+        if not customer_group:
+            return get_item_pricing_for_type(item_code, tipo_vendita, quantity)
+        
+        # Carica item e cerca minimi
+        item_doc = frappe.get_doc("Item", item_code)
+        minimum_applied = False
+        effective_qty = quantity
+        minimum_config = None
+        
+        if hasattr(item_doc, 'customer_group_minimums') and item_doc.customer_group_minimums:
+            for min_rule in item_doc.customer_group_minimums:
+                if (min_rule.customer_group == customer_group and 
+                    getattr(min_rule, 'selling_type', 'Metro Quadrato') == tipo_vendita and 
+                    min_rule.enabled):
+                    
+                    min_qty = getattr(min_rule, 'min_qty', getattr(min_rule, 'min_sqm', 0))
+                    if quantity < min_qty:
+                        effective_qty = min_qty
+                        minimum_applied = True
+                        minimum_config = min_rule
+                        frappe.logger().info(f"[IDERP] Minimo applicato {tipo_vendita}: {quantity:.3f} → {effective_qty:.3f}")
+                    break
+        
+        # Usa quantità effettiva per trovare prezzo
+        standard_price = get_item_pricing_for_type(item_code, tipo_vendita, effective_qty)
+        
+        if standard_price and minimum_applied:
+            standard_price.update({
+                "min_applied": True,
+                "original_qty": quantity,
+                "effective_qty": effective_qty,
+                "customer_group": customer_group,
+                "min_qty": effective_qty,
+                "minimum_config": minimum_config
+            })
+        
+        return standard_price
+        
+    except Exception as e:
+        frappe.logger().error(f"[IDERP] Errore customer specific pricing: {str(e)}")
+        return get_item_pricing_for_type(item_code, tipo_vendita, quantity)
+
+def get_hardcoded_fallback_pricing(tipo_vendita, quantity):
+    """
+    Prezzi fallback hard-coded quando il database è vuoto
+    Prezzi realistici per stampa digitale
+    """
+    try:
+        if tipo_vendita == "Metro Quadrato":
+            # Scaglioni m² per stampa digitale
+            if quantity <= 0.5:
+                return {"price_per_unit": 25.0, "tier_name": "Micro tirature"}
+            elif quantity <= 2.0:
+                return {"price_per_unit": 18.0, "tier_name": "Piccole tirature"}
+            elif quantity <= 10.0:
+                return {"price_per_unit": 12.0, "tier_name": "Tirature medie"}
+            else:
+                return {"price_per_unit": 8.0, "tier_name": "Tirature grandi"}
+                
+        elif tipo_vendita == "Metro Lineare":
+            # Scaglioni ml per banner/striscioni
+            if quantity <= 5.0:
+                return {"price_per_unit": 8.0, "tier_name": "Piccoli formati"}
+            elif quantity <= 20.0:
+                return {"price_per_unit": 6.0, "tier_name": "Formati medi"}
+            else:
+                return {"price_per_unit": 4.0, "tier_name": "Grandi formati"}
+                
+        elif tipo_vendita == "Pezzo":
+            # Scaglioni pezzi per prodotti vari
+            if quantity <= 10:
+                return {"price_per_unit": 5.0, "tier_name": "Retail"}
+            elif quantity <= 100:
+                return {"price_per_unit": 3.0, "tier_name": "Wholesale"}
+            else:
+                return {"price_per_unit": 2.0, "tier_name": "Bulk"}
+        
+        return None
+        
+    except Exception as e:
+        frappe.logger().error(f"[IDERP] Errore fallback pricing: {str(e)}")
+        return None
+
+def build_calculation_notes(tipo_vendita, qty_result, pricing_info, price_per_unit, rate_unitario):
+    """
+    Costruisce note dettagliate per il calcolo
+    """
+    note_parts = [
+        f"🎯 Tipo: {tipo_vendita}",
+        f"📊 Scaglione: {pricing_info.get('tier_name', 'Standard')}"
+    ]
+    
+    # Dettagli specifici per tipo
+    if tipo_vendita == "Metro Quadrato" and "dimensions" in qty_result:
+        note_parts.extend([
+            f"📐 Dimensioni: {qty_result['dimensions']}",
+            f"🔢 m² singolo: {qty_result['unit_qty']:.4f} m²",
+            f"📊 m² totali: {qty_result['total_qty']:.3f} m²"
+        ])
+    elif tipo_vendita == "Metro Lineare" and "dimensions" in qty_result:
+        note_parts.extend([
+            f"📏 Lunghezza: {qty_result['dimensions']}",
+            f"📊 ml totali: {qty_result['total_qty']:.2f} ml"
+        ])
+    elif tipo_vendita == "Pezzo":
+        note_parts.append(f"📦 Quantità: {qty_result['total_qty']:.0f} pezzi")
+    
+    # Minimi applicati
+    if pricing_info.get("min_applied"):
+        note_parts.extend([
+            f"⚠️ MINIMO {pricing_info.get('customer_group', '')}: {pricing_info.get('min_qty', 0)} {qty_result['qty_label']}",
+            f"📈 Quantità effettiva: {pricing_info.get('effective_qty', qty_result['total_qty']):.3f} {qty_result['qty_label']}"
+        ])
+    
+    # Prezzo e calcolo
+    note_parts.extend([
+        f"💰 Prezzo: €{price_per_unit}/{qty_result['qty_label'].rstrip('z')}",
+        f"💵 Prezzo unitario: €{rate_unitario:.2f}"
+    ])
+    
+    # Fonte del prezzo
+    if pricing_info.get("source") == "hardcoded":
+        note_parts.append("💾 Fonte: Fallback hard-coded")
+    else:
+        note_parts.append("🗄️ Fonte: Scaglioni configurati")
+    
+    return note_parts
+
+# ================================
+# VALIDAZIONE SCAGLIONI
+# ================================
 
 def validate_pricing_tiers(doc, method=None):
     """
     Valida scaglioni prezzo quando si salva un Item
-    FIXED: Valida per tipo di vendita separatamente
+    ERPNext 15 Compatible - Fix per scaglioni contigui
     """
     if not getattr(doc, 'supports_custom_measurement', 0):
         return
@@ -760,129 +534,201 @@ def validate_pricing_tiers(doc, method=None):
         return
     
     errors = []
+    warnings = []
     
-    # Funzioni helper per campi compatibili
-    def get_from_value(tier):
-        from_value = getattr(tier, 'from_qty', None)
-        if from_value is None:
-            from_value = getattr(tier, 'from_sqm', None)
-        return from_value if from_value is not None else 0
-    
-    def get_to_value(tier):
-        to_value = getattr(tier, 'to_qty', None)
-        if to_value is None:
-            to_value = getattr(tier, 'to_sqm', None)
-        return to_value
-    
-    def get_price_value(tier):
-        price_value = getattr(tier, 'price_per_unit', None)
-        if price_value is None:
-            price_value = getattr(tier, 'price_per_sqm', None)
-        return price_value if price_value is not None else 0
-    
-    def get_selling_type(tier):
+    # Raggruppa per tipo vendita
+    tiers_by_type = {}
+    for i, tier in enumerate(doc.pricing_tiers):
         # Determina tipo vendita
         selling_type = getattr(tier, 'selling_type', None)
         if not selling_type:
-            # Se manca selling_type, usa logica legacy
-            if hasattr(tier, 'from_sqm') or hasattr(tier, 'to_sqm') or hasattr(tier, 'price_per_sqm'):
-                return "Metro Quadrato"
+            # Formato legacy
+            if hasattr(tier, 'from_sqm') or hasattr(tier, 'price_per_sqm'):
+                selling_type = "Metro Quadrato"
             else:
-                return "Pezzo"
-        return selling_type
-    
-    # RAGGRUPPA PER TIPO DI VENDITA
-    tiers_by_type = {}
-    for i, tier in enumerate(doc.pricing_tiers):
-        selling_type = get_selling_type(tier)
+                selling_type = "Pezzo"
+        
         if selling_type not in tiers_by_type:
             tiers_by_type[selling_type] = []
-        tiers_by_type[selling_type].append((i, tier))
+        
+        tiers_by_type[selling_type].append((i + 1, tier))  # (row_number, tier)
     
-    print(f"[VALIDATE] Validando scaglioni per {len(tiers_by_type)} tipi: {list(tiers_by_type.keys())}")
-    
-    # VALIDA OGNI TIPO SEPARATAMENTE
+    # Valida ogni tipo separatamente
     for selling_type, tier_list in tiers_by_type.items():
-        print(f"[VALIDATE] Validando {len(tier_list)} scaglioni per {selling_type}")
-        
-        # Ordina per from_value per questo tipo
-        try:
-            tier_list.sort(key=lambda x: get_from_value(x[1]))
-        except Exception as e:
-            errors.append(f"Errore ordinamento {selling_type}: {str(e)}")
-            continue
-        
-        # Valida scaglioni di questo tipo
-        for j, (original_idx, tier) in enumerate(tier_list):
-            display_row = original_idx + 1  # Riga originale nel form
-            
-            # Ottieni valori
-            from_value = get_from_value(tier)
-            to_value = get_to_value(tier)
-            price_value = get_price_value(tier)
-            
-            # Validazioni base
-            if from_value < 0:
-                errors.append(f"Riga {display_row} ({selling_type}): 'Da Quantità' non può essere negativo")
-            
-            if to_value is not None and to_value < 0:
-                errors.append(f"Riga {display_row} ({selling_type}): 'A Quantità' non può essere negativo")
-            
-            if to_value is not None and from_value >= to_value:
-                errors.append(f"Riga {display_row} ({selling_type}): 'A Quantità' ({to_value}) deve essere maggiore di 'Da Quantità' ({from_value})")
-            
-            if price_value <= 0:
-                errors.append(f"Riga {display_row} ({selling_type}): 'Prezzo/Unità' deve essere maggiore di 0")
-            
-            # Validazioni sovrapposizioni DENTRO LO STESSO TIPO
-            if j > 0:
-                prev_original_idx, prev_tier = tier_list[j-1]
-                prev_to_value = get_to_value(prev_tier)
-                prev_display_row = prev_original_idx + 1
-                
-                # VERA sovrapposizione nello stesso tipo
-                if prev_to_value is not None and from_value < prev_to_value:
-                    errors.append(
-                        f"Riga {display_row} ({selling_type}): Sovrapposizione con riga {prev_display_row} - "
-                        f"inizia a {from_value} ma il precedente finisce a {prev_to_value}"
-                    )
+        validate_tiers_for_type(selling_type, tier_list, errors, warnings)
     
+    # Mostra risultati
     if errors:
-        print(f"[VALIDATE] ❌ {len(errors)} errori trovati:")
-        for error in errors:
-            print(f"[VALIDATE]   - {error}")
-        frappe.throw(_("Errori negli scaglioni prezzo:\n" + "\n".join(errors)))
-    else:
-        print(f"[VALIDATE] ✅ Validazione superata per tutti i tipi")
+        error_message = "❌ ERRORI negli scaglioni prezzo:\n" + "\n".join(errors)
+        if warnings:
+            error_message += "\n\n⚠️ AVVISI:\n" + "\n".join(warnings)
+        frappe.throw(_(error_message))
+    elif warnings:
+        warning_message = "⚠️ AVVISI scaglioni prezzo:\n" + "\n".join(warnings)
+        frappe.msgprint(_(warning_message), title="Configurazione Scaglioni", indicator="orange")
 
-def get_item_price_info(item_code):
+def validate_tiers_for_type(selling_type, tier_list, errors, warnings):
     """
-    Ottieni informazioni complete sui prezzi di un item
+    Valida scaglioni per un tipo vendita specifico
+    """
+    if not tier_list:
+        return
+    
+    # Funzioni helper per compatibilità formato
+    def get_from_value(tier):
+        return getattr(tier, 'from_qty', getattr(tier, 'from_sqm', 0))
+    
+    def get_to_value(tier):
+        return getattr(tier, 'to_qty', getattr(tier, 'to_sqm', None))
+    
+    def get_price_value(tier):
+        return getattr(tier, 'price_per_unit', getattr(tier, 'price_per_sqm', 0))
+    
+    # Ordina per from_value
+    try:
+        tier_list.sort(key=lambda x: get_from_value(x[1]))
+    except Exception as e:
+        errors.append(f"Errore ordinamento {selling_type}: {str(e)}")
+        return
+    
+    # Valida ogni scaglione
+    for j, (row_num, tier) in enumerate(tier_list):
+        from_value = get_from_value(tier)
+        to_value = get_to_value(tier)
+        price_value = get_price_value(tier)
+        
+        # Validazioni base
+        if from_value < 0:
+            errors.append(f"Riga {row_num} ({selling_type}): 'Da Quantità' non può essere negativo")
+        
+        if to_value is not None and to_value < 0:
+            errors.append(f"Riga {row_num} ({selling_type}): 'A Quantità' non può essere negativo")
+        
+        if to_value is not None and from_value >= to_value:
+            errors.append(f"Riga {row_num} ({selling_type}): 'A Quantità' ({to_value}) deve essere maggiore di 'Da Quantità' ({from_value})")
+        
+        if price_value <= 0:
+            errors.append(f"Riga {row_num} ({selling_type}): 'Prezzo/Unità' deve essere maggiore di 0")
+        
+        # Validazioni sovrapposizioni
+        if j > 0:
+            prev_row_num, prev_tier = tier_list[j-1]
+            prev_to_value = get_to_value(prev_tier)
+            
+            # VERA sovrapposizione (non scaglioni contigui)
+            if prev_to_value is not None and from_value < prev_to_value:
+                errors.append(
+                    f"Riga {row_num} ({selling_type}): Sovrapposizione - inizia a {from_value} "
+                    f"ma il precedente (riga {prev_row_num}) finisce a {prev_to_value}"
+                )
+            
+            # Gap tra scaglioni (warning)
+            elif prev_to_value is not None and from_value > prev_to_value:
+                gap_size = from_value - prev_to_value
+                warnings.append(
+                    f"Riga {row_num} ({selling_type}): Gap di {gap_size} tra riga {prev_row_num} e {row_num} "
+                    f"- ordini in questo range useranno scaglione precedente"
+                )
+
+# ================================
+# UTILITY E COMPATIBILITY
+# ================================
+
+def get_price_for_sqm(item_code, total_sqm):
+    """
+    Funzione legacy per compatibilità - ora usa sistema universale
+    """
+    result = get_item_pricing_for_type(item_code, "Metro Quadrato", total_sqm)
+    if result:
+        return {
+            "price_per_sqm": result["price_per_unit"],
+            "tier_name": result["tier_name"],
+            "from_sqm": result["from_qty"],
+            "to_sqm": result["to_qty"]
+        }
+    return None
+
+def get_customer_specific_price_for_sqm(customer, item_code, total_sqm):
+    """
+    Funzione legacy per compatibilità - ora usa sistema universale
+    """
+    result = get_customer_specific_pricing_for_type(customer, item_code, "Metro Quadrato", total_sqm)
+    if result:
+        return {
+            "price_per_sqm": result["price_per_unit"],
+            "tier_name": result["tier_name"],
+            "from_sqm": result["from_qty"],
+            "to_sqm": result["to_qty"],
+            "min_applied": result.get("min_applied", False),
+            "original_sqm": result.get("original_qty", total_sqm),
+            "effective_sqm": result.get("effective_qty", total_sqm),
+            "customer_group": result.get("customer_group"),
+            "min_sqm": result.get("min_qty", 0)
+        }
+    return None
+
+@frappe.whitelist()
+def calculate_item_pricing(item_code, base, altezza, qty=1, customer=None):
+    """
+    API legacy per compatibilità - ora usa sistema universale
+    """
+    return calculate_universal_item_pricing(
+        item_code=item_code,
+        tipo_vendita="Metro Quadrato",
+        base=base,
+        altezza=altezza,
+        qty=qty,
+        customer=customer
+    )
+
+# ================================
+# DEBUG E TESTING
+# ================================
+
+def debug_pricing_calculation(item_code, tipo_vendita, **kwargs):
+    """
+    Funzione di debug per troubleshooting calcoli
+    """
+    print(f"\n🔍 DEBUG PRICING: {item_code} - {tipo_vendita}")
+    print("="*50)
+    
+    try:
+        # Test calcolo quantità
+        qty_result = calculate_base_quantities_for_type(tipo_vendita, **kwargs)
+        print(f"1. Quantità: {qty_result}")
+        
+        if qty_result.get("success"):
+            # Test pricing
+            pricing_result = get_item_pricing_for_type(item_code, tipo_vendita, qty_result["total_qty"])
+            print(f"2. Pricing: {pricing_result}")
+            
+            # Test API completa
+            api_result = calculate_universal_item_pricing(item_code, tipo_vendita, **kwargs)
+            print(f"3. API Result: {api_result}")
+        
+    except Exception as e:
+        print(f"❌ Errore debug: {e}")
+
+def get_pricing_system_status():
+    """
+    Ritorna stato del sistema pricing per diagnostica
     """
     try:
-        item_doc = frappe.get_doc("Item", item_code)
+        # Item configurati
+        configured_items = frappe.db.count("Item", {"supports_custom_measurement": 1})
         
-        info = {
-            "item_code": item_code,
-            "item_name": item_doc.item_name,
-            "supports_custom_measurement": getattr(item_doc, 'supports_custom_measurement', 0),
-            "tipo_vendita_default": getattr(item_doc, 'tipo_vendita_default', ''),
-            "has_pricing_tiers": False,
-            "tiers": []
+        # Scaglioni totali
+        total_tiers = frappe.db.sql("SELECT COUNT(*) FROM `tabItem Pricing Tier`")[0][0] if frappe.db.exists("DocType", "Item Pricing Tier") else 0
+        
+        # Customer groups configurati
+        customer_groups = frappe.db.count("Customer Group", {"name": ["in", ["Finale", "Bronze", "Gold", "Diamond"]]})
+        
+        return {
+            "configured_items": configured_items,
+            "total_tiers": total_tiers,
+            "customer_groups": customer_groups,
+            "system_ready": configured_items > 0 and total_tiers > 0
         }
-        
-        if hasattr(item_doc, 'pricing_tiers') and item_doc.pricing_tiers:
-            info["has_pricing_tiers"] = True
-            for tier in item_doc.pricing_tiers:
-                info["tiers"].append({
-                    "from_sqm": tier.from_sqm,
-                    "to_sqm": tier.to_sqm,
-                    "price_per_sqm": tier.price_per_sqm,
-                    "tier_name": tier.tier_name,
-                    "is_default": tier.is_default
-                })
-        
-        return info
         
     except Exception as e:
         return {"error": str(e)}
