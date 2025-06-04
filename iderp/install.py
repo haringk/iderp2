@@ -1,48 +1,77 @@
+# iderp/install.py
+"""
+Installazione completa IDERP per ERPNext 15
+Sistema stampa digitale con pricing universale e customer groups
+"""
+
 import frappe
+from frappe import _
+import time
 
 def after_install():
-    """Installazione completa plugin iderp - ERPNext 15 Compatible"""
-    print("[iderp] === Installazione ERPNext 15 Safe Mode ===")
+    """Installazione completa plugin IDERP per ERPNext 15"""
+    print("\n" + "="*70)
+    print("🚀 INSTALLAZIONE IDERP v2.0 - ERPNext 15 Compatible")
+    print("="*70)
     
     try:
-        # 1. Installa campi custom per documenti di vendita
+        # 1. Installa campi custom per documenti vendita
+        print("\n1️⃣ Installazione campi documenti vendita...")
         install_sales_custom_fields()
         
         # 2. Installa campi custom per configurazione Item
+        print("\n2️⃣ Installazione configurazione Item...")
         install_item_config_fields()
         
-        # 3. DISABILITATO PER ORA: Child Tables (potrebbero causare errori)
-        # create_item_pricing_tier_child_table()
-        # add_pricing_table_to_item()
+        # 3. Crea Child DocTypes per sistema avanzato
+        print("\n3️⃣ Creazione DocTypes avanzati...")
+        create_advanced_doctypes()
         
-        print("[iderp] ✅ Installazione base completata")
-        print("[iderp] ✓ Custom Fields per vendita installati")
-        print("[iderp] ✓ Configurazione Item installata")
-        print("[iderp] ⚠️ DocTypes avanzati disabilitati temporaneamente")
+        # 4. Aggiunge tabelle agli Item
+        print("\n4️⃣ Configurazione tabelle Item...")
+        add_tables_to_item()
+        
+        # 5. Installa sistema Customer Groups
+        print("\n5️⃣ Setup Customer Groups...")
+        install_customer_group_system()
+        
+        # 6. Configura demo data
+        print("\n6️⃣ Configurazione demo...")
+        setup_demo_data()
+        
+        # 7. Validazione finale
+        print("\n7️⃣ Validazione installazione...")
+        validate_installation()
+        
+        print("\n" + "="*70)
+        print("✅ INSTALLAZIONE IDERP COMPLETATA CON SUCCESSO!")
+        print("="*70)
+        show_installation_summary()
         
     except Exception as e:
-        print(f"[iderp] ❌ Errore installazione: {e}")
+        print(f"\n❌ ERRORE INSTALLAZIONE: {e}")
+        import traceback
+        traceback.print_exc()
         # Non lanciare eccezione per permettere installazione parziale
 
 def install_sales_custom_fields():
-    """Installa campi custom per documenti di vendita - ERPNext 15"""
-    print("[iderp] Installando campi vendita...")
+    """Installa campi custom per documenti di vendita - ERPNext 15 Compatible"""
     
     doctypes = [
         "Quotation Item",
-        "Sales Order Item",
-        "Delivery Note Item", 
+        "Sales Order Item", 
+        "Delivery Note Item",
         "Sales Invoice Item",
         "Purchase Order Item",
         "Purchase Invoice Item",
-        "Material Request Item",
+        "Material Request Item"
     ]
     
     custom_fields = [
-        # Campo per tipo di vendita
+        # Tipo vendita principale
         {
             "fieldname": "tipo_vendita",
-            "label": "Tipo Vendita", 
+            "label": "Tipo Vendita",
             "fieldtype": "Select",
             "options": "\nPezzo\nMetro Quadrato\nMetro Lineare",
             "default": "Metro Quadrato",
@@ -50,144 +79,240 @@ def install_sales_custom_fields():
             "reqd": 1,
             "in_list_view": 1,
             "columns": 2,
-            "description": "Seleziona come vendere questo prodotto",
+            "description": "Modalità di vendita per questo prodotto"
         },
         
-        # Campi per metri quadrati
+        # Section Break per Metro Quadrato
+        {
+            "fieldname": "mq_section_break",
+            "fieldtype": "Section Break",
+            "label": "Misure Metro Quadrato",
+            "insert_after": "tipo_vendita",
+            "depends_on": "eval:doc.tipo_vendita==='Metro Quadrato'",
+            "collapsible": 1
+        },
+        
+        # Campi Metro Quadrato
         {
             "fieldname": "base",
             "label": "Base (cm)",
-            "fieldtype": "Float", 
-            "insert_after": "tipo_vendita",
+            "fieldtype": "Float",
+            "insert_after": "mq_section_break",
             "precision": 2,
-            "depends_on": "doc.tipo_vendita === 'Metro Quadrato'",  # ERPNext 15 syntax
+            "depends_on": "eval:doc.tipo_vendita==='Metro Quadrato'",
             "in_list_view": 1,
             "columns": 2,
-            "description": "Base in centimetri per calcolo mq",
+            "description": "Base del prodotto in centimetri"
         },
         {
             "fieldname": "altezza",
-            "label": "Altezza (cm)",
+            "label": "Altezza (cm)", 
             "fieldtype": "Float",
             "insert_after": "base",
-            "precision": 2, 
-            "depends_on": "doc.tipo_vendita === 'Metro Quadrato'",  # ERPNext 15 syntax
+            "precision": 2,
+            "depends_on": "eval:doc.tipo_vendita==='Metro Quadrato'",
             "in_list_view": 1,
             "columns": 2,
-            "description": "Altezza in centimetri per calcolo mq",
+            "description": "Altezza del prodotto in centimetri"
         },
+        
+        # Column Break
+        {
+            "fieldname": "mq_column_break",
+            "fieldtype": "Column Break",
+            "insert_after": "altezza"
+        },
+        
         {
             "fieldname": "mq_singolo",
             "label": "m² Singolo",
             "fieldtype": "Float",
-            "insert_after": "altezza",
+            "insert_after": "mq_column_break",
             "precision": 4,
             "read_only": 1,
-            "depends_on": "doc.tipo_vendita === 'Metro Quadrato'",
-            "in_list_view": 1,
-            "columns": 2,
-            "description": "Metri quadri per singolo pezzo",
+            "depends_on": "eval:doc.tipo_vendita==='Metro Quadrato'",
+            "description": "Metri quadri per singolo pezzo (calcolato automaticamente)"
         },
         {
-            "fieldname": "mq_calcolati",
+            "fieldname": "mq_calcolati", 
             "label": "m² Totali",
             "fieldtype": "Float",
             "insert_after": "mq_singolo",
             "precision": 3,
             "read_only": 1,
-            "depends_on": "doc.tipo_vendita === 'Metro Quadrato'",
-            "in_list_view": 1,
-            "columns": 2,
-            "description": "Metri quadri totali (singolo × quantità)",
+            "depends_on": "eval:doc.tipo_vendita==='Metro Quadrato'",
+            "description": "Metri quadri totali (singolo × quantità)"
         },
         
-        # Campi per metri lineari
+        # Section Break per Metro Lineare
         {
-            "fieldname": "larghezza_materiale",
-            "label": "Larghezza Materiale (cm)",
-            "fieldtype": "Float",
-            "insert_after": "mq_calcolati", 
-            "precision": 2,
-            "depends_on": "doc.tipo_vendita === 'Metro Lineare'",
-            "in_list_view": 1,
-            "columns": 2,
-            "description": "Larghezza del materiale in centimetri",
+            "fieldname": "ml_section_break",
+            "fieldtype": "Section Break",
+            "label": "Misure Metro Lineare",
+            "insert_after": "mq_calcolati",
+            "depends_on": "eval:doc.tipo_vendita==='Metro Lineare'",
+            "collapsible": 1
         },
+        
+        # Campi Metro Lineare
         {
             "fieldname": "lunghezza",
             "label": "Lunghezza (cm)",
             "fieldtype": "Float",
-            "insert_after": "larghezza_materiale",
+            "insert_after": "ml_section_break",
             "precision": 2,
-            "depends_on": "doc.tipo_vendita === 'Metro Lineare'",
+            "depends_on": "eval:doc.tipo_vendita==='Metro Lineare'",
             "in_list_view": 1,
             "columns": 2,
-            "description": "Lunghezza in centimetri",
+            "description": "Lunghezza del prodotto in centimetri"
         },
         {
-            "fieldname": "ml_calcolati",
-            "label": "Metri Lineari",
-            "fieldtype": "Float",
+            "fieldname": "larghezza_materiale",
+            "label": "Larghezza Materiale (cm)",
+            "fieldtype": "Float", 
             "insert_after": "lunghezza",
             "precision": 2,
-            "read_only": 1,
-            "depends_on": "doc.tipo_vendita === 'Metro Lineare'",
-            "in_list_view": 1,
+            "depends_on": "eval:doc.tipo_vendita==='Metro Lineare'",
             "columns": 2,
-            "description": "Metri lineari totali (lunghezza × quantità)",
+            "description": "Larghezza del materiale (può essere predefinita)"
+        },
+        
+        # Column Break ML
+        {
+            "fieldname": "ml_column_break",
+            "fieldtype": "Column Break",
+            "insert_after": "larghezza_materiale"
+        },
+        
+        {
+            "fieldname": "ml_calcolati",
+            "label": "Metri Lineari Totali",
+            "fieldtype": "Float",
+            "insert_after": "ml_column_break",
+            "precision": 2,
+            "read_only": 1,
+            "depends_on": "eval:doc.tipo_vendita==='Metro Lineare'",
+            "description": "Metri lineari totali (lunghezza × quantità / 100)"
+        },
+        
+        # Section Break per Pezzi
+        {
+            "fieldname": "pz_section_break",
+            "fieldtype": "Section Break",
+            "label": "Vendita a Pezzi",
+            "insert_after": "ml_calcolati",
+            "depends_on": "eval:doc.tipo_vendita==='Pezzo'",
+            "collapsible": 1
+        },
+        
+        {
+            "fieldname": "pz_totali",
+            "label": "Pezzi Totali",
+            "fieldtype": "Float",
+            "insert_after": "pz_section_break",
+            "precision": 0,
+            "read_only": 1,
+            "depends_on": "eval:doc.tipo_vendita==='Pezzo'",
+            "description": "Numero totale di pezzi"
+        },
+        
+        # Section Break per Prezzi
+        {
+            "fieldname": "pricing_section_break",
+            "fieldtype": "Section Break",
+            "label": "Prezzi Specifici",
+            "insert_after": "pz_totali",
+            "collapsible": 1
         },
         
         # Prezzi specifici per tipo
         {
             "fieldname": "prezzo_mq",
-            "label": "Prezzo al m² (€)",
+            "label": "Prezzo €/m²",
             "fieldtype": "Currency",
-            "insert_after": "rate",
-            "depends_on": "doc.tipo_vendita === 'Metro Quadrato'",
-            "description": "Prezzo per metro quadrato (da scaglioni o manuale)",
+            "insert_after": "pricing_section_break",
+            "depends_on": "eval:doc.tipo_vendita==='Metro Quadrato'",
+            "columns": 2,
+            "description": "Prezzo al metro quadrato (da scaglioni o manuale)"
         },
         {
-            "fieldname": "prezzo_ml", 
-            "label": "Prezzo al ml (€)",
-            "fieldtype": "Currency",
+            "fieldname": "prezzo_ml",
+            "label": "Prezzo €/ml",
+            "fieldtype": "Currency", 
             "insert_after": "prezzo_mq",
-            "depends_on": "doc.tipo_vendita === 'Metro Lineare'",
-            "description": "Prezzo per metro lineare",
+            "depends_on": "eval:doc.tipo_vendita==='Metro Lineare'",
+            "columns": 2,
+            "description": "Prezzo al metro lineare"
         },
         
-        # Campo informativo
+        # Column Break Prezzi
+        {
+            "fieldname": "pricing_column_break",
+            "fieldtype": "Column Break",
+            "insert_after": "prezzo_ml"
+        },
+        
+        # Campi di controllo
+        {
+            "fieldname": "auto_calculated",
+            "label": "Calcolato Automaticamente",
+            "fieldtype": "Check",
+            "insert_after": "pricing_column_break",
+            "read_only": 1,
+            "description": "Indica se il prezzo è stato calcolato automaticamente"
+        },
+        {
+            "fieldname": "manual_rate_override",
+            "label": "Prezzo Modificato Manualmente",
+            "fieldtype": "Check",
+            "insert_after": "auto_calculated",
+            "read_only": 1,
+            "description": "Indica se il prezzo è stato modificato manualmente"
+        },
+        {
+            "fieldname": "price_locked",
+            "label": "Prezzo Bloccato",
+            "fieldtype": "Check",
+            "insert_after": "manual_rate_override",
+            "description": "Blocca il ricalcolo automatico del prezzo"
+        },
+        
+        # Note di calcolo
         {
             "fieldname": "note_calcolo",
             "label": "Dettaglio Calcolo",
-            "fieldtype": "Text",
-            "insert_after": "prezzo_ml",
+            "fieldtype": "Long Text",
+            "insert_after": "price_locked",
             "read_only": 1,
-            "description": "Mostra come è stato calcolato il prezzo con scaglioni",
+            "description": "Mostra come è stato calcolato il prezzo"
         }
     ]
     
     for dt in doctypes:
+        print(f"   📋 Configurando {dt}...")
         for cf in custom_fields:
-            create_custom_field(dt, cf)
+            create_custom_field_v15(dt, cf)
 
 def install_item_config_fields():
-    """Installa campi custom per configurazione Item base - ERPNext 15"""
-    print("[iderp] Installando configurazione Item...")
+    """Installa campi custom per configurazione Item - ERPNext 15"""
     
     custom_fields = [
+        # Section principale
         {
-            "fieldname": "measurement_config_section",
+            "fieldname": "iderp_config_section",
             "fieldtype": "Section Break",
-            "label": "Configurazione Vendita Personalizzata",
+            "label": "🎯 IDERP - Configurazione Vendita Avanzata",
             "insert_after": "website_specifications",
-            "collapsible": 1,
+            "collapsible": 0
         },
+        
+        # Configurazione base
         {
             "fieldname": "supports_custom_measurement",
-            "fieldtype": "Check", 
+            "fieldtype": "Check",
             "label": "Supporta Misure Personalizzate",
-            "insert_after": "measurement_config_section",
-            "description": "Abilita calcoli per metro quadrato/lineare",
+            "insert_after": "iderp_config_section",
+            "description": "Abilita calcoli automatici per metro quadrato/lineare"
         },
         {
             "fieldname": "tipo_vendita_default",
@@ -196,980 +321,821 @@ def install_item_config_fields():
             "options": "\nPezzo\nMetro Quadrato\nMetro Lineare",
             "insert_after": "supports_custom_measurement",
             "depends_on": "supports_custom_measurement",
+            "description": "Tipo di vendita predefinito per questo articolo"
         },
+        
+        # Column Break
         {
-            "fieldname": "config_column_break",
+            "fieldname": "iderp_column_break_1",
             "fieldtype": "Column Break",
-            "insert_after": "tipo_vendita_default",
+            "insert_after": "tipo_vendita_default"
         },
+        
+        # Configurazioni avanzate
         {
             "fieldname": "larghezza_materiale_default",
             "fieldtype": "Float",
             "label": "Larghezza Materiale Default (cm)",
             "precision": 2,
-            "insert_after": "config_column_break",
-            "depends_on": "tipo_vendita_default === 'Metro Lineare'",  # ERPNext 15 syntax
+            "insert_after": "iderp_column_break_1",
+            "depends_on": "eval:doc.tipo_vendita_default==='Metro Lineare'",
+            "description": "Larghezza predefinita del materiale per vendita a metro lineare"
         },
+        {
+            "fieldname": "min_order_qty",
+            "fieldtype": "Float",
+            "label": "Quantità Minima Ordine",
+            "precision": 3,
+            "insert_after": "larghezza_materiale_default",
+            "depends_on": "supports_custom_measurement",
+            "description": "Quantità minima ordinabile (m², ml, o pezzi)"
+        },
+        
+        # Help text
+        {
+            "fieldname": "iderp_help",
+            "fieldtype": "HTML",
+            "label": "",
+            "insert_after": "min_order_qty",
+            "options": """
+            <div class="alert alert-info" style="margin: 15px 0;">
+                <h6><i class="fa fa-lightbulb-o"></i> Configurazione IDERP</h6>
+                <ul style="margin: 5px 0; padding-left: 20px;">
+                    <li><strong>Misure Personalizzate:</strong> Abilita calcoli automatici e scaglioni prezzo</li>
+                    <li><strong>Metro Quadrato:</strong> Calcolo base × altezza (cm) → m²</li>
+                    <li><strong>Metro Lineare:</strong> Calcolo lunghezza (cm) → metri lineari</li>
+                    <li><strong>Pezzo:</strong> Vendita tradizionale per quantità</li>
+                    <li><strong>Scaglioni Prezzo:</strong> Configura prezzi dinamici in base alla quantità</li>
+                    <li><strong>Customer Groups:</strong> Imposta minimi diversi per tipo cliente</li>
+                </ul>
+            </div>
+            """,
+            "depends_on": "supports_custom_measurement"
+        }
     ]
     
+    print("   📦 Configurando Item...")
     for cf in custom_fields:
-        create_custom_field("Item", cf)
+        create_custom_field_v15("Item", cf)
 
-def create_custom_field(doctype, field_dict):
+def create_advanced_doctypes():
+    """Crea DocTypes avanzati per sistema pricing universale"""
+    
+    # 1. Item Pricing Tier (Child Table per scaglioni)
+    create_item_pricing_tier_doctype()
+    
+    # 2. Customer Group Minimum (Child Table per minimi)
+    create_customer_group_minimum_doctype()
+    
+    # 3. Customer Group Price Rule (DocType principale)
+    create_customer_group_price_rule_doctype()
+
+def create_item_pricing_tier_doctype():
+    """Crea Child DocType per scaglioni prezzo universale"""
+    
+    doctype_name = "Item Pricing Tier"
+    
+    if frappe.db.exists("DocType", doctype_name):
+        print(f"   📊 {doctype_name} già esistente")
+        return True
+    
+    child_doctype = {
+        "doctype": "DocType",
+        "name": doctype_name,
+        "module": "IDERP",
+        "custom": 1,
+        "istable": 1,
+        "editable_grid": 1,
+        "track_changes": 0,
+        "engine": "InnoDB",
+        "fields": [
+            # Tipo vendita
+            {
+                "fieldname": "selling_type",
+                "fieldtype": "Select",
+                "label": "Tipo Vendita",
+                "options": "\nMetro Quadrato\nMetro Lineare\nPezzo",
+                "reqd": 1,
+                "in_list_view": 1,
+                "columns": 2,
+                "description": "Tipo di vendita per questo scaglione"
+            },
+            # Range quantità
+            {
+                "fieldname": "from_qty",
+                "fieldtype": "Float",
+                "label": "Da Quantità",
+                "precision": 3,
+                "reqd": 1,
+                "in_list_view": 1,
+                "columns": 2,
+                "description": "Quantità minima (m², ml, o pezzi)"
+            },
+            {
+                "fieldname": "to_qty",
+                "fieldtype": "Float",
+                "label": "A Quantità",
+                "precision": 3,
+                "in_list_view": 1,
+                "columns": 2,
+                "description": "Quantità massima (vuoto = illimitato)"
+            },
+            # Prezzo
+            {
+                "fieldname": "price_per_unit",
+                "fieldtype": "Currency",
+                "label": "Prezzo per Unità",
+                "reqd": 1,
+                "in_list_view": 1,
+                "columns": 2,
+                "description": "€/m², €/ml, o €/pezzo"
+            },
+            # Metadati
+            {
+                "fieldname": "tier_name",
+                "fieldtype": "Data",
+                "label": "Nome Scaglione",
+                "in_list_view": 1,
+                "columns": 3,
+                "description": "Nome descrittivo (es: Piccole tirature, Industriale)"
+            },
+            {
+                "fieldname": "is_default",
+                "fieldtype": "Check",
+                "label": "Default",
+                "columns": 1,
+                "description": "Prezzo di fallback per questo tipo vendita"
+            }
+        ],
+        "permissions": [
+            {
+                "role": "System Manager",
+                "read": 1, "write": 1, "create": 1, "delete": 1
+            },
+            {
+                "role": "Sales Manager",
+                "read": 1, "write": 1, "create": 1, "delete": 1
+            },
+            {
+                "role": "Sales User",
+                "read": 1, "write": 1, "create": 1
+            }
+        ]
+    }
+    
+    try:
+        child_doc = frappe.get_doc(child_doctype)
+        child_doc.insert(ignore_permissions=True)
+        print(f"   ✅ {doctype_name} creato")
+        return True
+    except Exception as e:
+        print(f"   ❌ Errore creazione {doctype_name}: {e}")
+        return False
+
+def create_customer_group_minimum_doctype():
+    """Crea Child DocType per minimi customer group universale"""
+    
+    doctype_name = "Customer Group Minimum"
+    
+    if frappe.db.exists("DocType", doctype_name):
+        print(f"   👥 {doctype_name} già esistente")
+        return True
+    
+    child_doctype = {
+        "doctype": "DocType",
+        "name": doctype_name,
+        "module": "IDERP",
+        "custom": 1,
+        "istable": 1,
+        "editable_grid": 1,
+        "track_changes": 0,
+        "engine": "InnoDB",
+        "fields": [
+            # Gruppo e tipo
+            {
+                "fieldname": "customer_group",
+                "fieldtype": "Link",
+                "label": "Gruppo Cliente",
+                "options": "Customer Group",
+                "reqd": 1,
+                "in_list_view": 1,
+                "columns": 2
+            },
+            {
+                "fieldname": "selling_type",
+                "fieldtype": "Select",
+                "label": "Tipo Vendita",
+                "options": "\nMetro Quadrato\nMetro Lineare\nPezzo",
+                "reqd": 1,
+                "in_list_view": 1,
+                "columns": 2,
+                "description": "Tipo vendita per cui si applica questa regola"
+            },
+            # Quantità minima
+            {
+                "fieldname": "min_qty",
+                "fieldtype": "Float",
+                "label": "Quantità Minima",
+                "precision": 3,
+                "reqd": 1,
+                "in_list_view": 1,
+                "columns": 2,
+                "description": "m², ml, o pezzi minimi fatturabili"
+            },
+            # Modalità calcolo
+            {
+                "fieldname": "calculation_mode",
+                "fieldtype": "Select",
+                "label": "Modalità Calcolo",
+                "options": "\nPer Riga\nGlobale Preventivo",
+                "default": "Per Riga",
+                "in_list_view": 1,
+                "columns": 2,
+                "description": "Come applicare il minimo"
+            },
+            # Costi fissi
+            {
+                "fieldname": "fixed_cost",
+                "fieldtype": "Currency",
+                "label": "Costo Fisso €",
+                "precision": 2,
+                "description": "Costo fisso aggiuntivo (setup, trasporto, etc.)"
+            },
+            {
+                "fieldname": "fixed_cost_mode",
+                "fieldtype": "Select",
+                "label": "Modalità Costo Fisso",
+                "options": "\nPer Riga\nPer Preventivo\nPer Item Totale",
+                "default": "Per Preventivo",
+                "depends_on": "eval:doc.fixed_cost > 0"
+            },
+            # Controlli
+            {
+                "fieldname": "enabled",
+                "fieldtype": "Check",
+                "label": "Abilitato",
+                "default": 1,
+                "in_list_view": 1
+            },
+            {
+                "fieldname": "priority",
+                "fieldtype": "Int",
+                "label": "Priorità",
+                "default": 10
+            },
+            {
+                "fieldname": "description",
+                "fieldtype": "Text",
+                "label": "Descrizione",
+                "description": "Descrizione della regola (es: Setup stampa, Gestione ordine)"
+            }
+        ],
+        "permissions": [
+            {
+                "role": "System Manager",
+                "read": 1, "write": 1, "create": 1, "delete": 1
+            },
+            {
+                "role": "Sales Manager",
+                "read": 1, "write": 1, "create": 1, "delete": 1
+            },
+            {
+                "role": "Sales User",
+                "read": 1, "write": 1, "create": 1
+            }
+        ]
+    }
+    
+    try:
+        child_doc = frappe.get_doc(child_doctype)
+        child_doc.insert(ignore_permissions=True)
+        print(f"   ✅ {doctype_name} creato")
+        return True
+    except Exception as e:
+        print(f"   ❌ Errore creazione {doctype_name}: {e}")
+        return False
+
+def create_customer_group_price_rule_doctype():
+    """Crea DocType principale per regole pricing customer group"""
+    
+    doctype_name = "Customer Group Price Rule"
+    
+    if frappe.db.exists("DocType", doctype_name):
+        print(f"   📋 {doctype_name} già esistente")
+        return True
+    
+    doctype_def = {
+        "doctype": "DocType",
+        "name": doctype_name,
+        "module": "IDERP",
+        "custom": 1,
+        "is_submittable": 0,
+        "track_changes": 1,
+        "fields": [
+            {
+                "fieldname": "customer_group",
+                "fieldtype": "Link",
+                "label": "Gruppo Cliente",
+                "options": "Customer Group",
+                "reqd": 1,
+                "in_list_view": 1,
+                "in_standard_filter": 1
+            },
+            {
+                "fieldname": "item_code",
+                "fieldtype": "Link",
+                "label": "Articolo",
+                "options": "Item",
+                "reqd": 1,
+                "in_list_view": 1,
+                "in_standard_filter": 1
+            },
+            {
+                "fieldname": "enabled",
+                "fieldtype": "Check",
+                "label": "Abilitato",
+                "default": 1,
+                "in_list_view": 1
+            },
+            {
+                "fieldname": "min_sqm",
+                "fieldtype": "Float",
+                "label": "m² Minimi",
+                "precision": 3,
+                "description": "Metri quadri minimi fatturabili (0 = nessun minimo)"
+            },
+            {
+                "fieldname": "notes",
+                "fieldtype": "Text",
+                "label": "Note",
+                "description": "Note interne su questa regola"
+            }
+        ],
+        "permissions": [
+            {
+                "role": "System Manager",
+                "read": 1, "write": 1, "create": 1, "delete": 1, "print": 1, "export": 1
+            },
+            {
+                "role": "Sales Manager",
+                "read": 1, "write": 1, "create": 1, "delete": 1, "print": 1, "export": 1
+            },
+            {
+                "role": "Sales User",
+                "read": 1, "print": 1
+            }
+        ]
+    }
+    
+    try:
+        doc = frappe.get_doc(doctype_def)
+        doc.insert(ignore_permissions=True)
+        print(f"   ✅ {doctype_name} creato")
+        return True
+    except Exception as e:
+        print(f"   ❌ Errore creazione {doctype_name}: {e}")
+        return False
+
+def add_tables_to_item():
+    """Aggiunge tabelle Child agli Item"""
+    
+    item_table_fields = [
+        # Scaglioni prezzo
+        {
+            "fieldname": "pricing_section",
+            "fieldtype": "Section Break",
+            "label": "🎯 Scaglioni Prezzo Universali",
+            "insert_after": "iderp_help",
+            "collapsible": 1,
+            "depends_on": "supports_custom_measurement",
+            "description": "Configura prezzi dinamici per tutti i tipi di vendita"
+        },
+        {
+            "fieldname": "pricing_tiers",
+            "fieldtype": "Table",
+            "label": "Scaglioni Prezzo",
+            "insert_after": "pricing_section",
+            "options": "Item Pricing Tier",
+            "depends_on": "supports_custom_measurement",
+            "description": "Definisci prezzi per Metro Quadrato, Metro Lineare e Pezzo"
+        },
+        {
+            "fieldname": "pricing_help",
+            "fieldtype": "HTML",
+            "label": "",
+            "insert_after": "pricing_tiers",
+            "options": """
+            <div class="alert alert-success" style="margin: 10px 0;">
+                <strong>💡 Scaglioni Universali:</strong><br>
+                • <strong>Metro Quadrato:</strong> Prezzi basati sui m² totali dell'ordine<br>
+                • <strong>Metro Lineare:</strong> Prezzi basati sui metri lineari totali<br>
+                • <strong>Pezzo:</strong> Prezzi basati sul numero di pezzi<br>
+                • Ogni tipo può avere scaglioni separati e prezzi indipendenti<br>
+                • Spunta "Default" per il prezzo di fallback per ogni tipo
+            </div>
+            """,
+            "depends_on": "supports_custom_measurement"
+        },
+        
+        # Minimi customer group
+        {
+            "fieldname": "customer_group_minimums_section",
+            "fieldtype": "Section Break",
+            "label": "👥 Minimi per Gruppo Cliente",
+            "insert_after": "pricing_help",
+            "collapsible": 1,
+            "depends_on": "supports_custom_measurement",
+            "description": "Configura minimi diversi per gruppi cliente"
+        },
+        {
+            "fieldname": "customer_group_minimums",
+            "fieldtype": "Table",
+            "label": "Minimi Gruppo Cliente",
+            "insert_after": "customer_group_minimums_section",
+            "options": "Customer Group Minimum",
+            "depends_on": "supports_custom_measurement",
+            "description": "Definisci quantità minime per diversi gruppi cliente"
+        },
+        {
+            "fieldname": "customer_group_help",
+            "fieldtype": "HTML",
+            "label": "",
+            "insert_after": "customer_group_minimums",
+            "options": """
+            <div class="alert alert-warning" style="margin: 10px 0;">
+                <strong>🎯 Minimi per Gruppo Cliente:</strong><br>
+                • <strong>Per Riga:</strong> Minimo applicato a ogni singola riga<br>
+                • <strong>Globale Preventivo:</strong> Minimo applicato UNA volta sul totale item<br>
+                • <strong>Costi Fissi:</strong> Setup, gestione ordine, trasporti<br>
+                • Esempio: Finale min 0.5m², Bronze min 0.25m², Gold min 0.1m², Diamond nessun minimo
+            </div>
+            """,
+            "depends_on": "supports_custom_measurement"
+        }
+    ]
+    
+    print("   🏗️ Aggiungendo tabelle a Item...")
+    for field in item_table_fields:
+        create_custom_field_v15("Item", field)
+
+def install_customer_group_system():
+    """Installa sistema Customer Groups completo"""
+    
+    print("   👥 Configurando Customer Groups...")
+    
+    # Crea gruppi standard
+    create_standard_customer_groups()
+    
+    # Crea clienti demo
+    create_demo_customers()
+
+def create_standard_customer_groups():
+    """Crea gruppi cliente standard per stampa digitale"""
+    
+    # Trova gruppo radice
+    root_group = get_root_customer_group()
+    if not root_group:
+        print("      ❌ Impossibile trovare gruppo radice clienti")
+        return
+    
+    groups = [
+        {
+            "customer_group_name": "Finale",
+            "parent_customer_group": root_group,
+            "is_group": 0,
+            "description": "Clienti finali - minimi più alti per costi setup"
+        },
+        {
+            "customer_group_name": "Bronze",
+            "parent_customer_group": root_group,
+            "is_group": 0,
+            "description": "Clienti Bronze - minimi medi"
+        },
+        {
+            "customer_group_name": "Gold",
+            "parent_customer_group": root_group,
+            "is_group": 0,
+            "description": "Clienti Gold - minimi bassi"
+        },
+        {
+            "customer_group_name": "Diamond",
+            "parent_customer_group": root_group,
+            "is_group": 0,
+            "description": "Clienti Diamond - nessun minimo"
+        }
+    ]
+    
+    created_count = 0
+    for group_data in groups:
+        if not frappe.db.exists("Customer Group", group_data["customer_group_name"]):
+            try:
+                group_doc = frappe.get_doc({
+                    "doctype": "Customer Group",
+                    **group_data
+                })
+                group_doc.insert(ignore_permissions=True)
+                created_count += 1
+                print(f"      ✅ Gruppo '{group_data['customer_group_name']}' creato")
+            except Exception as e:
+                print(f"      ❌ Errore gruppo {group_data['customer_group_name']}: {e}")
+        else:
+            print(f"      📋 Gruppo '{group_data['customer_group_name']}' già esistente")
+    
+    print(f"      📊 {created_count} nuovi gruppi creati")
+
+def create_demo_customers():
+    """Crea clienti demo per ogni gruppo"""
+    
+    import random
+    
+    # Trova territorio di default
+    default_territory = frappe.db.get_value("Territory", {"is_group": 0}, "name")
+    if not default_territory:
+        default_territory = "Rest Of The World"
+    
+    customer_configs = [
+        {"name": "Cliente Finale Demo", "group": "Finale", "code": "FINALE-001"},
+        {"name": "Studio Grafico Bronze", "group": "Bronze", "code": "BRONZE-001"},
+        {"name": "Agenzia Gold Marketing", "group": "Gold", "code": "GOLD-001"},
+        {"name": "Tipografia Diamond SRL", "group": "Diamond", "code": "DIAMOND-001"}
+    ]
+    
+    created_count = 0
+    for config in customer_configs:
+        if not frappe.db.exists("Customer", config["code"]):
+            try:
+                customer_doc = frappe.get_doc({
+                    "doctype": "Customer",
+                    "customer_name": config["name"],
+                    "customer_code": config["code"],
+                    "customer_group": config["group"],
+                    "territory": default_territory,
+                    "customer_type": "Company"
+                })
+                customer_doc.insert(ignore_permissions=True)
+                created_count += 1
+                print(f"      ✅ Cliente '{config['name']}' ({config['group']}) creato")
+            except Exception as e:
+                print(f"      ❌ Errore cliente {config['name']}: {e}")
+        else:
+            print(f"      📋 Cliente '{config['code']}' già esistente")
+    
+    print(f"      📊 {created_count} nuovi clienti demo creati")
+
+def setup_demo_data():
+    """Configura dati demo per test immediato"""
+    
+    print("   🧪 Configurando dati demo...")
+    
+    # Trova primo item disponibile
+    test_item = frappe.db.get_value("Item", {"disabled": 0}, "item_code")
+    
+    if not test_item:
+        print("      ⚠️ Nessun item disponibile per demo")
+        return
+    
+    try:
+        item_doc = frappe.get_doc("Item", test_item)
+        
+        # Abilita misure personalizzate
+        item_doc.supports_custom_measurement = 1
+        item_doc.tipo_vendita_default = "Metro Quadrato"
+        
+        # Aggiungi scaglioni demo se non esistono
+        if not hasattr(item_doc, 'pricing_tiers') or not item_doc.pricing_tiers:
+            
+            demo_tiers = [
+                # Metro Quadrato
+                {"selling_type": "Metro Quadrato", "from_qty": 0.0, "to_qty": 0.5, "price_per_unit": 25.0, "tier_name": "Micro m²"},
+                {"selling_type": "Metro Quadrato", "from_qty": 0.5, "to_qty": 2.0, "price_per_unit": 18.0, "tier_name": "Piccolo m²"},
+                {"selling_type": "Metro Quadrato", "from_qty": 2.0, "to_qty": None, "price_per_unit": 12.0, "tier_name": "Grande m²", "is_default": 1},
+                
+                # Metro Lineare
+                {"selling_type": "Metro Lineare", "from_qty": 0.0, "to_qty": 5.0, "price_per_unit": 8.0, "tier_name": "Piccolo ml"},
+                {"selling_type": "Metro Lineare", "from_qty": 5.0, "to_qty": 20.0, "price_per_unit": 6.0, "tier_name": "Medio ml"},
+                {"selling_type": "Metro Lineare", "from_qty": 20.0, "to_qty": None, "price_per_unit": 4.0, "tier_name": "Grande ml", "is_default": 1},
+                
+                # Pezzo
+                {"selling_type": "Pezzo", "from_qty": 1.0, "to_qty": 10.0, "price_per_unit": 5.0, "tier_name": "Retail"},
+                {"selling_type": "Pezzo", "from_qty": 10.0, "to_qty": 100.0, "price_per_unit": 3.0, "tier_name": "Wholesale"},
+                {"selling_type": "Pezzo", "from_qty": 100.0, "to_qty": None, "price_per_unit": 2.0, "tier_name": "Bulk", "is_default": 1}
+            ]
+            
+            item_doc.pricing_tiers = []
+            for tier in demo_tiers:
+                item_doc.append("pricing_tiers", tier)
+        
+        # Aggiungi minimi demo se non esistono
+        if not hasattr(item_doc, 'customer_group_minimums') or not item_doc.customer_group_minimums:
+            
+            existing_groups = ["Finale", "Bronze", "Gold", "Diamond"]
+            for group in existing_groups:
+                if frappe.db.exists("Customer Group", group):
+                    
+                    # Metro Quadrato
+                    min_mq = 0.5 if group == "Finale" else (0.25 if group == "Bronze" else (0.1 if group == "Gold" else 0))
+                    item_doc.append("customer_group_minimums", {
+                        "customer_group": group,
+                        "selling_type": "Metro Quadrato",
+                        "min_qty": min_mq,
+                        "calculation_mode": "Globale Preventivo" if group in ["Finale", "Gold"] else "Per Riga",
+                        "fixed_cost": 5.0 if group == "Finale" else 0,
+                        "fixed_cost_mode": "Per Preventivo",
+                        "enabled": 1,
+                        "description": f"Minimo m² {group}"
+                    })
+                    
+                    # Metro Lineare
+                    min_ml = 2.0 if group == "Finale" else (1.0 if group == "Bronze" else (0.5 if group == "Gold" else 0))
+                    item_doc.append("customer_group_minimums", {
+                        "customer_group": group,
+                        "selling_type": "Metro Lineare",
+                        "min_qty": min_ml,
+                        "calculation_mode": "Per Riga",
+                        "fixed_cost": 3.0 if group == "Finale" else 0,
+                        "fixed_cost_mode": "Per Riga",
+                        "enabled": 1,
+                        "description": f"Minimo ml {group}"
+                    })
+                    
+                    # Pezzo
+                    min_pz = 5 if group == "Finale" else (3 if group == "Bronze" else (1 if group == "Gold" else 0))
+                    item_doc.append("customer_group_minimums", {
+                        "customer_group": group,
+                        "selling_type": "Pezzo",
+                        "min_qty": min_pz,
+                        "calculation_mode": "Per Riga",
+                        "fixed_cost": 0,
+                        "enabled": 1,
+                        "description": f"Minimo pz {group}"
+                    })
+        
+        item_doc.save(ignore_permissions=True)
+        print(f"      ✅ Item demo '{test_item}' configurato con scaglioni e minimi")
+        
+    except Exception as e:
+        print(f"      ❌ Errore setup demo item: {e}")
+
+def validate_installation():
+    """Validazione completa installazione"""
+    
+    errors = []
+    warnings = []
+    
+    # Verifica DocTypes
+    required_doctypes = ["Item Pricing Tier", "Customer Group Minimum", "Customer Group Price Rule"]
+    for dt in required_doctypes:
+        if not frappe.db.exists("DocType", dt):
+            errors.append(f"DocType '{dt}' mancante")
+    
+    # Verifica Custom Fields su Quotation Item
+    required_fields = ["tipo_vendita", "base", "altezza", "mq_singolo", "mq_calcolati", "note_calcolo"]
+    for field in required_fields:
+        if not frappe.db.exists("Custom Field", {"dt": "Quotation Item", "fieldname": field}):
+            errors.append(f"Campo '{field}' mancante su Quotation Item")
+    
+    # Verifica Custom Fields su Item
+    item_fields = ["supports_custom_measurement", "tipo_vendita_default", "pricing_tiers", "customer_group_minimums"]
+    for field in item_fields:
+        if not frappe.db.exists("Custom Field", {"dt": "Item", "fieldname": field}):
+            errors.append(f"Campo '{field}' mancante su Item")
+    
+    # Verifica Customer Groups
+    groups = ["Finale", "Bronze", "Gold", "Diamond"]
+    missing_groups = [g for g in groups if not frappe.db.exists("Customer Group", g)]
+    if missing_groups:
+        warnings.append(f"Gruppi clienti mancanti: {', '.join(missing_groups)}")
+    
+    # Verifica item configurati
+    configured_items = frappe.db.count("Item", {"supports_custom_measurement": 1})
+    if configured_items == 0:
+        warnings.append("Nessun item configurato per misure personalizzate")
+    
+    # Risultato validazione
+    if errors:
+        print("      ❌ ERRORI CRITICI:")
+        for error in errors:
+            print(f"         • {error}")
+        return False
+    elif warnings:
+        print("      ⚠️ AVVISI:")
+        for warning in warnings:
+            print(f"         • {warning}")
+        print("      ✅ Installazione OK con avvisi")
+        return True
+    else:
+        print("      ✅ Validazione superata completamente!")
+        return True
+
+def show_installation_summary():
+    """Mostra riepilogo installazione"""
+    
+    # Conta elementi installati
+    doctypes_count = sum([
+        1 for dt in ["Item Pricing Tier", "Customer Group Minimum", "Customer Group Price Rule"]
+        if frappe.db.exists("DocType", dt)
+    ])
+    
+    sales_fields_count = frappe.db.count("Custom Field", {"dt": "Quotation Item"})
+    item_fields_count = frappe.db.count("Custom Field", {"dt": "Item"})
+    groups_count = frappe.db.count("Customer Group", {"name": ["in", ["Finale", "Bronze", "Gold", "Diamond"]]})
+    customers_count = frappe.db.count("Customer", {"customer_group": ["in", ["Finale", "Bronze", "Gold", "Diamond"]]})
+    configured_items = frappe.db.count("Item", {"supports_custom_measurement": 1})
+    
+    print("\n📊 RIEPILOGO INSTALLAZIONE:")
+    print(f"   • DocTypes installati: {doctypes_count}/3")
+    print(f"   • Custom Fields vendita: {sales_fields_count}")
+    print(f"   • Custom Fields Item: {item_fields_count}")
+    print(f"   • Gruppi clienti: {groups_count}/4")
+    print(f"   • Clienti demo: {customers_count}")
+    print(f"   • Item configurati: {configured_items}")
+    
+    print("\n🚀 PROSSIMI PASSI:")
+    print("   1. Vai su Item → Abilita 'Supporta Misure Personalizzate'")
+    print("   2. Configura scaglioni prezzo nella tabella 'Scaglioni Prezzo'")
+    print("   3. Imposta minimi per gruppo nella tabella 'Minimi Gruppo Cliente'")
+    print("   4. Crea una Quotation con clienti diversi per testare")
+    print("   5. Verifica calcoli automatici e minimi applicati")
+    
+    print("\n💡 DEMO RAPIDO:")
+    if configured_items > 0:
+        demo_item = frappe.db.get_value("Item", {"supports_custom_measurement": 1}, "item_code")
+        print(f"   • Item demo configurato: {demo_item}")
+        print("   • Clienti demo: FINALE-001, BRONZE-001, GOLD-001, DIAMOND-001")
+        print("   • Test: Crea Quotation con misure 30×40cm = 0.12 m²")
+        print("   • Risultato atteso: minimi diversi per gruppo cliente")
+
+# ================================
+# UTILITY FUNCTIONS
+# ================================
+
+def create_custom_field_v15(doctype, field_dict):
     """Crea Custom Field compatibile ERPNext 15"""
+    
     if not frappe.db.exists("Custom Field", {"dt": doctype, "fieldname": field_dict["fieldname"]}):
         try:
-            # ERPNext 15 compatible
             cf_doc = frappe.get_doc({
                 "doctype": "Custom Field",
                 "dt": doctype,
                 **field_dict
             })
-            
-            # Use save() instead of insert() for ERPNext 15
-            cf_doc.save(ignore_permissions=True)
-            
-            # Force commit for ERPNext 15
+            cf_doc.insert(ignore_permissions=True)
+            # Force commit per ERPNext 15
             frappe.db.commit()
-            
-            print(f"[iderp] ✓ Campo {field_dict['fieldname']} aggiunto a {doctype}")
+            print(f"         ✅ {field_dict['fieldname']}")
         except Exception as e:
-            print(f"[iderp] ✗ Errore campo {field_dict['fieldname']}: {str(e)}")
+            print(f"         ❌ {field_dict['fieldname']}: {str(e)}")
     else:
-        print(f"[iderp] - Campo {field_dict['fieldname']} già presente su {doctype}")
+        print(f"         📋 {field_dict['fieldname']} (già esistente)")
 
-# ===== FUNZIONI UTILITY =====
-
-def reinstall_all():
-    """Reinstalla tutto da capo"""
-    print("[iderp] === Reinstallazione completa ===")
-    after_install()
-
-def show_available_items():
-    """Mostra item disponibili per test"""
-    items = frappe.get_all("Item", 
-        fields=["item_code", "item_name"], 
-        filters={"disabled": 0},
-        limit=10
+def get_root_customer_group():
+    """Trova gruppo cliente radice"""
+    
+    # Cerca gruppo radice (senza parent)
+    root_groups = frappe.get_all("Customer Group",
+        filters={"is_group": 1},
+        fields=["name", "parent_customer_group"],
+        order_by="creation"
     )
     
-    print("[iderp] === Item disponibili per test ===")
-    for item in items:
-        print(f"[iderp] - {item.item_code}: {item.item_name}")
+    for group in root_groups:
+        if not group.parent_customer_group:
+            return group.name
     
-    return items
+    # Se non trova, usa il primo disponibile
+    if root_groups:
+        return root_groups[0].name
+    
+    # Ultima risorsa: crea gruppo radice
+    try:
+        root_doc = frappe.get_doc({
+            "doctype": "Customer Group",
+            "customer_group_name": "All Customer Groups",
+            "is_group": 1
+        })
+        root_doc.insert(ignore_permissions=True)
+        return "All Customer Groups"
+    except:
+        return None
 
-def validate_installation():
-    """Valida che l'installazione sia corretta"""
-    print("[iderp] === Validazione installazione ===")
-    
-    errors = []
-    
-    # Verifica campi su Quotation Item
-    required_fields = ["tipo_vendita", "base", "altezza", "mq_singolo", "mq_calcolati"]
-    for field in required_fields:
-        if not frappe.db.exists("Custom Field", {"dt": "Quotation Item", "fieldname": field}):
-            errors.append(f"Campo {field} mancante su Quotation Item")
-    
-    # Verifica campi su Item
-    item_fields = ["supports_custom_measurement", "tipo_vendita_default"]
-    for field in item_fields:
-        if not frappe.db.exists("Custom Field", {"dt": "Item", "fieldname": field}):
-            errors.append(f"Campo {field} mancante su Item")
-    
-    if errors:
-        print("[iderp] ✗ Errori trovati:")
-        for error in errors:
-            print(f"[iderp]   - {error}")
-        return False
-    else:
-        print("[iderp] ✅ Installazione valida!")
-        return True
+# ================================
+# COMMAND SHORTCUTS
+# ================================
 
-def get_installation_status():
-    """Ottieni stato dettagliato dell'installazione"""
-    print("[iderp] === Stato installazione ===")
-    
-    # Campi vendita
-    sales_fields = ["tipo_vendita", "base", "altezza", "mq_singolo", "mq_calcolati", "note_calcolo"]
-    for field in sales_fields:
-        has_field = frappe.db.exists("Custom Field", {"dt": "Quotation Item", "fieldname": field})
-        print(f"[iderp] Campo {field}: {'✓' if has_field else '✗'}")
-    
-    # Campi Item
-    item_fields = ["supports_custom_measurement", "tipo_vendita_default"]
-    for field in item_fields:
-        has_field = frappe.db.exists("Custom Field", {"dt": "Item", "fieldname": field})
-        print(f"[iderp] Item {field}: {'✓' if has_field else '✗'}")
-    
-    # Item configurati
-    configured_items = frappe.db.sql("""
-        SELECT item_code 
-        FROM `tabItem` 
-        WHERE supports_custom_measurement = 1
-        LIMIT 5
-    """, as_dict=True)
-    
-    print(f"[iderp] Item configurati: {len(configured_items)}")
-    for item in configured_items:
-        print(f"[iderp]   - {item.item_code}")
-    
-    print("[iderp] === Fine stato ===")
-    
-    
+def reinstall_all():
+    """Reinstallazione completa"""
+    print("[IDERP] Reinstallazione completa...")
+    after_install()
 
-# import frappe
-# 
-# 
-# import frappe
-# 
-# def after_install():
-#     """Installazione sicura per ERPNext 15"""
-#     print("[iderp] === Installazione ERPNext 15 Safe Mode ===")
-#     
-#     try:
-#         # 1. Solo Custom Fields essenziali per ora
-#         install_essential_custom_fields()
-#         print("[iderp] ✓ Custom Fields essenziali installati")
-#         
-#         # 2. Skip DocTypes per ora (potrebbero causare errori)
-#         # install_item_config_fields()
-#         # create_item_pricing_tier_child_table()
-#         
-#         print("[iderp] ✓ Installazione base completata")
-#         
-#     except Exception as e:
-#         print(f"[iderp] ❌ Errore installazione: {e}")
-#         # Non lanciare eccezione per permettere installazione parziale
-# 
-# # def install_essential_custom_fields():
-# #     """Installa solo i campi essenziali"""
-# #     
-# #     # Campi base per Quotation Item
-# #     essential_fields = [
-# #         {
-# #             "fieldname": "tipo_vendita",
-# #             "label": "Tipo Vendita", 
-# #             "fieldtype": "Select",
-# #             "options": "\nPezzo\nMetro Quadrato\nMetro Lineare",
-# #             "default": "Metro Quadrato",
-# #             "insert_after": "item_code",
-# #             "reqd": 1
-# #         },
-# #         {
-# #             "fieldname": "base",
-# #             "label": "Base (cm)",
-# #             "fieldtype": "Float", 
-# #             "insert_after": "tipo_vendita",
-# #             "precision": 2,
-# #             "depends_on": "eval:doc.tipo_vendita=='Metro Quadrato'"
-# #         },
-# #         {
-# #             "fieldname": "altezza",
-# #             "label": "Altezza (cm)",
-# #             "fieldtype": "Float",
-# #             "insert_after": "base",
-# #             "precision": 2, 
-# #             "depends_on": "eval:doc.tipo_vendita=='Metro Quadrato'"
-# #         }
-# #     ]
-# #     
-# #     # Applica a Quotation Item
-# #     for field in essential_fields:
-# #         create_custom_field_safe("Quotation Item", field)
-# 
-# # def create_custom_field_safe(doctype, field_dict):
-# #     """Crea Custom Field con gestione errori"""
-# #     try:
-# #         if not frappe.db.exists("Custom Field", {"dt": doctype, "fieldname": field_dict["fieldname"]}):
-# #             cf_doc = frappe.get_doc({
-# #                 "doctype": "Custom Field",
-# #                 "dt": doctype,
-# #                 **field_dict
-# #             })
-# #             cf_doc.insert(ignore_permissions=True)
-# #             print(f"[iderp] ✓ Campo {field_dict['fieldname']} aggiunto a {doctype}")
-# #         else:
-# #             print(f"[iderp] - Campo {field_dict['fieldname']} già presente su {doctype}")
-# #     except Exception as e:
-# #         print(f"[iderp] ✗ Errore campo {field_dict['fieldname']}: {str(e)}")
-# 
-# #  def after_install():
-# #     """Installazione completa plugin iderp"""
-# #     print("[iderp] === Iniziando installazione plugin ===")
-# #     
-# #     # 1. Installa campi custom per documenti di vendita
-# #     install_sales_custom_fields()
-# #     
-# #     # 2. Installa campi custom per configurazione Item
-# #     install_item_config_fields()
-# #     
-# #     # 3. Crea Child Table per scaglioni prezzo
-# #     create_item_pricing_tier_child_table()
-# #     
-# #     # 4. Aggiunge tabella scaglioni all'Item
-# #     add_pricing_table_to_item()
-# #     
-# #     # 5. NUOVO: Installa sistema Customer Group Pricing
-# #     install_customer_group_pricing_system()
-# #     
-# #     print("[iderp] === Installazione completata ===")
-# #     print("[iderp] ✓ Vendita al pezzo")
-# #     print("[iderp] ✓ Vendita al metro quadrato con scaglioni") 
-# #     print("[iderp] ✓ Vendita al metro lineare")
-# #     print("[iderp] ✓ Configurazione Item con scaglioni prezzo")
-# #     print("[iderp] ✓ NUOVO: Customer Group Pricing con minimi")
-# #     print("[iderp] ✓ Gruppi: Finale, Bronze, Gold, Diamond")
-# #     print("[iderp] ✓ Sistema completo pronto all'uso")
-# 
-# def install_customer_group_pricing_system():
-#     """Installa il sistema Customer Group Pricing semplificato"""
-#     print("[iderp] Installando Customer Group Pricing...")
-#     
-#     from iderp.customer_group_pricing import setup_complete_customer_groups
-#     
-#     # Setup completo: DocType, gruppi, clienti, regole
-#     setup_complete_customer_groups()
-#     
-#     print("[iderp] ✓ Customer Group Pricing installato")
-#     
-# 
-# def setup_universal_pricing_demo():
-#     """Setup demo completo per tutti i tipi di vendita"""
-#     print("[iderp] === Setup demo pricing universale ===")
-#     
-#     # Trova item di test
-#     test_item = frappe.db.get_value("Item", {"supports_custom_measurement": 1}, "item_code")
-#     
-#     if not test_item:
-#         print("[iderp] ❌ Nessun item configurato")
-#         return False
-#     
-#     try:
-#         item_doc = frappe.get_doc("Item", test_item)
-#         
-#         # SCAGLIONI PER TUTTI I TIPI
-#         item_doc.pricing_tiers = []
-#         
-#         # Metro Quadrato
-#         mq_tiers = [
-#             {"selling_type": "Metro Quadrato", "from_qty": 0, "to_qty": 0.5, "price_per_unit": 20.0, "tier_name": "Micro m²"},
-#             {"selling_type": "Metro Quadrato", "from_qty": 0.5, "to_qty": 2, "price_per_unit": 15.0, "tier_name": "Piccolo m²"},
-#             {"selling_type": "Metro Quadrato", "from_qty": 2, "to_qty": None, "price_per_unit": 10.0, "tier_name": "Grande m²", "is_default": 1}
-#         ]
-#         
-#         # Metro Lineare  
-#         ml_tiers = [
-#             {"selling_type": "Metro Lineare", "from_qty": 0, "to_qty": 5, "price_per_unit": 8.0, "tier_name": "Piccolo ml"},
-#             {"selling_type": "Metro Lineare", "from_qty": 5, "to_qty": 20, "price_per_unit": 6.0, "tier_name": "Medio ml"},
-#             {"selling_type": "Metro Lineare", "from_qty": 20, "to_qty": None, "price_per_unit": 4.0, "tier_name": "Grande ml", "is_default": 1}
-#         ]
-#         
-#         # Pezzo
-#         pz_tiers = [
-#             {"selling_type": "Pezzo", "from_qty": 1, "to_qty": 10, "price_per_unit": 5.0, "tier_name": "Retail"},
-#             {"selling_type": "Pezzo", "from_qty": 10, "to_qty": 100, "price_per_unit": 3.0, "tier_name": "Wholesale"},
-#             {"selling_type": "Pezzo", "from_qty": 100, "to_qty": None, "price_per_unit": 2.0, "tier_name": "Bulk", "is_default": 1}
-#         ]
-#         
-#         # Aggiungi tutti gli scaglioni
-#         for tier_data in mq_tiers + ml_tiers + pz_tiers:
-#             item_doc.append("pricing_tiers", tier_data)
-#         
-#         # MINIMI PER GRUPPI
-#         item_doc.customer_group_minimums = []
-#         
-#         # Minimi diversi per tipo vendita
-#         minimums = [
-#             # Finale
-#             {"customer_group": "Finale", "selling_type": "Metro Quadrato", "min_qty": 0.5, "calculation_mode": "Globale Preventivo", "fixed_cost": 5.0, "fixed_cost_mode": "Per Preventivo"},
-#             {"customer_group": "Finale", "selling_type": "Metro Lineare", "min_qty": 2.0, "calculation_mode": "Per Riga", "fixed_cost": 3.0, "fixed_cost_mode": "Per Riga"},
-#             {"customer_group": "Finale", "selling_type": "Pezzo", "min_qty": 5, "calculation_mode": "Per Riga", "fixed_cost": 0},
-#             
-#             # Bronze
-#             {"customer_group": "Bronze", "selling_type": "Metro Quadrato", "min_qty": 0.25, "calculation_mode": "Globale Preventivo", "fixed_cost": 3.0, "fixed_cost_mode": "Per Preventivo"},
-#             {"customer_group": "Bronze", "selling_type": "Metro Lineare", "min_qty": 1.0, "calculation_mode": "Per Riga", "fixed_cost": 2.0, "fixed_cost_mode": "Per Riga"},
-#             {"customer_group": "Bronze", "selling_type": "Pezzo", "min_qty": 3, "calculation_mode": "Per Riga", "fixed_cost": 0},
-#             
-#             # Gold  
-#             {"customer_group": "Gold", "selling_type": "Metro Quadrato", "min_qty": 0.1, "calculation_mode": "Globale Preventivo", "fixed_cost": 0},
-#             {"customer_group": "Gold", "selling_type": "Metro Lineare", "min_qty": 0.5, "calculation_mode": "Per Riga", "fixed_cost": 0},
-#             {"customer_group": "Gold", "selling_type": "Pezzo", "min_qty": 1, "calculation_mode": "Per Riga", "fixed_cost": 0},
-#             
-#             # Diamond
-#             {"customer_group": "Diamond", "selling_type": "Metro Quadrato", "min_qty": 0, "calculation_mode": "Per Riga", "fixed_cost": 0},
-#             {"customer_group": "Diamond", "selling_type": "Metro Lineare", "min_qty": 0, "calculation_mode": "Per Riga", "fixed_cost": 0},
-#             {"customer_group": "Diamond", "selling_type": "Pezzo", "min_qty": 0, "calculation_mode": "Per Riga", "fixed_cost": 0}
-#         ]
-#         
-#         for min_data in minimums:
-#             item_doc.append("customer_group_minimums", min_data)
-#         
-#         item_doc.save(ignore_permissions=True)
-#         
-#         print(f"[iderp] ✅ Demo universale configurato per {test_item}")
-#         print("[iderp] 📊 3 tipi vendita × 4 gruppi cliente = 12 configurazioni")
-#         print("[iderp] 💰 Scaglioni + Minimi + Costi fissi")
-#         
-#         return True
-#         
-#     except Exception as e:
-#         print(f"[iderp] ❌ Errore setup demo: {e}")
-#         return False
-# 
-# 
-# def install_sales_custom_fields():
-#     """Installa campi custom per documenti di vendita"""
-#     print("[iderp] Installando campi vendita...")
-#     
-#     doctypes = [
-#         "Quotation Item",
-#         "Sales Order Item",
-#         "Delivery Note Item", 
-#         "Sales Invoice Item",
-#         "Purchase Order Item",
-#         "Purchase Invoice Item",
-#         "Material Request Item",
-#     ]
-#     
-#     custom_fields = [
-#         # Campo per tipo di vendita
-#         {
-#             "fieldname": "tipo_vendita",
-#             "label": "Tipo Vendita", 
-#             "fieldtype": "Select",
-#             "options": "\nPezzo\nMetro Quadrato\nMetro Lineare",
-#             "default": "Metro Quadrato",
-#             "insert_after": "item_code",
-#             "reqd": 1,
-#             "description": "Seleziona come vendere questo prodotto",
-#         },
-#         
-#         # Campi per metri quadrati
-# # Nel array custom_fields, sostituisci i campi base/altezza con:
-#         {
-#             "fieldname": "base",
-#             "label": "Base (cm)",
-#             "fieldtype": "Float", 
-#             "insert_after": "tipo_vendita",
-#             "precision": 2,
-#             "depends_on": "doc.tipo_vendita === 'Metro Quadrato'",  # ERPNext 15 syntax
-#             "in_list_view": 1,
-#             "columns": 2,
-#             "description": "Base in centimetri per calcolo mq",
-#         },
-#         {
-#             "fieldname": "altezza",
-#             "label": "Altezza (cm)",
-#             "fieldtype": "Float",
-#             "insert_after": "base",
-#             "precision": 2, 
-#             "depends_on": "doc.tipo_vendita === 'Metro Quadrato'",  # ERPNext 15 syntax
-#             "in_list_view": 1,
-#             "columns": 2,
-#             "description": "Altezza in centimetri per calcolo mq",
-#         },
-#         {
-#             "fieldname": "mq_singolo",
-#             "label": "m² Singolo",
-#             "fieldtype": "Float",
-#             "insert_after": "altezza",
-#             "precision": 4,
-#             "read_only": 1,
-#             "depends_on": "eval:doc.tipo_vendita=='Metro Quadrato'",
-#             "description": "Metri quadri per singolo pezzo",
-#         },
-#         {
-#             "fieldname": "mq_calcolati",
-#             "label": "m² Totali",
-#             "fieldtype": "Float",
-#             "insert_after": "mq_singolo",
-#             "precision": 3,
-#             "read_only": 1,
-#             "depends_on": "eval:doc.tipo_vendita=='Metro Quadrato'",
-#             "description": "Metri quadri totali (singolo × quantità)",
-#         },
-#         
-#         # Campi per metri lineari
-#         {
-#             "fieldname": "larghezza_materiale",
-#             "label": "Larghezza Materiale (cm)",
-#             "fieldtype": "Float",
-#             "insert_after": "mq_calcolati", 
-#             "precision": 2,
-#             "depends_on": "eval:doc.tipo_vendita=='Metro Lineare'",
-#             "description": "Larghezza del materiale in centimetri",
-#         },
-#         {
-#             "fieldname": "lunghezza",
-#             "label": "Lunghezza (cm)",
-#             "fieldtype": "Float",
-#             "insert_after": "larghezza_materiale",
-#             "precision": 2,
-#             "depends_on": "eval:doc.tipo_vendita=='Metro Lineare'", 
-#             "description": "Lunghezza in centimetri",
-#         },
-#         {
-#             "fieldname": "ml_calcolati",
-#             "label": "Metri Lineari",
-#             "fieldtype": "Float",
-#             "insert_after": "lunghezza",
-#             "precision": 2,
-#             "read_only": 1,
-#             "depends_on": "eval:doc.tipo_vendita=='Metro Lineare'",
-#             "description": "Metri lineari totali (lunghezza × quantità)",
-#         },
-#         
-#         # Prezzi specifici per tipo
-#         {
-#             "fieldname": "prezzo_mq",
-#             "label": "Prezzo al m² (€)",
-#             "fieldtype": "Currency",
-#             "insert_after": "rate",
-#             "depends_on": "eval:doc.tipo_vendita=='Metro Quadrato'",
-#             "description": "Prezzo per metro quadrato (da scaglioni o manuale)",
-#         },
-#         {
-#             "fieldname": "prezzo_ml", 
-#             "label": "Prezzo al ml (€)",
-#             "fieldtype": "Currency",
-#             "insert_after": "prezzo_mq",
-#             "depends_on": "eval:doc.tipo_vendita=='Metro Lineare'",
-#             "description": "Prezzo per metro lineare",
-#         },
-#         
-#         # Campo informativo
-#         {
-#             "fieldname": "note_calcolo",
-#             "label": "Dettaglio Calcolo",
-#             "fieldtype": "Text",
-#             "insert_after": "prezzo_ml",
-#             "read_only": 1,
-#             "description": "Mostra come è stato calcolato il prezzo con scaglioni",
-#         },
-#         
-#         # NUOVO: Campo per customer group rules
-#         {
-#             "fieldname": "customer_group_rules_applied",
-#             "label": "Regole Gruppo Applicate",
-#             "fieldtype": "Check",
-#             "read_only": 1,
-#             "insert_after": "note_calcolo",
-#             "description": "Indica se sono state applicate regole del gruppo cliente"
-#         }
-#     ]
-#     
-#     for dt in doctypes:
-#         for cf in custom_fields:
-#             create_custom_field(dt, cf)
-# 
-# def install_item_config_fields():
-#     """Installa campi custom per configurazione Item base"""
-#     print("[iderp] Installando configurazione Item...")
-#     
-#     custom_fields = [
-#         {
-#             "fieldname": "measurement_config_section",
-#             "fieldtype": "Section Break",
-#             "label": "Configurazione Vendita Personalizzata",
-#             "insert_after": "website_specifications",
-#             "collapsible": 1,
-#         },
-#         {
-#             "fieldname": "supports_custom_measurement",
-#             "fieldtype": "Check", 
-#             "label": "Supporta Misure Personalizzate",
-#             "insert_after": "measurement_config_section",
-#             "description": "Abilita calcoli per metro quadrato/lineare",
-#         },
-#         {
-#             "fieldname": "tipo_vendita_default",
-#             "fieldtype": "Select",
-#             "label": "Tipo Vendita Default",
-#             "options": "\nPezzo\nMetro Quadrato\nMetro Lineare",
-#             "insert_after": "supports_custom_measurement",
-#             "depends_on": "supports_custom_measurement",
-#         },
-#         {
-#             "fieldname": "config_column_break",
-#             "fieldtype": "Column Break",
-#             "insert_after": "tipo_vendita_default",
-#         },
-#         {
-#             "fieldname": "larghezza_materiale_default",
-#             "fieldtype": "Float",
-#             "label": "Larghezza Materiale Default (cm)",
-#             "precision": 2,
-#             "insert_after": "config_column_break",
-#             "depends_on": "eval:doc.tipo_vendita_default=='Metro Lineare'",
-#         },
-#     ]
-#     
-#     for cf in custom_fields:
-#         create_custom_field("Item", cf)
-# 
-# def create_item_pricing_tier_child_table():
-#     """Crea Child Table per scaglioni prezzo MULTI-TIPO VENDITA"""
-#     print("[iderp] Creando Child Table per scaglioni universali...")
-#     
-#     # Verifica se esiste già
-#     if frappe.db.exists("DocType", "Item Pricing Tier"):
-#         print("[iderp] - Child Table già esistente")
-#         # Aggiungi nuovi campi se mancano
-#         add_multi_type_pricing_fields()
-#         return True
-#     
-#     child_doctype = {
-#         "doctype": "DocType",
-#         "name": "Item Pricing Tier",
-#         "module": "Custom",
-#         "custom": 1,
-#         "istable": 1,
-#         "editable_grid": 1,
-#         "track_changes": 0,
-#         "engine": "InnoDB",
-#         "fields": [
-#             {
-#                 "fieldname": "selling_type",
-#                 "fieldtype": "Select",
-#                 "label": "Tipo Vendita",
-#                 "options": "\nMetro Quadrato\nMetro Lineare\nPezzo",
-#                 "reqd": 1,
-#                 "in_list_view": 1,
-#                 "columns": 2,
-#                 "description": "Tipo di vendita per questo scaglione"
-#             },
-#             {
-#                 "fieldname": "from_qty",
-#                 "fieldtype": "Float",
-#                 "label": "Da Quantità",
-#                 "precision": 3,
-#                 "reqd": 1,
-#                 "in_list_view": 1,
-#                 "columns": 2,
-#                 "description": "Quantità minima (m², ml, o pezzi)"
-#             },
-#             {
-#                 "fieldname": "to_qty",
-#                 "fieldtype": "Float", 
-#                 "label": "A Quantità",
-#                 "precision": 3,
-#                 "in_list_view": 1,
-#                 "columns": 2,
-#                 "description": "Quantità massima (vuoto = illimitato)"
-#             },
-#             {
-#                 "fieldname": "price_per_unit",
-#                 "fieldtype": "Currency",
-#                 "label": "Prezzo/Unità",
-#                 "reqd": 1,
-#                 "in_list_view": 1,
-#                 "columns": 2,
-#                 "description": "€/m², €/ml, o €/pezzo"
-#             },
-#             {
-#                 "fieldname": "tier_name",
-#                 "fieldtype": "Data",
-#                 "label": "Nome Scaglione",
-#                 "in_list_view": 1,
-#                 "columns": 3,
-#                 "description": "Es: Piccole tirature, Industriale, Retail, ecc."
-#             },
-#             {
-#                 "fieldname": "is_default",
-#                 "fieldtype": "Check",
-#                 "label": "Default",
-#                 "columns": 1,
-#                 "description": "Prezzo di fallback per questo tipo vendita"
-#             }
-#         ],
-#         "permissions": [
-#             {
-#                 "role": "System Manager",
-#                 "read": 1,
-#                 "write": 1,
-#                 "create": 1,
-#                 "delete": 1
-#             },
-#             {
-#                 "role": "Sales Manager", 
-#                 "read": 1,
-#                 "write": 1,
-#                 "create": 1,
-#                 "delete": 1
-#             },
-#             {
-#                 "role": "Sales User",
-#                 "read": 1,
-#                 "write": 1,
-#                 "create": 1
-#             }
-#         ]
-#     }
-#     
-#     try:
-#         child_doc = frappe.get_doc(child_doctype)
-#         child_doc.insert(ignore_permissions=True)
-#         print("[iderp] ✓ Child Table 'Item Pricing Tier' multi-tipo creata")
-#         return True
-#     except Exception as e:
-#         print(f"[iderp] ✗ Errore creazione Child Table: {e}")
-#         return False
-# 
-# def add_multi_type_pricing_fields():
-#     """Aggiungi campi per multi-tipo se mancanti"""
-#     
-#     try:
-#         doctype_doc = frappe.get_doc("DocType", "Item Pricing Tier")
-#         
-#         # Verifica se selling_type esiste già
-#         has_selling_type = any(field.fieldname == "selling_type" for field in doctype_doc.fields)
-#         
-#         if not has_selling_type:
-#             print("[iderp] Aggiungendo campi multi-tipo...")
-#             
-#             # Rinomina campi esistenti
-#             for field in doctype_doc.fields:
-#                 if field.fieldname == "from_sqm":
-#                     field.fieldname = "from_qty"
-#                     field.label = "Da Quantità"
-#                     field.description = "Quantità minima (m², ml, o pezzi)"
-#                 elif field.fieldname == "to_sqm":
-#                     field.fieldname = "to_qty"
-#                     field.label = "A Quantità"
-#                     field.description = "Quantità massima (vuoto = illimitato)"
-#                 elif field.fieldname == "price_per_sqm":
-#                     field.fieldname = "price_per_unit"
-#                     field.label = "Prezzo/Unità"
-#                     field.description = "€/m², €/ml, o €/pezzo"
-#             
-#             # Aggiungi campo selling_type all'inizio
-#             new_field = {
-#                 "fieldname": "selling_type",
-#                 "fieldtype": "Select",
-#                 "label": "Tipo Vendita",
-#                 "options": "\nMetro Quadrato\nMetro Lineare\nPezzo",
-#                 "reqd": 1,
-#                 "in_list_view": 1,
-#                 "columns": 2,
-#                 "description": "Tipo di vendita per questo scaglione",
-#                 "idx": 1
-#             }
-#             
-#             doctype_doc.insert(0, "fields", new_field)
-#             doctype_doc.save()
-#             
-#             print("[iderp] ✓ Campi multi-tipo aggiunti")
-#         else:
-#             print("[iderp] - Campi multi-tipo già presenti")
-#             
-#         return True
-#         
-#     except Exception as e:
-#         print(f"[iderp] ✗ Errore aggiunta campi: {e}")
-#         return False
-# 
-# def add_pricing_table_to_item():
-#     """Aggiunge la tabella scaglioni all'Item"""
-#     print("[iderp] Aggiungendo tabella scaglioni all'Item...")
-#     
-#     item_fields = [
-# {
-#     "fieldname": "pricing_section",
-#     "fieldtype": "Section Break",
-#     "label": "Scaglioni Prezzo Universali",  # <-- Cambia anche il label
-#     "insert_after": "larghezza_materiale_default",
-#     "collapsible": 1,
-#     "depends_on": "eval:doc.supports_custom_measurement",  # <-- Rimuovi la condizione Metro Quadrato
-#     "description": "Configura prezzi per tutti i tipi di vendita: m², ml, pezzi"
-# },
-# {
-#     "fieldname": "pricing_tiers",
-#     "fieldtype": "Table",
-#     "label": "Scaglioni Prezzo",
-#     "insert_after": "pricing_section",
-#     "options": "Item Pricing Tier",
-#     "depends_on": "eval:doc.supports_custom_measurement",  # <-- Rimuovi la condizione Metro Quadrato
-#     "description": "Definisci prezzi per tutti i tipi di vendita"
-# },
-# {
-#     "fieldname": "pricing_help",
-#     "fieldtype": "HTML",
-#     "label": "",
-#     "insert_after": "pricing_tiers",
-#     "options": """
-#     <div class="alert alert-info">
-#         <strong>💡 Come funzionano gli scaglioni universali:</strong><br>
-#         • <strong>Metro Quadrato</strong>: Prezzi in base ai m² totali dell'ordine<br>
-#         • <strong>Metro Lineare</strong>: Prezzi in base ai metri lineari totali<br>
-#         • <strong>Pezzo</strong>: Prezzi in base al numero di pezzi<br>
-#         • Il sistema sceglierà automaticamente il prezzo giusto per tipo<br>
-#         • Usa il campo "Tipo Vendita" per differenziare gli scaglioni<br>
-#         • Spunta "Default" per il prezzo di fallback per ogni tipo
-#     </div>
-#     """,
-#     "depends_on": "eval:doc.supports_custom_measurement"  # <-- Rimuovi la condizione Metro Quadrato
-# },
-#     ]
-#     
-#     for field in item_fields:
-#         create_custom_field("Item", field)
-# 
-# def create_custom_field(doctype, field_dict):
-#     """Crea Custom Field compatibile ERPNext 15"""
-#     if not frappe.db.exists("Custom Field", {"dt": doctype, "fieldname": field_dict["fieldname"]}):
-#         try:
-#             # ERPNext 15 compatible
-#             cf_doc = frappe.get_doc({
-#                 "doctype": "Custom Field",
-#                 "dt": doctype,
-#                 **field_dict
-#             })
-#             
-#             # Use save() instead of insert() for ERPNext 15
-#             cf_doc.save(ignore_permissions=True)
-#             
-#             # Force commit for ERPNext 15
-#             frappe.db.commit()
-#             
-#             print(f"[iderp] ✓ Campo {field_dict['fieldname']} aggiunto a {doctype}")
-#         except Exception as e:
-#             print(f"[iderp] ✗ Errore campo {field_dict['fieldname']}: {str(e)}")
-#     else:
-#         print(f"[iderp] - Campo {field_dict['fieldname']} già presente su {doctype}")
-#         
-# 
-# # ===== FUNZIONI UTILITY =====
-# 
-# def reinstall_all():
-#     """Reinstalla tutto da capo"""
-#     print("[iderp] === Reinstallazione completa ===")
-#     after_install()
-# 
-# def create_sample_pricing_for_item(item_code):
-#     """Crea scaglioni di esempio per un item"""
-#     print(f"[iderp] Creando scaglioni esempio per {item_code}...")
-#     
-#     if not frappe.db.exists("Item", item_code):
-#         print(f"[iderp] ✗ Item {item_code} non trovato")
-#         return False
-#     
-#     try:
-#         item_doc = frappe.get_doc("Item", item_code)
-#         
-#         # Abilita misure personalizzate
-#         item_doc.supports_custom_measurement = 1
-#         item_doc.tipo_vendita_default = "Metro Quadrato"
-#         
-#         # Scaglioni di esempio specifici per stampa digitale
-#         sample_tiers = [
-#             {
-#                 "from_sqm": 0,
-#                 "to_sqm": 0.25,
-#                 "price_per_sqm": 20.0,
-#                 "tier_name": "Micro tirature"
-#             },
-#             {
-#                 "from_sqm": 0.25,
-#                 "to_sqm": 1,
-#                 "price_per_sqm": 15.0,
-#                 "tier_name": "Piccole tirature"
-#             },
-#             {
-#                 "from_sqm": 1,
-#                 "to_sqm": 5,
-#                 "price_per_sqm": 12.0,
-#                 "tier_name": "Tirature medie"
-#             },
-#             {
-#                 "from_sqm": 5,
-#                 "to_sqm": None,
-#                 "price_per_sqm": 8.0,
-#                 "tier_name": "Tirature grandi",
-#                 "is_default": 1
-#             }
-#         ]
-#         
-#         # Pulisci e aggiungi scaglioni
-#         item_doc.pricing_tiers = []
-#         for tier_data in sample_tiers:
-#             item_doc.append("pricing_tiers", tier_data)
-#         
-#         item_doc.save(ignore_permissions=True)
-#         print(f"[iderp] ✓ Scaglioni esempio creati per {item_code}")
-#         return True
-#         
-#     except Exception as e:
-#         print(f"[iderp] ✗ Errore creazione scaglioni: {e}")
-#         return False
-# 
-# def show_available_items():
-#     """Mostra item disponibili per test"""
-#     items = frappe.get_all("Item", 
-#         fields=["item_code", "item_name"], 
-#         filters={"disabled": 0},
-#         limit=10
-#     )
-#     
-#     print("[iderp] === Item disponibili per test ===")
-#     for item in items:
-#         print(f"[iderp] - {item.item_code}: {item.item_name}")
-#     
-#     if items:
-#         print(f"[iderp] Per test: create_sample_pricing_for_item('{items[0].item_code}')")
-#     
-#     return items
-# 
-# def quick_test_setup():
-#     """Setup rapido per test con primo item disponibile"""
-#     print("[iderp] === Setup rapido per test ===")
-#     
-#     # Mostra item disponibili
-#     items = show_available_items()
-#     
-#     if items:
-#         # Prendi il primo item e crea scaglioni
-#         test_item = items[0].item_code
-#         print(f"[iderp] Configurando {test_item} per test...")
-#         
-#         if create_sample_pricing_for_item(test_item):
-#             print(f"[iderp] ✓ Setup test completato!")
-#             print(f"[iderp] Vai su Item → {test_item} → Scaglioni Prezzo m²")
-#             print(f"[iderp] Poi testa in una Quotation con diversi Customer Group")
-#             return test_item
-#     else:
-#         print("[iderp] ✗ Nessun item disponibile per test")
-#         return None
-# 
-# def validate_installation():
-#     """Valida che l'installazione sia corretta"""
-#     print("[iderp] === Validazione installazione ===")
-#     
-#     errors = []
-#     
-#     # Verifica Child DocType
-#     if not frappe.db.exists("DocType", "Item Pricing Tier"):
-#         errors.append("DocType 'Item Pricing Tier' mancante")
-#     
-#     # Verifica campi su Quotation Item
-#     required_fields = ["tipo_vendita", "base", "altezza", "mq_singolo", "mq_calcolati"]
-#     for field in required_fields:
-#         if not frappe.db.exists("Custom Field", {"dt": "Quotation Item", "fieldname": field}):
-#             errors.append(f"Campo {field} mancante su Quotation Item")
-#     
-#     # Verifica campi su Item
-#     item_fields = ["supports_custom_measurement", "tipo_vendita_default", "pricing_tiers"]
-#     for field in item_fields:
-#         if not frappe.db.exists("Custom Field", {"dt": "Item", "fieldname": field}):
-#             errors.append(f"Campo {field} mancante su Item")
-#     
-#     if errors:
-#         print("[iderp] ✗ Errori trovati:")
-#         for error in errors:
-#             print(f"[iderp]   - {error}")
-#         return False
-#     else:
-#         print("[iderp] ✓ Installazione valida!")
-#         return True
-# 
-# def get_installation_status():
-#     """Ottieni stato dettagliato dell'installazione"""
-#     print("[iderp] === Stato installazione ===")
-#     
-#     # Child DocType
-#     has_child_doctype = frappe.db.exists("DocType", "Item Pricing Tier")
-#     print(f"[iderp] Child DocType: {'✓' if has_child_doctype else '✗'}")
-#     
-#     # Campi vendita
-#     sales_fields = ["tipo_vendita", "base", "altezza", "mq_singolo", "mq_calcolati", "note_calcolo"]
-#     for field in sales_fields:
-#         has_field = frappe.db.exists("Custom Field", {"dt": "Quotation Item", "fieldname": field})
-#         print(f"[iderp] Campo {field}: {'✓' if has_field else '✗'}")
-#     
-#     # Campi Item
-#     item_fields = ["supports_custom_measurement", "pricing_tiers"]
-#     for field in item_fields:
-#         has_field = frappe.db.exists("Custom Field", {"dt": "Item", "fieldname": field})
-#         print(f"[iderp] Item {field}: {'✓' if has_field else '✗'}")
-#     
-#     # Item configurati
-#     configured_items = frappe.db.sql("""
-#         SELECT item_code 
-#         FROM `tabItem` 
-#         WHERE supports_custom_measurement = 1
-#         LIMIT 5
-#     """, as_dict=True)
-#     
-#     print(f"[iderp] Item configurati: {len(configured_items)}")
-#     for item in configured_items:
-#         print(f"[iderp]   - {item.item_code}")
-#     
-#     print("[iderp] === Fine stato ===")
-#     
-# def setup_global_minimums_demo():
-#     """Setup demo per minimi globali"""
-#     print("[iderp] Configurando demo minimi globali...")
-#     
-#     # Aggiorna campo se necessario
-#     from iderp.customer_group_minimums_fix import add_global_minimum_fields
-#     add_global_minimum_fields()
-#     
-#     # Trova item di test
-#     test_item = frappe.db.get_value("Item", {"supports_custom_measurement": 1}, "item_code")
-#     
-#     if test_item:
-#         try:
-#             item_doc = frappe.get_doc("Item", test_item)
-#             
-#             # Configura minimi misti: alcuni per riga, altri globali
-#             item_doc.customer_group_minimums = []
-#             
-#             # Finale: Globale (più vantaggioso)
-#             item_doc.append("customer_group_minimums", {
-#                 "customer_group": "Finale",
-#                 "min_sqm": 0.5,
-#                 "calculation_mode": "Globale Preventivo",
-#                 "enabled": 1,
-#                 "description": "Setup UNA volta per preventivo",
-#                 "priority": 10
-#             })
-#             
-#             # Bronze: Per riga (standard)
-#             item_doc.append("customer_group_minimums", {
-#                 "customer_group": "Bronze", 
-#                 "min_sqm": 0.25,
-#                 "calculation_mode": "Per Riga",
-#                 "enabled": 1,
-#                 "description": "Minimo per ogni riga",
-#                 "priority": 20
-#             })
-#             
-#             # Gold: Globale
-#             item_doc.append("customer_group_minimums", {
-#                 "customer_group": "Gold",
-#                 "min_sqm": 0.1,
-#                 "calculation_mode": "Globale Preventivo",
-#                 "enabled": 1,
-#                 "description": "Minimo globale preferenziale",
-#                 "priority": 30
-#             })
-#             
-#             # Diamond: Nessun minimo
-#             item_doc.append("customer_group_minimums", {
-#                 "customer_group": "Diamond",
-#                 "min_sqm": 0,
-#                 "calculation_mode": "Per Riga",
-#                 "enabled": 1,
-#                 "description": "Nessun minimo",
-#                 "priority": 40
-#             })
-#             
-#             item_doc.save(ignore_permissions=True)
-#             
-#             print(f"[iderp] ✅ Demo minimi globali configurato per {test_item}")
-#             print("[iderp] 🎯 Finale/Gold: minimi globali")
-#             print("[iderp] 📄 Bronze: minimi per riga")
-#             print("[iderp] 💎 Diamond: nessun minimo")
-#             
-#         except Exception as e:
-#             print(f"[iderp] ❌ Errore setup demo: {e}")
+def quick_validation():
+    """Validazione rapida"""
+    return validate_installation()
+
+def show_status():
+    """Mostra stato installazione"""
+    show_installation_summary()
+
+# Alias per console
+ri = reinstall_all
+qv = quick_validation
+ss = show_status
