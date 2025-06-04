@@ -22,57 +22,57 @@ def after_install():
         print(f"[iderp] ❌ Errore installazione: {e}")
         # Non lanciare eccezione per permettere installazione parziale
 
-def install_essential_custom_fields():
-    """Installa solo i campi essenziali"""
-    
-    # Campi base per Quotation Item
-    essential_fields = [
-        {
-            "fieldname": "tipo_vendita",
-            "label": "Tipo Vendita", 
-            "fieldtype": "Select",
-            "options": "\nPezzo\nMetro Quadrato\nMetro Lineare",
-            "default": "Metro Quadrato",
-            "insert_after": "item_code",
-            "reqd": 1
-        },
-        {
-            "fieldname": "base",
-            "label": "Base (cm)",
-            "fieldtype": "Float", 
-            "insert_after": "tipo_vendita",
-            "precision": 2,
-            "depends_on": "eval:doc.tipo_vendita=='Metro Quadrato'"
-        },
-        {
-            "fieldname": "altezza",
-            "label": "Altezza (cm)",
-            "fieldtype": "Float",
-            "insert_after": "base",
-            "precision": 2, 
-            "depends_on": "eval:doc.tipo_vendita=='Metro Quadrato'"
-        }
-    ]
-    
-    # Applica a Quotation Item
-    for field in essential_fields:
-        create_custom_field_safe("Quotation Item", field)
+# def install_essential_custom_fields():
+#     """Installa solo i campi essenziali"""
+#     
+#     # Campi base per Quotation Item
+#     essential_fields = [
+#         {
+#             "fieldname": "tipo_vendita",
+#             "label": "Tipo Vendita", 
+#             "fieldtype": "Select",
+#             "options": "\nPezzo\nMetro Quadrato\nMetro Lineare",
+#             "default": "Metro Quadrato",
+#             "insert_after": "item_code",
+#             "reqd": 1
+#         },
+#         {
+#             "fieldname": "base",
+#             "label": "Base (cm)",
+#             "fieldtype": "Float", 
+#             "insert_after": "tipo_vendita",
+#             "precision": 2,
+#             "depends_on": "eval:doc.tipo_vendita=='Metro Quadrato'"
+#         },
+#         {
+#             "fieldname": "altezza",
+#             "label": "Altezza (cm)",
+#             "fieldtype": "Float",
+#             "insert_after": "base",
+#             "precision": 2, 
+#             "depends_on": "eval:doc.tipo_vendita=='Metro Quadrato'"
+#         }
+#     ]
+#     
+#     # Applica a Quotation Item
+#     for field in essential_fields:
+#         create_custom_field_safe("Quotation Item", field)
 
-def create_custom_field_safe(doctype, field_dict):
-    """Crea Custom Field con gestione errori"""
-    try:
-        if not frappe.db.exists("Custom Field", {"dt": doctype, "fieldname": field_dict["fieldname"]}):
-            cf_doc = frappe.get_doc({
-                "doctype": "Custom Field",
-                "dt": doctype,
-                **field_dict
-            })
-            cf_doc.insert(ignore_permissions=True)
-            print(f"[iderp] ✓ Campo {field_dict['fieldname']} aggiunto a {doctype}")
-        else:
-            print(f"[iderp] - Campo {field_dict['fieldname']} già presente su {doctype}")
-    except Exception as e:
-        print(f"[iderp] ✗ Errore campo {field_dict['fieldname']}: {str(e)}")
+# def create_custom_field_safe(doctype, field_dict):
+#     """Crea Custom Field con gestione errori"""
+#     try:
+#         if not frappe.db.exists("Custom Field", {"dt": doctype, "fieldname": field_dict["fieldname"]}):
+#             cf_doc = frappe.get_doc({
+#                 "doctype": "Custom Field",
+#                 "dt": doctype,
+#                 **field_dict
+#             })
+#             cf_doc.insert(ignore_permissions=True)
+#             print(f"[iderp] ✓ Campo {field_dict['fieldname']} aggiunto a {doctype}")
+#         else:
+#             print(f"[iderp] - Campo {field_dict['fieldname']} già presente su {doctype}")
+#     except Exception as e:
+#         print(f"[iderp] ✗ Errore campo {field_dict['fieldname']}: {str(e)}")
 
 #  def after_install():
 #     """Installazione completa plugin iderp"""
@@ -226,13 +226,16 @@ def install_sales_custom_fields():
         },
         
         # Campi per metri quadrati
+# Nel array custom_fields, sostituisci i campi base/altezza con:
         {
             "fieldname": "base",
             "label": "Base (cm)",
             "fieldtype": "Float", 
             "insert_after": "tipo_vendita",
             "precision": 2,
-            "depends_on": "eval:doc.tipo_vendita=='Metro Quadrato'",
+            "depends_on": "doc.tipo_vendita === 'Metro Quadrato'",  # ERPNext 15 syntax
+            "in_list_view": 1,
+            "columns": 2,
             "description": "Base in centimetri per calcolo mq",
         },
         {
@@ -241,7 +244,9 @@ def install_sales_custom_fields():
             "fieldtype": "Float",
             "insert_after": "base",
             "precision": 2, 
-            "depends_on": "eval:doc.tipo_vendita=='Metro Quadrato'",
+            "depends_on": "doc.tipo_vendita === 'Metro Quadrato'",  # ERPNext 15 syntax
+            "in_list_view": 1,
+            "columns": 2,
             "description": "Altezza in centimetri per calcolo mq",
         },
         {
@@ -591,20 +596,28 @@ def add_pricing_table_to_item():
         create_custom_field("Item", field)
 
 def create_custom_field(doctype, field_dict):
-    """Crea un Custom Field se non esiste già"""
+    """Crea Custom Field compatibile ERPNext 15"""
     if not frappe.db.exists("Custom Field", {"dt": doctype, "fieldname": field_dict["fieldname"]}):
         try:
+            # ERPNext 15 compatible
             cf_doc = frappe.get_doc({
                 "doctype": "Custom Field",
                 "dt": doctype,
                 **field_dict
             })
-            cf_doc.insert(ignore_permissions=True)
+            
+            # Use save() instead of insert() for ERPNext 15
+            cf_doc.save(ignore_permissions=True)
+            
+            # Force commit for ERPNext 15
+            frappe.db.commit()
+            
             print(f"[iderp] ✓ Campo {field_dict['fieldname']} aggiunto a {doctype}")
         except Exception as e:
             print(f"[iderp] ✗ Errore campo {field_dict['fieldname']}: {str(e)}")
     else:
         print(f"[iderp] - Campo {field_dict['fieldname']} già presente su {doctype}")
+        
 
 # ===== FUNZIONI UTILITY =====
 
