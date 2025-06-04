@@ -8,19 +8,19 @@ app_email = "ai@idstudio.org"
 app_license = "MIT"
 
 # JavaScript per backend ERPNext
-doctype_js = {
-    "Quotation": "public/js/item_dimension.js",
-    "Sales Order": "public/js/item_dimension.js",
-    "Sales Invoice": "public/js/item_dimension.js",
-    "Delivery Note": "public/js/item_dimension.js",
-    "Work Order": "public/js/item_dimension.js"
+#doctype_js = {
+#    "Quotation": "public/js/item_dimension.js",
+#    "Sales Order": "public/js/item_dimension.js",
+#    "Sales Invoice": "public/js/item_dimension.js",
+#    "Delivery Note": "public/js/item_dimension.js",
+#    "Work Order": "public/js/item_dimension.js"
     # "Item": "public/js/item_config.js"  # GIÀ COMMENTATO
 }
 
 # CSS
-app_include_css = [
-    "/assets/iderp/css/iderp.css"
-]
+#app_include_css = [
+#    "/assets/iderp/css/iderp.css"
+#]
 
 # DISABILITA COMPLETAMENTE TUTTI GLI HOOK
 # doc_events = {
