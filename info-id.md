@@ -1,3 +1,18 @@
+# ⚠️ ATTENZIONE: Questo cancella tutto
+
+# Drop sito
+bench drop-site sito.local --force
+
+# Ricrea sito
+bench new-site sito.local --admin-password admin --db-name sito_local
+
+# Installa ERPNext
+bench --site sito.local install-app erpnext
+
+# Setup wizard
+bench --site sito.local execute frappe.desk.page.setup_wizard.setup_wizard.setup_complete --args "{'language': 'it', 'country': 'Italy', 'timezone': 'Europe/Rome', 'currency': 'EUR'}"
+
+
 
 Controlla il codice in questa repository. Per le istruzioni e le linee guida leggi il file `info-id.txt`. Il file `readme.md` contiene solo appunti disordinati, ignoralo.
 
