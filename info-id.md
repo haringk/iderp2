@@ -14,7 +14,7 @@ bench --site sito.local execute frappe.desk.page.setup_wizard.setup_wizard.setup
 
 
 
-Controlla il codice in questa repository. Per le istruzioni e le linee guida leggi il file `info-id.txt`. Il file `readme.md` contiene solo appunti disordinati, ignoralo.
+Controlla il codice in questa repository. Per le istruzioni e le linee guida leggi il file `info-id.md`. Il file `readme.md` contiene solo appunti disordinati, ignoralo.
 
 
 Tieni a mente sempre che:
