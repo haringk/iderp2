@@ -56,8 +56,32 @@ def after_install():
         print("\n8️⃣ Ottimizzazione performance...")
         setup_performance_optimizations()
         
-        # 9. Validazione finale completa
-        print("\n9️⃣ Validazione installazione completa...")
+		# 8. Setup cache e performance
+        print("\n8️⃣ Ottimizzazione performance...")
+        setup_performance_optimizations()
+        
+        # 9. Installa sistema Optional/Lavorazioni
+        print("\n9️⃣ Installazione sistema Optional...")
+        install_optional_system()
+        
+        # 10. Installa sistema Produzione
+        print("\n🔟 Installazione sistema Produzione...")
+        install_production_system()
+        
+        # 11. Installa Portal Cliente avanzato
+        print("\n1️⃣1️⃣ Installazione Portal Cliente...")
+        install_customer_portal_features()
+        
+        # 12. Pulizia post-installazione
+        print("\n1️⃣2️⃣ Pulizia e ottimizzazione finale...")
+        post_install_cleanup()
+        
+        # 13. Validazione finale completa
+        print("\n1️⃣3️⃣ Validazione installazione completa...")
+        if validate_installation_complete():
+
+        # 14. Validazione finale completa
+        print("\n14️⃣ Validazione installazione completa...")
         if validate_installation_complete():
             print("\n" + "="*80)
             print("✅ INSTALLAZIONE IDERP COMPLETATA CON SUCCESSO!")
@@ -1207,7 +1231,10 @@ def validate_installation_complete():
         "customer_groups": validate_customer_groups_created(),
         "demo_data": validate_demo_data_created(),
         "api_endpoints": validate_api_endpoints(),
-        "hooks": validate_hooks_configured()
+        "hooks": validate_hooks_configured(),
+        "optional_system": validate_optional_system(),  # NUOVO
+        "production_system": validate_production_system(),  # NUOVO
+        "portal_features": validate_portal_features()  # NUOVO
     }
     
     passed_validations = sum(validation_results.values())
@@ -1309,6 +1336,56 @@ def validate_hooks_configured():
         print(f"      ❌ Errore import hooks: {e}")
         return False
 
+def validate_optional_system():
+    """Valida sistema optional installato"""
+    
+    required_doctypes = ["Item Optional", "Optional Template", "Sales Item Optional"]
+    
+    for dt in required_doctypes:
+        if not frappe.db.exists("DocType", dt):
+            print(f"      ❌ DocType Optional mancante: {dt}")
+            return False
+    
+    # Verifica optional demo
+    optional_count = frappe.db.count("Item Optional")
+    if optional_count == 0:
+        print("      ⚠️ Nessun optional demo creato")
+        return False
+    
+    return True
+
+def validate_production_system():
+    """Valida sistema produzione installato"""
+    
+    # Verifica ruolo Machine Operator
+    if not frappe.db.exists("Role", "Machine Operator"):
+        print("      ❌ Ruolo Machine Operator mancante")
+        return False
+    
+    # Verifica campi Work Order
+    if not frappe.db.exists("Custom Field", {"dt": "Work Order", "fieldname": "printing_section"}):
+        print("      ❌ Campi produzione Work Order mancanti")
+        return False
+    
+    return True
+
+def validate_portal_features():
+    """Valida funzionalità portal cliente"""
+    
+    # Verifica campi Quotation
+    portal_fields = ["allow_customer_confirmation", "customer_confirmed"]
+    
+    for field in portal_fields:
+        if not frappe.db.exists("Custom Field", {"dt": "Quotation", "fieldname": field}):
+            print(f"      ❌ Campo portal mancante: Quotation.{field}")
+            return False
+    
+    # Verifica template email
+    if not frappe.db.exists("Email Template", "Quotation Confirmation Request"):
+        print("      ⚠️ Template email conferma mancante")
+    
+    return True
+
 def show_installation_summary_v15():
     """Mostra riepilogo installazione per ERPNext 15"""
     
@@ -1330,6 +1407,9 @@ def show_installation_summary_v15():
     print(f"   ✅ Vendita Metro Quadrato/Lineare/Pezzo")
     print(f"   ✅ Customer Groups con minimi")
     print(f"   ✅ Scaglioni prezzo dinamici")
+    print(f"   ✅ Optional e lavorazioni (plastificazione, fustella, ecc.)")  # NUOVO
+    print(f"   ✅ Sistema produzione con Work Orders")  # NUOVO
+    print(f"   ✅ Portal cliente con conferma preventivi")  # NUOVO
     print(f"   ✅ Calcoli automatici server-side")
     print(f"   ✅ API RESTful complete")
     print(f"   ✅ Dashboard e workspace")
