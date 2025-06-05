@@ -1,4 +1,5 @@
 # iderp/install.py
+
 """
 Installazione completa IDERP per ERPNext 15
 Sistema stampa digitale con pricing universale e customer groups
