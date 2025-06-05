@@ -1,2 +1,89 @@
-frappe>=15.0.0
-erpnext>=15.0.0
+# IDERP Requirements for ERPNext 15
+# Core dependencies
+
+# Frappe Framework (ERPNext 15 compatible)
+frappe>=15.0.0,<16.0.0
+
+# ERPNext (version 15.x)
+erpnext>=15.0.0,<16.0.0
+
+# Python dependencies for enhanced functionality
+# (These are usually already included in Frappe/ERPNext but specified for clarity)
+
+# Database and caching (usually included)
+redis>=4.0.0
+pymysql>=1.0.0
+
+# Web framework (included in Frappe)
+werkzeug>=2.0.0
+
+# Date/time utilities (included in Frappe)
+python-dateutil>=2.8.0
+
+# Math and calculations
+numpy>=1.21.0
+
+# For dashboard charts and analytics
+pandas>=1.3.0
+
+# HTTP requests (for external integrations)
+requests>=2.25.0
+
+# JSON processing improvements
+ujson>=4.0.0
+
+# Image processing (for potential future features)
+Pillow>=8.0.0
+
+# Excel/CSV processing (for import/export)
+openpyxl>=3.0.0
+xlsxwriter>=3.0.0
+
+# PDF generation enhancements
+reportlab>=3.6.0
+
+# Email and communication
+email-validator>=1.1.0
+
+# Decimal precision for financial calculations
+decimal>=1.70
+
+# Development and testing dependencies (optional)
+# Uncomment if needed for development
+# pytest>=6.0.0
+# pytest-cov>=2.0.0
+# black>=21.0.0
+# flake8>=3.9.0
+
+# Performance monitoring (optional)
+# psutil>=5.8.0
+
+# Additional utilities for IDERP specific features
+# For mathematical calculations in pricing
+sympy>=1.8
+
+# For data validation
+cerberus>=1.3.0
+
+# For improved logging
+structlog>=21.0.0
+
+# For API rate limiting (if needed)
+# flask-limiter>=2.0.0
+
+# For enhanced security (optional)
+# cryptography>=3.4.0
+
+# Note: ERPNext 15 compatibility
+# - Ensure all packages are compatible with Python 3.8+
+# - Frappe 15.x includes many dependencies automatically
+# - Only add what's specifically needed for IDERP features
+# - Test compatibility before adding new packages
+
+# IDERP specific calculation engines
+# (Custom packages would go here if we had any)
+
+# Version pins for stability in production
+# Uncomment and adjust versions as needed:
+# frappe==15.34.0
+# erpnext==15.25.0
