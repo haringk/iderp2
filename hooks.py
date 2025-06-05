@@ -34,7 +34,7 @@ doc_events = {
     "Quotation": {
         "before_save": [
             "iderp.universal_pricing.apply_universal_pricing_server_side",
-            "iderp.global_minimums.apply_global_minimums_server_side"
+            "iderp.global_minimums.apply_global_minimums_server_side",
             "iderp.optional_pricing.calculate_optional_totals"  # AGGIUNGI QUESTA
         ],
         "validate": "iderp.copy_fields.copy_custom_fields"
@@ -42,7 +42,7 @@ doc_events = {
     "Sales Order": {
         "before_save": [
             "iderp.universal_pricing.apply_universal_pricing_server_side", 
-            "iderp.global_minimums.apply_global_minimums_server_side"
+            "iderp.global_minimums.apply_global_minimums_server_side",
             "iderp.optional_pricing.calculate_optional_totals"  # AGGIUNGI QUESTA
         ],
         "validate": "iderp.copy_fields.copy_custom_fields"
@@ -50,7 +50,7 @@ doc_events = {
     "Sales Invoice": {
         "before_save": [
             "iderp.universal_pricing.apply_universal_pricing_server_side",
-            "iderp.global_minimums.apply_global_minimums_server_side"
+            "iderp.global_minimums.apply_global_minimums_server_side",
             "iderp.optional_pricing.calculate_optional_totals"  # AGGIUNGI QUESTA
         ],
         "validate": "iderp.copy_fields.copy_custom_fields"
@@ -58,7 +58,7 @@ doc_events = {
     "Delivery Note": {
         "before_save": [
             "iderp.universal_pricing.apply_universal_pricing_server_side",
-            "iderp.global_minimums.apply_global_minimums_server_side"
+            "iderp.global_minimums.apply_global_minimums_server_side",
             "iderp.optional_pricing.calculate_optional_totals"  # AGGIUNGI QUESTA
         ],
         "validate": "iderp.copy_fields.copy_custom_fields"
