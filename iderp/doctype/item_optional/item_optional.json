@@ -1,0 +1,111 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:optional_name",
+ "creation": "2025-01-01 00:00:00.000000",
+ "custom": 1,
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "optional_name",
+  "description",
+  "pricing_type",
+  "price",
+  "applicable_for",
+  "enabled"
+ ],
+ "fields": [
+  {
+   "fieldname": "optional_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Nome Optional",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Text Editor",
+   "in_list_view": 1,
+   "label": "Descrizione"
+  },
+  {
+   "fieldname": "pricing_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Tipo Prezzo",
+   "options": "Fisso\nPer Metro Quadrato\nPer Metro Lineare\nPercentuale",
+   "default": "Fisso",
+   "reqd": 1
+  },
+  {
+   "fieldname": "price",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Prezzo/Valore",
+   "reqd": 1
+  },
+  {
+   "fieldname": "applicable_for",
+   "fieldtype": "Table",
+   "label": "Applicabile a",
+   "options": "Item Optional Applicability"
+  },
+  {
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "Attivo",
+   "default": 1
+  }
+ ],
+ "links": [],
+ "modified": "2025-01-01 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Iderp",
+ "name": "Item Optional",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Sales Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 0,
+   "role": "Sales User",
+   "share": 0,
+   "write": 0
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "title_field": "optional_name",
+ "track_changes": 1
+}
