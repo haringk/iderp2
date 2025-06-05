@@ -23,10 +23,10 @@ app_include_css = [
 
 doctype_js = {
     "Item": "public/js/item_config.js",
-    "Quotation": "public/js/item_dimension.js",
-    "Sales Order": "public/js/item_dimension.js",
-    "Sales Invoice": "public/js/item_dimension.js",
-    "Delivery Note": "public/js/item_dimension.js"
+    "Quotation": ["public/js/item_dimension.js", "public/js/sales_item_optional.js"],
+    "Sales Order": ["public/js/item_dimension.js", "public/js/sales_item_optional.js"],
+    "Sales Invoice": ["public/js/item_dimension.js", "public/js/sales_item_optional.js"],
+    "Delivery Note": ["public/js/item_dimension.js", "public/js/sales_item_optional.js"]
 }
 
 # Server-side Events - ATTIVATI per ERPNext 15
@@ -35,6 +35,7 @@ doc_events = {
         "before_save": [
             "iderp.universal_pricing.apply_universal_pricing_server_side",
             "iderp.global_minimums.apply_global_minimums_server_side"
+            "iderp.optional_pricing.calculate_optional_totals"  # AGGIUNGI QUESTA
         ],
         "validate": "iderp.copy_fields.copy_custom_fields"
     },
@@ -42,6 +43,7 @@ doc_events = {
         "before_save": [
             "iderp.universal_pricing.apply_universal_pricing_server_side", 
             "iderp.global_minimums.apply_global_minimums_server_side"
+            "iderp.optional_pricing.calculate_optional_totals"  # AGGIUNGI QUESTA
         ],
         "validate": "iderp.copy_fields.copy_custom_fields"
     },
@@ -49,6 +51,7 @@ doc_events = {
         "before_save": [
             "iderp.universal_pricing.apply_universal_pricing_server_side",
             "iderp.global_minimums.apply_global_minimums_server_side"
+            "iderp.optional_pricing.calculate_optional_totals"  # AGGIUNGI QUESTA
         ],
         "validate": "iderp.copy_fields.copy_custom_fields"
     },
@@ -56,6 +59,7 @@ doc_events = {
         "before_save": [
             "iderp.universal_pricing.apply_universal_pricing_server_side",
             "iderp.global_minimums.apply_global_minimums_server_side"
+            "iderp.optional_pricing.calculate_optional_totals"  # AGGIUNGI QUESTA
         ],
         "validate": "iderp.copy_fields.copy_custom_fields"
     },
@@ -64,6 +68,10 @@ doc_events = {
     },
     "Customer": {
         "after_insert": "iderp.customer_group_pricing.setup_default_customer_group"
+    },
+    # AGGIUNGI QUESTO:
+    "Item Optional": {
+        "validate": "iderp.optional_pricing.validate_optional"
     }
 }
 
@@ -87,6 +95,16 @@ whitelisted_methods = [
     "iderp.dashboard.get_average_order_value",
     "iderp.dashboard.get_iderp_system_health",
     
+    # Optional APIs (AGGIUNGI QUESTE)
+    "iderp.api.optional.get_item_optionals",
+    "iderp.api.optional.apply_template",
+    "iderp.api.optional.calculate_optional_price",
+    "iderp.api.optional.get_optional_summary",
+    "iderp.api.optional.toggle_optional",
+    "iderp.api.optional.get_templates_for_item",
+    "iderp.optional_pricing.get_optional_price",
+    "iderp.optional_pricing.format_optional_price",
+
     # E-commerce APIs (placeholder per future implementazioni)
     "iderp.ecommerce.calculate_item_price",
     "iderp.ecommerce.add_to_cart_calculated",
@@ -103,7 +121,8 @@ boot_session = "iderp.boot_session"
 # Scheduler Events per manutenzione sistema
 scheduler_events = {
     "daily": [
-        "iderp.maintenance.cleanup_old_calculations"
+        "iderp.maintenance.cleanup_old_calculations",
+        "iderp.optional_pricing.cleanup_optional_orphans"  # AGGIUNGI
     ],
     "weekly": [
         "iderp.maintenance.cleanup_cache",
@@ -121,7 +140,9 @@ fixtures = [
     {
         "dt": "Custom Field",
         "filters": [
-            ["dt", "in", ["Item", "Quotation Item", "Sales Order Item", "Sales Invoice Item", "Delivery Note Item"]]
+            ["dt", "in", ["Item", "Quotation Item", "Sales Order Item", 
+                         "Sales Invoice Item", "Delivery Note Item",
+                         "Quotation", "Work Order", "Portal Settings"]]  # AGGIUNTI NUOVI
         ]
     },
     {
@@ -129,6 +150,13 @@ fixtures = [
         "filters": [
             ["doc_type", "in", ["Item", "Quotation Item", "Sales Order Item"]]
         ]
+    },
+    # AGGIUNGI QUESTO BLOCCO:
+    {
+        "dt": "Item Optional",
+        "filters": [["name", "in", ["Plastificazione Lucida", "Plastificazione Opaca", 
+                                    "Fustella Sagomata", "Occhielli Metallici", 
+                                    "Verniciatura UV Spot"]]]
     }
 ]
 
@@ -160,7 +188,12 @@ has_permission = {
 jinja = {
     "methods": [
         "iderp.utils.get_measurement_options",
-        "iderp.utils.format_price_with_measurement"
+        "iderp.utils.format_price_with_measurement",
+        "iderp.optional_pricing.get_optional_price",  # AGGIUNGI
+        "iderp.optional_pricing.format_optional_price"  # AGGIUNGI
+    ],
+    "filters": [
+        "iderp.optional_pricing.optional_price"  # AGGIUNGI
     ]
 }
 
