@@ -56,10 +56,6 @@ def after_install():
         print("\n8️⃣ Ottimizzazione performance...")
         setup_performance_optimizations()
         
-		# 8. Setup cache e performance
-        print("\n8️⃣ Ottimizzazione performance...")
-        setup_performance_optimizations()
-        
         # 9. Installa sistema Optional/Lavorazioni
         print("\n9️⃣ Installazione sistema Optional...")
         install_optional_system()
@@ -78,10 +74,6 @@ def after_install():
         
         # 13. Validazione finale completa
         print("\n1️⃣3️⃣ Validazione installazione completa...")
-        if validate_installation_complete():
-
-        # 14. Validazione finale completa
-        print("\n14️⃣ Validazione installazione completa...")
         if validate_installation_complete():
             print("\n" + "="*80)
             print("✅ INSTALLAZIONE IDERP COMPLETATA CON SUCCESSO!")
