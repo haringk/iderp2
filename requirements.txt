@@ -1,4 +1,4 @@
-# IDERP Requirements for ERPNext 15
+# iderp Requirements for ERPNext 15
 # Core dependencies
 
 # Frappe Framework (ERPNext 15 compatible)
@@ -57,7 +57,7 @@ email-validator>=1.1.0
 # Performance monitoring (optional)
 # psutil>=5.8.0
 
-# Additional utilities for IDERP specific features
+# Additional utilities for iderp specific features
 # For mathematical calculations in pricing
 sympy>=1.8
 
@@ -76,10 +76,10 @@ structlog>=21.0.0
 # Note: ERPNext 15 compatibility
 # - Ensure all packages are compatible with Python 3.8+
 # - Frappe 15.x includes many dependencies automatically
-# - Only add what's specifically needed for IDERP features
+# - Only add what's specifically needed for iderp features
 # - Test compatibility before adding new packages
 
-# IDERP specific calculation engines
+# iderp specific calculation engines
 # (Custom packages would go here if we had any)
 
 # Version pins for stability in production

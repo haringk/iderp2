@@ -2,7 +2,7 @@
 
 """
 API REST per gestione optional
-Sistema stampa digitale IDERP - ERPNext 15
+Sistema stampa digitale iderp - ERPNext 15
 """
 
 import frappe

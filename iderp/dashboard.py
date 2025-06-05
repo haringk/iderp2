@@ -1,6 +1,6 @@
 # iderp/dashboard.py
 """
-Dashboard functions per IDERP workspace in ERPNext 15
+Dashboard functions per iderp workspace in ERPNext 15
 Fornisce metriche e KPI per il sistema stampa digitale
 """
 
@@ -23,7 +23,7 @@ def get_quotations_this_month():
             "transaction_date": ["between", [first_day, last_day]]
         })
         
-        # Conta quotazioni IDERP (con tipo_vendita configurato)
+        # Conta quotazioni iderp (con tipo_vendita configurato)
         iderp_quotations = frappe.db.sql("""
             SELECT COUNT(DISTINCT q.name) as count
             FROM `tabQuotation` q
@@ -41,7 +41,7 @@ def get_quotations_this_month():
         return {
             "value": total_quotations,
             "label": _("Quotations This Month"),
-            "subtitle": f"{iderp_quotations} with IDERP, {confirmed_quotations} confirmed",
+            "subtitle": f"{iderp_quotations} with iderp, {confirmed_quotations} confirmed",
             "color": "#3498db",
             "trend": "up" if total_quotations > 0 else "neutral"
         }
@@ -110,7 +110,7 @@ def get_top_customer_groups():
 @frappe.whitelist()
 def get_configured_items_count():
     """
-    Ottieni numero item configurati per IDERP
+    Ottieni numero item configurati per iderp
     """
     try:
         # Item con misure personalizzate
@@ -225,7 +225,7 @@ def get_average_order_value():
 @frappe.whitelist()
 def get_iderp_system_health():
     """
-    Ottieni stato salute sistema IDERP
+    Ottieni stato salute sistema iderp
     """
     try:
         health_score = 0

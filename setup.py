@@ -1,6 +1,6 @@
 # setup.py
 """
-IDERP Setup Configuration for ERPNext 15
+iderp Setup Configuration for ERPNext 15
 Sistema Stampa Digitale - Package Installation
 """
 
@@ -27,7 +27,7 @@ setup(
     # Metadata
     description="Sistema completo per stampa digitale con calcoli automatici Metro Quadrato/Lineare/Pezzo",
     long_description="""
-IDERP - Sistema Stampa Digitale per ERPNext 15
+iderp - Sistema Stampa Digitale per ERPNext 15
 
 Funzionalità principali:
 - Vendita multi-unità: Metro Quadrato, Metro Lineare, Pezzo
@@ -42,10 +42,10 @@ Perfetto per aziende di stampa digitale, serigrafia, cartotecnica.
     long_description_content_type="text/plain",
     
     # Author info
-    author="idstudio AI",
-    author_email="ai@idstudio.org",
-    maintainer="idstudio AI",
-    maintainer_email="ai@idstudio.org",
+    author="idstudio",
+    author_email="dev@idstudio.org",
+    maintainer="idstudio",
+    maintainer_email="dev@idstudio.org",
     
     # URLs
     url="https://github.com/haringk/iderp2",
@@ -138,10 +138,10 @@ Perfetto per aziende di stampa digitale, serigrafia, cartotecnica.
     
     # Additional metadata for ERPNext 15
     app_name="iderp",
-    app_title="IDERP - Sistema Stampa Digitale",
-    app_publisher="idstudio AI",
+    app_title="iderp - Sistema Stampa Digitale",
+    app_publisher="idstudio",
     app_description="Plugin ERPNext per stampa digitale con calcoli universali",
-    app_email="ai@idstudio.org",
+    app_email="dev@idstudio.org",
     app_license="MIT",
     app_version="2.0.0",
     required_apps=["frappe", "erpnext"],
@@ -172,17 +172,17 @@ Perfetto per aziende di stampa digitale, serigrafia, cartotecnica.
 
 # Post-install message
 print("""
-🎉 IDERP v2.0.0 Setup Complete!
+🎉 iderp v2.0.0 Setup Complete!
 
 📋 Next Steps:
 1. Install: bench --site [site-name] install-app iderp
-2. Setup: Go to IDERP workspace to configure
+2. Setup: Go to iderp workspace to configure
 3. Configure: Set up Customer Groups and Item pricing
 4. Test: Create a quotation with custom measurements
 
 📖 Documentation: https://github.com/haringk/iderp2
 🐛 Issues: https://github.com/haringk/iderp2/issues
-📧 Support: ai@idstudio.org
+📧 Support: dev@idstudio.org
 
 ERPNext 15 Compatible ✅
 """)

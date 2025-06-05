@@ -16,14 +16,14 @@ class CustomItem(Item):
     """
     
     def validate(self):
-        """Validazione estesa per Item con IDERP"""
+        """Validazione estesa per Item con iderp"""
         super().validate()
         self.validate_iderp_configuration()
         self.validate_pricing_tiers()
         self.validate_customer_group_minimums()
     
     def validate_iderp_configuration(self):
-        """Valida configurazione IDERP"""
+        """Valida configurazione iderp"""
         if not getattr(self, 'supports_custom_measurement', 0):
             return
             
@@ -64,7 +64,7 @@ class CustomItem(Item):
         self.clear_iderp_cache()
     
     def clear_iderp_cache(self):
-        """Pulisce cache IDERP per questo item"""
+        """Pulisce cache iderp per questo item"""
         # Pulisce cache pricing tiers
         from iderp.doctype.item_pricing_tier.item_pricing_tier import clear_all_pricing_tier_cache
         clear_all_pricing_tier_cache()
@@ -74,7 +74,7 @@ class CustomItem(Item):
         clear_all_minimum_cache()
     
     def get_iderp_summary(self):
-        """Ottieni riepilogo configurazione IDERP"""
+        """Ottieni riepilogo configurazione iderp"""
         if not getattr(self, 'supports_custom_measurement', 0):
             return {"configured": False}
             
@@ -97,16 +97,16 @@ class CustomItem(Item):
 
 class CustomQuotation(Quotation):
     """
-    Override della classe Quotation per calcoli IDERP
+    Override della classe Quotation per calcoli iderp
     """
     
     def validate(self):
-        """Validazione estesa per Quotation con IDERP"""
+        """Validazione estesa per Quotation con iderp"""
         super().validate()
         self.validate_iderp_items()
     
     def validate_iderp_items(self):
-        """Valida item con configurazione IDERP"""
+        """Valida item con configurazione iderp"""
         if not hasattr(self, 'items') or not self.items:
             return
             
@@ -114,7 +114,7 @@ class CustomQuotation(Quotation):
             self.validate_single_iderp_item(item)
     
     def validate_single_iderp_item(self, item):
-        """Valida singolo item IDERP"""
+        """Valida singolo item iderp"""
         tipo_vendita = getattr(item, 'tipo_vendita', 'Pezzo')
         
         # Validazioni specifiche per tipo
@@ -152,12 +152,12 @@ class CustomQuotation(Quotation):
         """Prima del salvataggio"""
         super().before_save()
         
-        # Applica calcoli IDERP se configurato
+        # Applica calcoli iderp se configurato
         if self.customer:
             self.apply_iderp_calculations()
     
     def apply_iderp_calculations(self):
-        """Applica calcoli IDERP server-side"""
+        """Applica calcoli iderp server-side"""
         try:
             # Import funzioni di calcolo
             from iderp.universal_pricing import apply_universal_pricing_server_side
@@ -171,11 +171,11 @@ class CustomQuotation(Quotation):
             
         except ImportError:
             # Fallback se moduli non disponibili
-            frappe.logger().warning("IDERP calculation modules not available, using basic calculations")
+            frappe.logger().warning("iderp calculation modules not available, using basic calculations")
             self.apply_basic_iderp_calculations()
     
     def apply_basic_iderp_calculations(self):
-        """Calcoli IDERP base di fallback"""
+        """Calcoli iderp base di fallback"""
         for item in self.items:
             tipo_vendita = getattr(item, 'tipo_vendita', 'Pezzo')
             
@@ -199,7 +199,7 @@ class CustomQuotation(Quotation):
 
 # Utility functions per override
 def get_item_iderp_config(item_code):
-    """Ottieni configurazione IDERP per item"""
+    """Ottieni configurazione iderp per item"""
     try:
         item_doc = frappe.get_doc("Item", item_code)
         if hasattr(item_doc, 'get_iderp_summary'):
@@ -209,12 +209,12 @@ def get_item_iderp_config(item_code):
         return {"configured": False}
 
 def validate_iderp_item_compatibility(doc, method=None):
-    """Hook di validazione compatibilità IDERP"""
+    """Hook di validazione compatibilità iderp"""
     if hasattr(doc, 'item_code') and doc.item_code:
         config = get_item_iderp_config(doc.item_code)
         
         if config.get("configured"):
-            # Item configurato per IDERP, applica validazioni
+            # Item configurato per iderp, applica validazioni
             tipo_vendita = getattr(doc, 'tipo_vendita', None)
             
             if not tipo_vendita:

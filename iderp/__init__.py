@@ -1,6 +1,6 @@
 # iderp/__init__.py zzz
 """
-IDERP Module Initialization
+iderp Module Initialization
 Sistema Stampa Digitale per ERPNext 15
 """
 
@@ -33,10 +33,10 @@ except ImportError:
 
 # Module metadata
 app_name = "iderp"
-app_title = "IDERP - Sistema Stampa Digitale"
-app_publisher = "idstudio AI"
+app_title = "iderp - Sistema Stampa Digitale"
+app_publisher = "idstudio"
 app_description = "Plugin ERPNext per stampa digitale con calcoli universali"
-app_email = "ai@idstudio.org"
+app_email = "dev@idstudio.org"
 app_license = "MIT"
 
 # ERPNext 15 compatibility flags
@@ -68,19 +68,19 @@ def validate_dependencies():
     # Check Frappe version
     frappe_version = frappe.__version__
     if not frappe_version.startswith(('15.', '16.', '17.')):
-        frappe.throw(f"IDERP requires Frappe 15+. Current version: {frappe_version}")
+        frappe.throw(f"iderp requires Frappe 15+. Current version: {frappe_version}")
     
     # Check ERPNext installation
     try:
         import erpnext
         erpnext_version = erpnext.__version__
         if not erpnext_version.startswith(('15.', '16.', '17.')):
-            frappe.throw(f"IDERP requires ERPNext 15+. Current version: {erpnext_version}")
+            frappe.throw(f"iderp requires ERPNext 15+. Current version: {erpnext_version}")
     except ImportError:
-        frappe.throw("ERPNext is required for IDERP")
+        frappe.throw("ERPNext is required for iderp")
 
 def check_installation():
-    """Check if IDERP is properly installed"""
+    """Check if iderp is properly installed"""
     import frappe
     
     required_doctypes = [
@@ -118,7 +118,7 @@ def check_installation():
     return {
         "installed": len(missing_fields) == 0,
         "missing_fields": missing_fields,
-        "message": "IDERP is properly installed" if len(missing_fields) == 0 else f"Missing fields: {', '.join(missing_fields)}"
+        "message": "iderp is properly installed" if len(missing_fields) == 0 else f"Missing fields: {', '.join(missing_fields)}"
     }
 
 def get_system_status():
@@ -161,7 +161,7 @@ def get_system_status():
 
 # Boot function for client-side
 def boot_session(bootinfo):
-    """Add IDERP data to boot session"""
+    """Add iderp data to boot session"""
     import frappe
     
     try:
@@ -172,5 +172,5 @@ def boot_session(bootinfo):
                 "system_status": get_system_status()
             }
     except Exception:
-        # Don't break boot if IDERP has issues
+        # Don't break boot if iderp has issues
         pass

@@ -1,7 +1,7 @@
 # iderp/maintenance.py
 
 """
-Modulo manutenzione e pulizia sistema IDERP
+Modulo manutenzione e pulizia sistema iderp
 Funzioni schedulabili per ottimizzazione performance
 """
 
@@ -51,23 +51,23 @@ def cleanup_old_calculations():
         # Log operazione
         frappe.log_error(
             "Pulizia calcoli completata",
-            "IDERP Maintenance"
+            "iderp Maintenance"
         )
         
     except Exception as e:
         frappe.log_error(
             f"Errore pulizia calcoli: {str(e)}",
-            "IDERP Maintenance Error"
+            "iderp Maintenance Error"
         )
 
 
 def cleanup_cache():
     """
-    Pulisce cache IDERP
+    Pulisce cache iderp
     Schedulato: weekly
     """
     try:
-        # Lista chiavi cache IDERP
+        # Lista chiavi cache iderp
         cache_keys = [
             "iderp_customer_pricing_cache",
             "iderp_item_tiers_cache",
@@ -97,19 +97,19 @@ def cleanup_cache():
         # Log operazione
         frappe.log_error(
             f"Cache pulita: {cleared_count} chiavi rimosse",
-            "IDERP Cache Cleanup"
+            "iderp Cache Cleanup"
         )
         
     except Exception as e:
         frappe.log_error(
             f"Errore pulizia cache: {str(e)}",
-            "IDERP Cache Error"
+            "iderp Cache Error"
         )
 
 
 def cleanup_document_cache():
     """
-    Pulisce cache documenti IDERP
+    Pulisce cache documenti iderp
     """
     # Pulisci cache per Item con misure personalizzate
     items = frappe.get_all("Item", 
@@ -124,7 +124,7 @@ def cleanup_document_cache():
 
 def optimize_database_tables():
     """
-    Ottimizza tabelle database IDERP
+    Ottimizza tabelle database iderp
     Schedulato: monthly (da aggiungere a hooks se necessario)
     """
     try:
@@ -148,13 +148,13 @@ def optimize_database_tables():
         
         frappe.log_error(
             "Ottimizzazione tabelle completata",
-            "IDERP Database Optimization"
+            "iderp Database Optimization"
         )
         
     except Exception as e:
         frappe.log_error(
             f"Errore ottimizzazione DB: {str(e)}",
-            "IDERP DB Error"
+            "iderp DB Error"
         )
 
 
@@ -193,13 +193,13 @@ def cleanup_orphaned_child_records():
     except Exception as e:
         frappe.log_error(
             f"Errore pulizia record orfani: {str(e)}",
-            "IDERP Cleanup Error"
+            "iderp Cleanup Error"
         )
 
 
 def validate_system_integrity():
     """
-    Valida integrità sistema IDERP
+    Valida integrità sistema iderp
     """
     issues = []
     
@@ -264,13 +264,13 @@ def validate_system_integrity():
         
         # Report risultati
         if issues:
-            report_content = "REPORT INTEGRITÀ SISTEMA IDERP\n" + "="*50 + "\n"
+            report_content = "REPORT INTEGRITÀ SISTEMA iderp\n" + "="*50 + "\n"
             for issue in issues:
                 report_content += f"\n[{issue['type'].upper()}] {issue['message']}"
             
             frappe.log_error(
                 report_content,
-                "IDERP System Integrity Check"
+                "iderp System Integrity Check"
             )
         
         return issues
@@ -278,7 +278,7 @@ def validate_system_integrity():
     except Exception as e:
         frappe.log_error(
             f"Errore validazione sistema: {str(e)}",
-            "IDERP Validation Error"
+            "iderp Validation Error"
         )
         return [{"type": "error", "message": str(e)}]
 
@@ -327,7 +327,7 @@ def run_maintenance_now(task=None):
 @frappe.whitelist()
 def get_system_health():
     """
-    Ottieni stato salute sistema IDERP
+    Ottieni stato salute sistema iderp
     """
     health_data = {
         "status": "healthy",
@@ -382,7 +382,7 @@ def get_system_health():
 
 def get_cache_size():
     """
-    Stima dimensione cache IDERP
+    Stima dimensione cache iderp
     """
     # Implementazione semplificata
     # In produzione potrebbe usare Redis INFO

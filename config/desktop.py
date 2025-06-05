@@ -1,7 +1,7 @@
 # config/desktop.py
 """
-IDERP Desktop Configuration for ERPNext 15
-Configurazione icone e workspace per IDERP
+iderp Desktop Configuration for ERPNext 15
+Configurazione icone e workspace per iderp
 """
 
 from frappe import _
@@ -9,7 +9,7 @@ from frappe import _
 # Configurazione base app
 app_icon = "fa fa-print"
 app_color = "#3498db"
-app_email = "ai@idstudio.org"
+app_email = "dev@idstudio.org"
 app_license = "MIT"
 
 def get_data():
@@ -17,11 +17,11 @@ def get_data():
     Return desktop icons configuration per ERPNext 15
     """
     return [
-        # Main IDERP workspace
+        # Main iderp workspace
         {
-            "module_name": "IDERP",
+            "module_name": "iderp",
             "category": "Modules",
-            "label": _("IDERP - Stampa Digitale"),
+            "label": _("iderp - Stampa Digitale"),
             "color": "#3498db",
             "icon": "fa fa-print",
             "type": "module",
@@ -51,8 +51,8 @@ def get_data():
         
         # Reports section
         {
-            "module_name": "IDERP Reports",
-            "label": _("IDERP Reports"),
+            "module_name": "iderp Reports",
+            "label": _("iderp Reports"),
             "color": "#9b59b6",
             "icon": "fa fa-bar-chart",
             "type": "module",
@@ -116,7 +116,7 @@ def get_workspace_sidebar_items():
             "items": [
                 {
                     "type": "report",
-                    "name": "IDERP Pricing Analysis",
+                    "name": "iderp Pricing Analysis",
                     "label": _("Pricing Analysis"),
                     "is_query_report": True
                 },
@@ -133,7 +133,7 @@ def get_workspace_sidebar_items():
 # Gestione permessi per workspace
 def has_permission(user=None):
     """
-    Check if user has permission to access IDERP workspace
+    Check if user has permission to access iderp workspace
     """
     import frappe
     
@@ -153,7 +153,7 @@ def has_permission(user=None):
 # Cards per dashboard
 def get_dashboard_cards():
     """
-    Return dashboard cards for IDERP workspace
+    Return dashboard cards for iderp workspace
     """
     return [
         {
@@ -189,7 +189,7 @@ def get_dashboard_cards():
 # Shortcuts per toolbar
 def get_quick_shortcuts():
     """
-    Return quick shortcuts for IDERP
+    Return quick shortcuts for iderp
     """
     return [
         {
@@ -220,8 +220,8 @@ def get_quick_shortcuts():
 
 # Configuration per menu principal
 workspace_config = {
-    "name": "IDERP",
-    "title": _("IDERP - Stampa Digitale"),
+    "name": "iderp",
+    "title": _("iderp - Stampa Digitale"),
     "icon": "fa fa-print",
     "color": "#3498db",
     "description": _("Sistema completo per gestione stampa digitale con calcoli automatici metro quadrato, metro lineare e al pezzo"),

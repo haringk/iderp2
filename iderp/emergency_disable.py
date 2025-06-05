@@ -6,7 +6,7 @@ Script di emergenza per disabilitare custom fields problematici
 import frappe
 
 def disable_iderp_custom_fields():
-    """Disabilita temporaneamente tutti i custom fields IDERP"""
+    """Disabilita temporaneamente tutti i custom fields iderp"""
     
     # Custom fields che potrebbero causare problemi
     problematic_fields = [

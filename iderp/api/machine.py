@@ -2,7 +2,7 @@
 
 """
 API per comunicazione con macchine stampa
-Sistema produzione IDERP - ERPNext 15
+Sistema produzione iderp - ERPNext 15
 """
 
 import frappe

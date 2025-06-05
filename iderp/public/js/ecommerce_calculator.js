@@ -1,5 +1,5 @@
 // iderp/public/js/ecommerce_calculator.js
-console.log("IDERP: E-commerce Calculator Loaded");
+console.log("iderp: E-commerce Calculator Loaded");
 
 class ERPProductCalculator {
     constructor(itemCode) {

@@ -1,7 +1,7 @@
 # iderp/install.py
 
 """
-Installazione completa IDERP per ERPNext 15
+Installazione completa iderp per ERPNext 15
 Sistema stampa digitale con pricing universale e customer groups
 VERSIONE FINALE OTTIMIZZATA E COMPLETA
 """
@@ -13,9 +13,9 @@ import json
 import os
 
 def after_install():
-    """Installazione completa plugin IDERP per ERPNext 15"""
+    """Installazione completa plugin iderp per ERPNext 15"""
     print("\n" + "="*80)
-    print("🚀 INSTALLAZIONE IDERP v2.0 - ERPNext 15 Compatible")
+    print("🚀 INSTALLAZIONE iderp v2.0 - ERPNext 15 Compatible")
     print("   Sistema Stampa Digitale - Versione Finale Completa")
     print("="*80)
     
@@ -76,7 +76,7 @@ def after_install():
         print("\n1️⃣3️⃣ Validazione installazione completa...")
         if validate_installation_complete():
             print("\n" + "="*80)
-            print("✅ INSTALLAZIONE IDERP COMPLETATA CON SUCCESSO!")
+            print("✅ INSTALLAZIONE iderp COMPLETATA CON SUCCESSO!")
             print("="*80)
             show_installation_summary_v15()
             show_next_steps()
@@ -625,7 +625,7 @@ def update_existing_field(field_name, new_config):
         return False
 
 def create_advanced_doctypes_v15():
-    """Crea DocTypes avanzati per sistema IDERP ERPNext 15"""
+    """Crea DocTypes avanzati per sistema iderp ERPNext 15"""
     
     # Verifica se DocTypes esistono già
     required_doctypes = [
@@ -935,7 +935,7 @@ def setup_demo_data_v15():
     
     print(f"   ✅ Demo data configurato:")
     print(f"      • {demo_items_created} item demo configurati")
-    print(f"      • Workspace IDERP: {'✅' if workspace_created else '❌'}")
+    print(f"      • Workspace iderp: {'✅' if workspace_created else '❌'}")
 
 def setup_demo_items():
     """Configura item demo con scaglioni"""
@@ -1041,12 +1041,12 @@ def setup_demo_pricing_tiers(item_doc):
         print(f"      ⚠️ Errore scaglioni demo: {e}")
 
 def setup_iderp_workspace():
-    """Configura workspace IDERP"""
+    """Configura workspace iderp"""
     
     try:
         # Il workspace viene configurato tramite config/desktop.py
         # Qui verifichiamo solo che sia tutto in ordine
-        print("      ✅ Workspace IDERP configurato via desktop.py")
+        print("      ✅ Workspace iderp configurato via desktop.py")
         return True
     except Exception as e:
         print(f"      ❌ Errore workspace: {e}")
@@ -1072,7 +1072,7 @@ def configure_system_settings():
         return False
 
 def setup_role_permissions():
-    """Configura permessi per ruoli IDERP"""
+    """Configura permessi per ruoli iderp"""
     
     # Permessi per Customer Group Price Rule
     setup_doctype_permissions("Customer Group Price Rule", [
@@ -1381,7 +1381,7 @@ def validate_portal_features():
 def show_installation_summary_v15():
     """Mostra riepilogo installazione per ERPNext 15"""
     
-    print("\n📋 RIEPILOGO INSTALLAZIONE IDERP v2.0:")
+    print("\n📋 RIEPILOGO INSTALLAZIONE iderp v2.0:")
     print("="*60)
     
     # Statistiche installazione
@@ -1456,7 +1456,7 @@ def show_next_steps():
     print("   • Verifica calcolo automatico prezzi")
     
     print("\n3. 🎛️ PERSONALIZZA:")
-    print("   • Workspace IDERP per dashboard")
+    print("   • Workspace iderp per dashboard")
     print("   • Report pricing analysis")
     print("   • Configura additional customer groups")
     
@@ -1547,7 +1547,7 @@ def create_optional_doctype():
         doctype_json = {
             "doctype": "DocType",
             "name": "Item Optional",
-            "module": "Iderp",
+            "module": "iderp",
             "custom": 1,
             "naming_rule": "By fieldname",
             "autoname": "field:optional_name",
@@ -1638,7 +1638,7 @@ def create_optional_applicability_doctype():
         doctype_json = {
             "doctype": "DocType",
             "name": "Item Optional Applicability",
-            "module": "Iderp",
+            "module": "iderp",
             "custom": 1,
             "istable": 1,
             "fields": [
@@ -1687,7 +1687,7 @@ def create_optional_template_doctype():
         doctype_json = {
             "doctype": "DocType",
             "name": "Optional Template",
-            "module": "Iderp",
+            "module": "iderp",
             "custom": 1,
             "fields": [
                 {
@@ -1753,7 +1753,7 @@ def create_optional_template_item_doctype():
         doctype_json = {
             "doctype": "DocType",
             "name": "Optional Template Item",
-            "module": "Iderp",
+            "module": "iderp",
             "custom": 1,
             "istable": 1,
             "fields": [
@@ -1841,7 +1841,7 @@ def create_sales_item_optional_doctype():
         doctype_json = {
             "doctype": "DocType",
             "name": "Sales Item Optional",
-            "module": "Iderp",
+            "module": "iderp",
             "custom": 1,
             "istable": 1,
             "fields": [
@@ -2299,8 +2299,8 @@ def generate_installation_report():
 
 # Comandi utility per console
 def quick_test():
-    """Test rapido sistema IDERP"""
-    print("\n🧪 TEST RAPIDO SISTEMA IDERP")
+    """Test rapido sistema iderp"""
+    print("\n🧪 TEST RAPIDO SISTEMA iderp")
     print("="*40)
     
     tests = {
@@ -2326,10 +2326,10 @@ def can_import_apis():
         return False
 
 def system_status():
-    """Mostra status dettagliato sistema IDERP"""
+    """Mostra status dettagliato sistema iderp"""
     stats = get_installation_stats()
     
-    print("\n📊 STATUS SISTEMA IDERP")
+    print("\n📊 STATUS SISTEMA iderp")
     print("="*40)
     print(f"DocTypes Custom: {stats['doctypes']}")
     print(f"Custom Fields: {stats['custom_fields']}")
@@ -2339,7 +2339,7 @@ def system_status():
     print(f"Regole Pricing: {stats['pricing_rules']}")
 
 def reinstall_iderp():
-    """Reinstalla completamente IDERP"""
+    """Reinstalla completamente iderp"""
     if frappe.utils.cint(input("\n⚠️  Sicuro di voler reinstallare? (1=Si, 0=No): ")):
         return after_install()
     return False

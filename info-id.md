@@ -36,11 +36,11 @@ cd ~/frappe-bench
 cat > update_iderp.sh << 'EOF'
 #!/bin/bash
 
-# Script aggiornamento IDERP per ERPNext 15
+# Script aggiornamento iderp per ERPNext 15
 # Versione: 2.0 - Compatibile ERPNext 15
 
 echo "🚀 =========================================="
-echo "    AGGIORNAMENTO PLUGIN IDERP v2.0"
+echo "    AGGIORNAMENTO PLUGIN iderp v2.0"
 echo "    Compatibile ERPNext 15"
 echo "=========================================="
 
@@ -247,7 +247,7 @@ Se puoi evita di farmi usare la console e usa i file per installare o aggiornare
 
 
 
-# Roadmap Implementazione IDERP - Sistema Stampa Digitale
+# Roadmap Implementazione iderp - Sistema Stampa Digitale
 
 ## ✅ **FASE 1 COMPLETATA: Customer Group Pricing (Completato Giugno 2025)**
 
