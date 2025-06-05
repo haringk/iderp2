@@ -1,0 +1,62 @@
+[build-system]
+requires = ["flit_core >=3.4,<4"]
+build-backend = "flit_core.buildapi"
+
+[project]
+name = "iderp"
+version = "2.0.0"
+description = "Custom ERPNext App per gestione prodotti a metratura e sincronizzazione documenti"
+readme = "README.md"
+authors = [
+    {name = "ID Studio", email = "info@idstudio.it"}
+]
+license = {text = "MIT"}
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Web Environment",
+    "Framework :: Frappe",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Natural Language :: Italian",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Office/Business :: Financial :: Accounting",
+]
+requires-python = ">=3.10"
+dependencies = [
+    "frappe>=15.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pre-commit",
+    "black",
+    "ruff",
+]
+
+[project.urls]
+Homepage = "https://github.com/haringk/iderp2"
+Repository = "https://github.com/haringk/iderp2.git"
+"Bug Reports" = "https://github.com/haringk/iderp2/issues"
+
+[tool.black]
+line-length = 99
+target-version = ['py310']
+
+[tool.ruff]
+line-length = 110
+target-version = "py310"
+select = [
+    "F",  # pyflakes
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warnings
+    "I",  # isort
+]
+ignore = [
+    "E501",  # line too long
+    "W191",  # indentation contains tabs
+]
+
+[tool.ruff.isort]
+known-first-party = ["iderp"]
