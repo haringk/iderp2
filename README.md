@@ -1,4 +1,4 @@
-# iDERP 2.0 - Custom ERPNext App per Gestione Metrature
+# IDERP 2.0 - Custom ERPNext App per Gestione Metrature
 
 App personalizzata per ERPNext 15 che gestisce prodotti venduti al metro quadro, metro lineare o cadauno, con sistema avanzato di prezzi per gruppi cliente e articoli opzionali.
 
