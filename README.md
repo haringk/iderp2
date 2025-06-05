@@ -1,90 +1,212 @@
-# iderp
-Custom app per ERPNext che gestisce prodotti venduti al metro quadro, aggiungendo campi “base” e “altezza” su tutti i documenti vendita.
+# iDERP 2.0 - Custom ERPNext App per Gestione Metrature
 
-Per le istruzioni complete consulta info-id.md
+App personalizzata per ERPNext 15 che gestisce prodotti venduti al metro quadro, metro lineare o cadauno, con sistema avanzato di prezzi per gruppi cliente e articoli opzionali.
 
-## Funzionalità
-- Campi “base” e “altezza” (da aggiungere via Custom Field su Quotation Item, Sales Order Item, ecc.)
-- Calcolo automatico del prezzo totale lato client
+## 🚀 Caratteristiche Principali
 
+### Gestione Metrature
+- **Articoli a Metro Quadro**: Campi base e altezza con calcolo automatico mq
+- **Articoli a Metro Lineare**: Gestione dimensioni lineari
+- **Calcolo Automatico**: Prezzi calcolati in tempo reale lato client
+- **Validazione Dimensioni**: Controllo limiti min/max per articolo
 
-## Setup
-- Installa come una normale app bench.
-- Aggiungi i Custom Field nei DocType Item desiderati.
-- Verifica che iderp.js sia incluso.
+### Prezzi Gruppo Cliente
+- **Regole Prezzo Personalizzate**: Prezzi differenziati per gruppo cliente
+- **Sconti Automatici**: Applicazione sconti percentuali o fissi
+- **Fasce Quantità**: Prezzi scalari basati su quantità
+- **Priorità Regole**: Sistema di priorità per gestire sovrapposizioni
 
+### Articoli Opzionali
+- **Template Opzionali**: Gruppi predefiniti di articoli correlati
+- **Selezione Dinamica**: Aggiunta opzionali durante creazione ordine
+- **Prezzi Speciali**: Regole prezzo dedicate per opzionali
 
-## Note
-- il file apps.txt nel quale deve esserci il nome del plugin è quello nella directory /sites/
+### Ordini Minimi
+- **Minimi per Gruppo**: Valore o quantità minima ordine per gruppo cliente
+- **Validazione Automatica**: Controllo in fase di conferma documento
+- **Notifiche**: Avvisi per ordini sotto soglia
 
+## 📋 Requisiti
 
-## Utilità
-```bash
-bench update --reset
-bench --site sito.local set-maintenance-mode off
-bench --site sito.local install-app iderp
-```
+- **ERPNext**: Versione 15.x
+- **Frappe Framework**: Versione 15.x
+- **Python**: 3.10+
+- **Node.js**: 18+
+- **MariaDB**: 10.6+ o MySQL 8.0+
 
-Aggiornamento
-```bash
-cd ~/frappe-bench/apps/iderp
-git pull origin master
-bench build
-cd ~/frappe-bench
-bench --site sito.local clear-cache
-bench restart
-```
+## 🛠️ Installazione
 
-Per refresh
-```bash
-bench --site sito.local clear-cache
-bench clear-compiled # questo non va 
-bench restart
-```
-
-Disinstalla:
-```bash
-bench --site sito.local uninstall-app iderp
-```
-Rimuovi manualmente la diga "iderp" da ```sites/sito.local/apps.txt``` (aggiungila dopo la reinstallazione.
-```bash
-bench build
-bench --site sito.local clear-cache
-bench restart
-```
-Cancella la cartella "iderp" 
-
-
-Console:
-```bash
-bench --site sito.local console
-```
-
-Installa:
-```
-bench get-app iderp https://github.com/haringk/iderp2.git
-bench --site sito.local install-app iderp
-```
-Verifica che in ```sites/sito.local/apps.txt``` ci sia la voce del plugin.
-
-
-## Avvio
-```bash
-source ~/frappe-bench/bench-env/bin/activate
-cd ~/frappe-bench
-bench start
-```
-
-# iderp
-
-**Custom ERPNext App** per gestione prodotti a metratura (base/altezza/mq) e sincronizzazione automatica tra documenti (Preventivi, Ordini, Fatture, ecc).
-
-## Installazione
+### 1. Clona la repository nell'ambiente bench
 
 ```bash
 cd ~/frappe-bench/apps
-git clone <repo> iderp
-cd ~/frappe-bench
-bench --site <nome_sito> install-app iderp
+git clone https://github.com/haringk/iderp2.git iderp
 ```
 
+### 2. Installa l'app nel sito
+
+```bash
+cd ~/frappe-bench
+bench --site [nome-sito] install-app iderp
+```
+
+### 3. Esegui le migrazioni
+
+```bash
+bench --site [nome-sito] migrate
+```
+
+### 4. Ricostruisci assets
+
+```bash
+bench build --app iderp
+bench clear-cache
+```
+
+### 5. Riavvia i servizi
+
+```bash
+bench restart
+```
+
+## 🔧 Configurazione
+
+### Custom Fields Automatici
+
+L'app crea automaticamente i seguenti custom fields:
+
+#### Su Item (Articolo):
+- `base_default`: Base predefinita in mm
+- `altezza_default`: Altezza predefinita in mm
+- `min_base`, `max_base`: Limiti base
+- `min_altezza`, `max_altezza`: Limiti altezza
+
+#### Su documenti vendita (Quotation, Sales Order, etc.):
+- `base`: Base articolo in mm
+- `altezza`: Altezza articolo in mm
+- `mq_totali`: Metri quadri totali calcolati
+
+### Configurazione Workspace
+
+Il workspace iDERP viene creato automaticamente con shortcuts a:
+- Gestione articoli e documenti
+- Configurazione prezzi gruppo cliente
+- Report e analisi metrature
+
+## 📊 Utilizzo
+
+### Creazione Articolo a Metratura
+
+1. Crea nuovo articolo
+2. Imposta UOM = "Mq" per metro quadro
+3. Compila dimensioni predefinite (opzionale)
+4. Imposta limiti dimensionali (opzionale)
+
+### Configurazione Prezzi Gruppo Cliente
+
+1. Vai a **iDERP → Regole Prezzo Gruppo Cliente**
+2. Crea nuova regola
+3. Seleziona gruppo cliente
+4. Aggiungi articoli con prezzi personalizzati
+5. Imposta priorità e periodo validità
+
+### Creazione Preventivo con Metrature
+
+1. Crea nuovo preventivo
+2. Aggiungi articolo con UOM "Mq"
+3. Inserisci base e altezza in mm
+4. Il sistema calcola automaticamente:
+   - Mq unitari
+   - Mq totali
+   - Prezzo totale
+
+### Gestione Articoli Opzionali
+
+1. Configura template opzionali
+2. Associa template ad articoli principali
+3. Durante creazione ordine, seleziona opzionali desiderati
+
+## 🔄 Aggiornamento
+
+### Da ERPNext 14 a 15
+
+```bash
+# Aggiorna codice
+cd ~/frappe-bench/apps/iderp
+git pull origin master
+
+# Esegui migrazioni
+cd ~/frappe-bench
+bench --site [nome-sito] migrate
+bench build --app iderp
+bench restart
+```
+
+## 🐛 Risoluzione Problemi
+
+### Campi metratura non visibili
+
+```bash
+bench --site [nome-sito] clear-cache
+bench --site [nome-sito] reload-doc iderp
+```
+
+### Errori JavaScript
+
+```bash
+bench build --force --app iderp
+```
+
+### Problemi permessi
+
+Verifica permessi ruoli in:
+- Impostazioni → Permessi Ruolo
+- Assegna ruoli appropriati agli utenti
+
+## 📝 API Disponibili
+
+### Python API
+
+```python
+# Recupera dettagli articolo con prezzi gruppo
+from iderp.api.item import get_item_details
+details = get_item_details(item_code, customer, company)
+
+# Calcola metriche articolo
+from iderp.api.item import calculate_item_metrics
+metrics = calculate_item_metrics(base_mm, altezza_mm, qty, uom)
+
+# Applica prezzi gruppo cliente
+from iderp.pricing import get_customer_group_price
+price_info = get_customer_group_price(item_code, customer, qty)
+```
+
+### JavaScript API
+
+```javascript
+// Calcola metrature
+iderp.calculate_metrics(frm, cdt, cdn);
+
+// Applica prezzi gruppo
+iderp.apply_customer_group_pricing(frm, cdt, cdn);
+
+// Valida minimi ordine
+iderp.validate_minimum_qty(frm);
+```
+
+## 🤝 Contribuire
+
+1. Fork la repository
+2. Crea branch per feature (`git checkout -b feature/AmazingFeature`)
+3. Commit modifiche (`git commit -m 'Add AmazingFeature'`)
+4. Push al branch (`git push origin feature/AmazingFeature`)
+5. Apri Pull Request
+
+## 📄 Licenza
+
+Distribuito sotto licenza MIT. Vedi `LICENSE` per maggiori informazioni.
+
+## 🙏 Ringraziamenti
+
+- Team Frappe/ERPNext per il framework eccellente
+- Comunità ERPNext per supporto e suggerimenti
