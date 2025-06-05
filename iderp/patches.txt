@@ -1,0 +1,5 @@
+iderp.patches.v2_0.migrate_to_erpnext_15
+iderp.patches.v2_0.add_metrature_custom_fields
+iderp.patches.v2_0.migrate_customer_group_prices
+iderp.patches.v2_0.update_item_uom_settings
+iderp.patches.v2_0.create_default_optional_templates

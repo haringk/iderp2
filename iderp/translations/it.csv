@@ -1,0 +1,127 @@
+DocType: Item,Base (mm),Base (mm)
+DocType: Item,Height (mm),Altezza (mm)
+DocType: Item,Default Base,Base Predefinita
+DocType: Item,Default Height,Altezza Predefinita
+DocType: Item,Min Base,Base Minima
+DocType: Item,Max Base,Base Massima
+DocType: Item,Min Height,Altezza Minima
+DocType: Item,Max Height,Altezza Massima
+DocType: Quotation Item,Base (mm),Base (mm)
+DocType: Quotation Item,Height (mm),Altezza (mm)
+DocType: Quotation Item,Total Sq.m,Mq Totali
+DocType: Sales Order Item,Base (mm),Base (mm)
+DocType: Sales Order Item,Height (mm),Altezza (mm)
+DocType: Sales Order Item,Total Sq.m,Mq Totali
+DocType: Sales Invoice Item,Base (mm),Base (mm)
+DocType: Sales Invoice Item,Height (mm),Altezza (mm)
+DocType: Sales Invoice Item,Total Sq.m,Mq Totali
+DocType: Delivery Note Item,Base (mm),Base (mm)
+DocType: Delivery Note Item,Height (mm),Altezza (mm)
+DocType: Delivery Note Item,Total Sq.m,Mq Totali
+DocType: Delivery Note Item,Total Weight,Peso Totale
+DocType: Delivery Note Item,Volume,Volume
+DocType: Delivery Note Item,No of Packages,Numero Colli
+DocType: Customer Group Price Rule,Customer Group,Gruppo Cliente
+DocType: Customer Group Price Rule,Is Active,Attivo
+DocType: Customer Group Price Rule,Priority,Priorità
+DocType: Customer Group Price Rule,Valid From,Valido Dal
+DocType: Customer Group Price Rule,Valid To,Valido Fino A
+DocType: Item Group Price Rule,Item Code,Codice Articolo
+DocType: Item Group Price Rule,Price,Prezzo
+DocType: Item Group Price Rule,Discount %,Sconto %
+DocType: Item Pricing Tier,Tier Name,Nome Fascia
+DocType: Item Pricing Tier,Min Qty,Qtà Minima
+DocType: Item Pricing Tier,Price,Prezzo
+DocType: Customer Group Minimum,Customer Group,Gruppo Cliente
+DocType: Customer Group Minimum,Minimum Order Value,Valore Ordine Minimo
+DocType: Customer Group Minimum,Minimum Order Qty,Qtà Ordine Minima
+DocType: Item Optional,Optional Item Code,Codice Articolo Opzionale
+DocType: Item Optional,Optional Item Name,Nome Articolo Opzionale
+DocType: Item Optional,Default Qty,Qtà Predefinita
+DocType: Item Optional,Is Mandatory,Obbligatorio
+DocType: Item Optional,Price Rule,Regola Prezzo
+DocType: Item Optional,Display Order,Ordine Visualizzazione
+DocType: Item Optional,Is Active,Attivo
+DocType: Sales Item Optional,Item Code,Codice Articolo
+DocType: Sales Item Optional,Item Name,Nome Articolo
+DocType: Sales Item Optional,Qty,Quantità
+DocType: Sales Item Optional,Rate,Prezzo
+DocType: Sales Item Optional,Amount,Importo
+DocType: Optional Template,Template Name,Nome Template
+DocType: Optional Template,Description,Descrizione
+DocType: Optional Template,Is Active,Attivo
+DocType: Optional Template Item,Item Code,Codice Articolo
+DocType: Optional Template Item,Default Qty,Qtà Predefinita
+DocType: Optional Template Item,Is Mandatory,Obbligatorio
+Apps: iDERP,Calculate Metrics,Calcola Metrature
+Apps: iDERP,Apply Group Discounts,Applica Sconti Gruppo
+Apps: iDERP,Import from Quotation,Importa da Preventivo
+Apps: iDERP,Get Items From,Ottieni Articoli Da
+Apps: iDERP,Tools,Strumenti
+Apps: iDERP,Metrics Summary,Riepilogo Metrature
+Apps: iDERP,Total Sq.m,Totale Mq
+Apps: iDERP,Total Linear Meters,Totale Metri Lineari
+Apps: iDERP,articles,articoli
+Apps: iDERP,Production Status,Stato Produzione
+Apps: iDERP,View,Visualizza
+Apps: iDERP,Special Dimensions Warning,Attenzione: Dimensioni Speciali
+Apps: iDERP,Row {0}: {1} has dimensions over 3 meters,Riga {0}: {1} ha dimensioni superiori a 3 metri
+Apps: iDERP,Invalid Delivery Date,Data Consegna Non Valida
+Apps: iDERP,Row {0}: Delivery date cannot be in the past,Riga {0}: La data di consegna non può essere nel passato
+Apps: iDERP,{0}: Only {1} {2} available in {3},{0}: Disponibili solo {1} {2} in {3}
+Apps: iDERP,Attention availability:,Attenzione disponibilità:
+Apps: iDERP,Proceed anyway?,Procedere comunque?
+Apps: iDERP,Order Production Status,Stato Produzione Ordine
+Apps: iDERP,Apply Withholding Tax,Applica Ritenuta
+Apps: iDERP,Withholding Type,Tipo Ritenuta
+Apps: iDERP,20% Professionals Withholding,Ritenuta 20% Professionisti
+Apps: iDERP,23% Agents Withholding,Ritenuta 23% Agenti
+Apps: iDERP,4% Condominiums Withholding,Ritenuta 4% Condomini
+Apps: iDERP,Other Withholding,Altra Ritenuta
+Apps: iDERP,Percentage,Percentuale
+Apps: iDERP,Applied {0}% withholding,Applicata ritenuta del {0}%
+Apps: iDERP,Invalid VAT Number,Partita IVA Non Valida
+Apps: iDERP,Italian VAT must be in format IT followed by 11 digits,La partita IVA italiana deve essere nel formato IT seguito da 11 cifre
+Apps: iDERP,Invalid Tax Code,Codice Fiscale Non Valido
+Apps: iDERP,Tax code is not in correct format,Il codice fiscale non è nel formato corretto
+Apps: iDERP,Zero Price,Prezzo Zero
+Apps: iDERP,Row {0}: {1} has zero price. Mark as free item if intentional,Riga {0}: {1} ha prezzo zero. Contrassegnare come omaggio se intenzionale
+Apps: iDERP,Missing Income Account,Conto Ricavi Mancante
+Apps: iDERP,Row {0}: Specify income account,Riga {0}: Specificare il conto ricavi
+Apps: iDERP,Invoice Summary,Riepilogo Fattura
+Apps: iDERP,Items,Articoli
+Apps: iDERP,Payment Status,Stato Pagamento
+Apps: iDERP,Not Paid,Non Pagata
+Apps: iDERP,Paid,Pagata
+Apps: iDERP,Due Date,Scadenza
+Apps: iDERP,Calculate Weights/Volumes,Calcola Pesi/Volumi
+Apps: iDERP,Shipping Tracking,Tracking Spedizione
+Apps: iDERP,Shipping Information,Informazioni Spedizione
+Apps: iDERP,Transporter,Trasportatore
+Apps: iDERP,Total Weight,Peso Totale
+Apps: iDERP,Number of Packages,Numero Colli
+Apps: iDERP,Missing Warehouse,Magazzino Mancante
+Apps: iDERP,Row {0}: Specify warehouse,Riga {0}: Specificare il magazzino
+Apps: iDERP,Transport document number not specified. Continue?,Numero documento di trasporto non specificato. Continuare?
+Apps: iDERP,Sale,Vendita
+Apps: iDERP,Weight exceeds limit,Limite peso superato
+Apps: iDERP,Total weight ({0} kg) exceeds limit for {1} ({2} kg). Continue?,Il peso totale ({0} kg) supera il limite per {1} ({2} kg). Continuare?
+Apps: iDERP,Tracking URL not available for {0},URL tracking non disponibile per {0}
+Apps: iDERP,Tracking number not available,Numero tracking non disponibile
+Apps: iDERP,Applied price rule: {0},Applicata regola prezzo: {0}
+Apps: iDERP,Minimum order not reached,Ordine minimo non raggiunto
+Apps: iDERP,Missing item code,Codice articolo mancante
+Apps: iDERP,Invalid dimensions for {0}:,Dimensioni non valide per {0}:
+Apps: iDERP,Min base: {0}mm,Base minima: {0}mm
+Apps: iDERP,Max base: {0}mm,Base massima: {0}mm
+Apps: iDERP,Min height: {0}mm,Altezza minima: {0}mm
+Apps: iDERP,Max height: {0}mm,Altezza massima: {0}mm
+Apps: iDERP,Validation Error,Errore Validazione
+Apps: iDERP,Fix errors before proceeding,Correggere gli errori prima di procedere
+Apps: iDERP,Recalculated metrics for {0} rows,Ricalcolate metrature per {0} righe
+Apps: iDERP,Select a customer first,Selezionare prima un cliente
+Apps: iDERP,Customer group discounts applied,Applicati sconti gruppo cliente
+Apps: iDERP,Select Quotation,Seleziona Preventivo
+Apps: iDERP,Imported {0} items from quotation,Importati {0} articoli dal preventivo
+Apps: iDERP,Calculated weights and volumes: {0} kg\, {1} m³\, {2} packages,Calcolati pesi e volumi: {0} kg\, {1} m³\, {2} colli
+Apps: iDERP,Add at least one item to invoice,Aggiungere almeno un articolo alla fattura
