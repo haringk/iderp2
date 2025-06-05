@@ -203,13 +203,13 @@ currency = "EUR"
 timezone = "Europe/Rome"
 
 # Development mode settings
-if frappe.conf.get("developer_mode"):
-    doctype_js.update({
-        "Item": [
-            "public/js/item_config.js",
-            "public/js/item_debug.js"
-        ]
-    })
+# if frappe.conf.get("developer_mode"):
+#     doctype_js.update({
+#         "Item": [
+#             "public/js/item_config.js",
+#             "public/js/item_debug.js"
+#         ]
+#     })
 
 # Error logging specifico IDERP
 log_clearing_doctypes = {
