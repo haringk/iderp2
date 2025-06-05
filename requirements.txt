@@ -46,7 +46,6 @@ reportlab>=3.6.0
 email-validator>=1.1.0
 
 # Decimal precision for financial calculations
-decimal>=1.70
 
 # Development and testing dependencies (optional)
 # Uncomment if needed for development
