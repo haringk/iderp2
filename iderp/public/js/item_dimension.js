@@ -1,6 +1,6 @@
-// IDERP - Sistema Calcolatore Universale ERPNext 15 Compatible
+// iderp - Sistema Calcolatore Universale ERPNext 15 Compatible
 // Versione 2.0 - Supporta Metro Quadrato, Metro Lineare, Pezzo + Customer Groups
-console.log("IDERP v2.0: Loading Universal Calculator for ERPNext 15");
+console.log("iderp v2.0: Loading Universal Calculator for ERPNext 15");
 
 // Variabili globali per controllo stato
 var iderp_calculating = false;
@@ -26,7 +26,7 @@ function calculate_universal_pricing_v15(frm, cdt, cdn, force_recalc = false) {
     
     // Non ricalcolare se bloccato (a meno che non sia forzato)
     if (row.price_locked && !force_recalc) {
-        console.log(`IDERP: Riga ${row.idx} bloccata, skip calcolo`);
+        console.log(`iderp: Riga ${row.idx} bloccata, skip calcolo`);
         return;
     }
     
@@ -132,7 +132,7 @@ function calculate_base_quantities_v15(row, tipo_vendita) {
         return null;
         
     } catch (e) {
-        console.error("IDERP: Errore calcolo quantità", e);
+        console.error("iderp: Errore calcolo quantità", e);
         return null;
     }
 }
@@ -214,7 +214,7 @@ function call_pricing_api_v15(frm, row, tipo_vendita, qty_info) {
                     });
                 }
             } catch (err) {
-                console.error("IDERP: Errore callback", err);
+                console.error("iderp: Errore callback", err);
                 row.note_calcolo = `📊 ${qty_info.display_text}\n💥 Errore interno calcolo`;
                 frm.refresh_field("items");
             } finally {
@@ -223,7 +223,7 @@ function call_pricing_api_v15(frm, row, tipo_vendita, qty_info) {
             }
         },
         error: function(err) {
-            console.error("IDERP: Errore API", err);
+            console.error("iderp: Errore API", err);
             row.note_calcolo = `📊 ${qty_info.display_text}\n🔌 Errore connessione API`;
             frm.refresh_field("items");
             iderp_calculating = false;
@@ -243,7 +243,7 @@ function call_pricing_api_v15(frm, row, tipo_vendita, qty_info) {
 
 function update_toolbar_status_v15(frm) {
     if (!selected_item_row) {
-        frm.page.set_indicator("🎛️ IDERP: Seleziona riga per controlli", "blue");
+        frm.page.set_indicator("🎛️ iderp: Seleziona riga per controlli", "blue");
         return;
     }
     
@@ -388,7 +388,7 @@ frappe.ui.form.on('Quotation Item', {
     tipo_vendita: function(frm, cdt, cdn) {
         let row = locals[cdt][cdn];
         
-        console.log(`IDERP: Tipo vendita cambiato in: ${row.tipo_vendita}`);
+        console.log(`iderp: Tipo vendita cambiato in: ${row.tipo_vendita}`);
         
         // Reset campi quando cambia tipo
         reset_measurement_fields(row);
@@ -560,7 +560,7 @@ function handle_measurement_change(frm, cdt, cdn, changed_field) {
     }
     
     // Log del cambiamento
-    console.log(`IDERP: Campo ${changed_field} cambiato, tipo: ${row.tipo_vendita}`);
+    console.log(`iderp: Campo ${changed_field} cambiato, tipo: ${row.tipo_vendita}`);
     
     // Aggiorna campi calcolati sempre
     let qty_info = calculate_base_quantities_v15(row, row.tipo_vendita);
@@ -586,7 +586,7 @@ $(document).on('click', '[data-fieldname="items"] .grid-row', function() {
             if (item) {
                 selected_item_row = item;
                 update_toolbar_status_v15(cur_frm);
-                console.log(`IDERP: Riga selezionata: ${item.item_code} (${item.tipo_vendita})`);
+                console.log(`iderp: Riga selezionata: ${item.item_code} (${item.tipo_vendita})`);
             }
         }
     }, 100);
@@ -594,6 +594,6 @@ $(document).on('click', '[data-fieldname="items"] .grid-row', function() {
 
 // Inizializzazione
 $(document).ready(function() {
-    console.log("✅ IDERP v2.0: Universal Calculator caricato per ERPNext 15");
+    console.log("✅ iderp v2.0: Universal Calculator caricato per ERPNext 15");
     console.log("🎯 Supporto: Metro Quadrato, Metro Lineare, Pezzo + Customer Groups");
 });

@@ -1,10 +1,10 @@
 # hooks.py (ROOT)
 
 app_name = "iderp"
-app_title = "IDERP - Sistema Stampa Digitale"
-app_publisher = "idstudio AI"
+app_title = "iderp - Sistema Stampa Digitale"
+app_publisher = "idstudio"
 app_description = "Plugin ERPNext per stampa digitale con calcoli universali Metro Quadrato/Lineare/Pezzo"
-app_email = "ai@idstudio.org"
+app_email = "dev@idstudio.org"
 app_license = "MIT"
 app_version = "2.0.0"
 
@@ -211,7 +211,7 @@ timezone = "Europe/Rome"
 #         ]
 #     })
 
-# Error logging specifico IDERP
+# Error logging specifico iderp
 log_clearing_doctypes = {
     "Error Log": 30  # Mantieni 30 giorni di log errori
 }
@@ -219,19 +219,19 @@ log_clearing_doctypes = {
 # Translation
 default_mail_footer = """
 <div style="text-align: center; margin-top: 20px; color: #888;">
-    <small>Powered by IDERP - Sistema Stampa Digitale v{version}</small>
+    <small>Powered by iderp - Sistema Stampa Digitale v{version}</small>
 </div>
 """.format(version=app_version)
 
 # Data Import Templates
 data_import_tool = [
     {
-        "module": "IDERP",
+        "module": "iderp",
         "doctype": "Item",
         "template": "iderp_item_template.xlsx"
     },
     {
-        "module": "IDERP", 
+        "module": "iderp", 
         "doctype": "Customer",
         "template": "iderp_customer_template.xlsx"
     }
@@ -256,7 +256,7 @@ benchmarks = {
 }
 
 def boot_session(bootinfo):
-    """Add IDERP data to boot session"""
+    """Add iderp data to boot session"""
     if frappe.session.user != "Guest":
         try:
             bootinfo.iderp = {
@@ -264,11 +264,11 @@ def boot_session(bootinfo):
                 "system_status": get_system_status()
             }
         except Exception:
-            # Don't break boot if IDERP has issues
+            # Don't break boot if iderp has issues
             pass
 
 def get_system_status():
-    """Get IDERP system status for client"""
+    """Get iderp system status for client"""
     try:
         configured_items = frappe.db.count("Item", {"supports_custom_measurement": 1})
         customer_groups = frappe.db.count("Customer Group", 

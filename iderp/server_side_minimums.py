@@ -201,8 +201,8 @@ def disable_problematic_javascript():
     Crea file JavaScript vuoto per disabilitare eventi problematici
     """
     js_content = '''
-// IDERP: JavaScript Disabilitato - Solo Server-Side
-console.log("IDERP: JavaScript events disabilitati - calcoli solo server-side");
+// iderp: JavaScript Disabilitato - Solo Server-Side
+console.log("iderp: JavaScript events disabilitati - calcoli solo server-side");
 
 // Nessun evento JavaScript sui campi rate
 // Tutto gestito lato server per evitare loop infiniti
@@ -230,7 +230,7 @@ frappe.ui.form.on('Quotation', {
     }
 });
 
-console.log("✅ IDERP: Modalità server-side attiva");
+console.log("✅ iderp: Modalità server-side attiva");
 '''
     
     return js_content

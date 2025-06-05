@@ -8,7 +8,7 @@ version = "2.0.0"
 description = "Custom ERPNext App per gestione prodotti a metratura e sincronizzazione documenti"
 readme = "README.md"
 authors = [
-    {name = "ID Studio", email = "info@idstudio.it"}
+    {name = "idstudio", email = "dev@idstudio.org"}
 ]
 license = {text = "MIT"}
 classifiers = [

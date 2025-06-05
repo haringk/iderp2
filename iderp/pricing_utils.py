@@ -1,6 +1,6 @@
 # iderp/pricing_utils.py
 """
-Utility functions per gestione scaglioni prezzo IDERP
+Utility functions per gestione scaglioni prezzo iderp
 ERPNext 15 Compatible - Sistema Universale Metro Quadrato/Lineare/Pezzo
 """
 
@@ -20,7 +20,7 @@ def calculate_universal_item_pricing(item_code, tipo_vendita, base=0, altezza=0,
     """
     try:
         # Log della chiamata per debug
-        frappe.logger().info(f"[IDERP API] calculate_universal_item_pricing: {item_code}, {tipo_vendita}, customer={customer}")
+        frappe.logger().info(f"[iderp API] calculate_universal_item_pricing: {item_code}, {tipo_vendita}, customer={customer}")
         
         # Validazione parametri base
         if not item_code:
@@ -82,7 +82,7 @@ def calculate_universal_item_pricing(item_code, tipo_vendita, base=0, altezza=0,
         }
         
     except Exception as e:
-        frappe.logger().error(f"[IDERP API] Errore calculate_universal_item_pricing: {str(e)}")
+        frappe.logger().error(f"[iderp API] Errore calculate_universal_item_pricing: {str(e)}")
         return {
             "error": f"Errore interno: {str(e)}",
             "success": False
@@ -102,7 +102,7 @@ def calculate_universal_item_pricing_with_fallback(item_code, tipo_vendita, base
             return result
         
         # Se fallisce, usa fallback hard-coded
-        frappe.logger().info(f"[IDERP FALLBACK] Usando prezzi hard-coded per {tipo_vendita}")
+        frappe.logger().info(f"[iderp FALLBACK] Usando prezzi hard-coded per {tipo_vendita}")
         
         # Calcola quantità
         qty_result = calculate_base_quantities_for_type(tipo_vendita, base, altezza, lunghezza, qty)
@@ -135,7 +135,7 @@ def calculate_universal_item_pricing_with_fallback(item_code, tipo_vendita, base
         }
         
     except Exception as e:
-        frappe.logger().error(f"[IDERP FALLBACK] Errore: {str(e)}")
+        frappe.logger().error(f"[iderp FALLBACK] Errore: {str(e)}")
         return {"error": f"Errore fallback: {str(e)}", "success": False}
 
 @frappe.whitelist()
@@ -197,7 +197,7 @@ def get_item_pricing_tiers(item_code):
         }
         
     except Exception as e:
-        frappe.logger().error(f"[IDERP API] Errore get_item_pricing_tiers: {str(e)}")
+        frappe.logger().error(f"[iderp API] Errore get_item_pricing_tiers: {str(e)}")
         return {"error": f"Errore caricamento scaglioni: {str(e)}"}
 
 @frappe.whitelist()
@@ -242,7 +242,7 @@ def get_customer_group_min_sqm(customer, item_code):
         }
         
     except Exception as e:
-        frappe.logger().error(f"[IDERP API] Errore get_customer_group_min_sqm: {str(e)}")
+        frappe.logger().error(f"[iderp API] Errore get_customer_group_min_sqm: {str(e)}")
         return {"min_sqm": 0, "error": str(e)}
 
 # ================================
@@ -377,7 +377,7 @@ def get_item_pricing_for_type(item_code, tipo_vendita, quantity):
         return None
         
     except Exception as e:
-        frappe.logger().error(f"[IDERP] Errore get_item_pricing_for_type: {str(e)}")
+        frappe.logger().error(f"[iderp] Errore get_item_pricing_for_type: {str(e)}")
         return None
 
 def get_customer_specific_pricing_for_type(customer, item_code, tipo_vendita, quantity):
@@ -410,7 +410,7 @@ def get_customer_specific_pricing_for_type(customer, item_code, tipo_vendita, qu
                         effective_qty = min_qty
                         minimum_applied = True
                         minimum_config = min_rule
-                        frappe.logger().info(f"[IDERP] Minimo applicato {tipo_vendita}: {quantity:.3f} → {effective_qty:.3f}")
+                        frappe.logger().info(f"[iderp] Minimo applicato {tipo_vendita}: {quantity:.3f} → {effective_qty:.3f}")
                     break
         
         # Usa quantità effettiva per trovare prezzo
@@ -429,7 +429,7 @@ def get_customer_specific_pricing_for_type(customer, item_code, tipo_vendita, qu
         return standard_price
         
     except Exception as e:
-        frappe.logger().error(f"[IDERP] Errore customer specific pricing: {str(e)}")
+        frappe.logger().error(f"[iderp] Errore customer specific pricing: {str(e)}")
         return get_item_pricing_for_type(item_code, tipo_vendita, quantity)
 
 def get_hardcoded_fallback_pricing(tipo_vendita, quantity):
@@ -470,7 +470,7 @@ def get_hardcoded_fallback_pricing(tipo_vendita, quantity):
         return None
         
     except Exception as e:
-        frappe.logger().error(f"[IDERP] Errore fallback pricing: {str(e)}")
+        frappe.logger().error(f"[iderp] Errore fallback pricing: {str(e)}")
         return None
 
 def build_calculation_notes(tipo_vendita, qty_result, pricing_info, price_per_unit, rate_unitario):

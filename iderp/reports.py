@@ -1,7 +1,7 @@
 # iderp/reports.py
 
 """
-Modulo report e analisi IDERP
+Modulo report e analisi iderp
 Report settimanali e analisi dati stampa digitale
 """
 
@@ -56,13 +56,13 @@ def generate_weekly_reports():
         
         frappe.log_error(
             f"Report settimanale generato: {start_date} - {end_date}",
-            "IDERP Weekly Report"
+            "iderp Weekly Report"
         )
         
     except Exception as e:
         frappe.log_error(
             f"Errore generazione report: {str(e)}",
-            "IDERP Report Error"
+            "iderp Report Error"
         )
 
 
@@ -412,9 +412,9 @@ def save_weekly_report(reports):
     """
     try:
         # Crea documento Report Log (se esiste il DocType)
-        if frappe.db.exists("DocType", "IDERP Report Log"):
+        if frappe.db.exists("DocType", "iderp Report Log"):
             report_doc = frappe.get_doc({
-                "doctype": "IDERP Report Log",
+                "doctype": "iderp Report Log",
                 "report_type": "Weekly Summary",
                 "period_start": reports["period"]["start"],
                 "period_end": reports["period"]["end"],
@@ -462,7 +462,7 @@ def send_weekly_report_email(reports):
         # Invia email
         frappe.sendmail(
             recipients=recipients,
-            subject=f"IDERP Report Settimanale - {reports['period']['start']} / {reports['period']['end']}",
+            subject=f"iderp Report Settimanale - {reports['period']['start']} / {reports['period']['end']}",
             message=html_content,
             delayed=False
         )
@@ -491,7 +491,7 @@ def generate_html_report(reports):
     </head>
     <body>
         <div class="header">
-            <h1>IDERP Report Settimanale</h1>
+            <h1>iderp Report Settimanale</h1>
             <p>Periodo: {reports['period']['start']} - {reports['period']['end']}</p>
         </div>
     """
@@ -614,6 +614,6 @@ def get_report_list():
         {
             "name": "performance",
             "title": _("Report Performance"),
-            "description": _("Performance sistema IDERP")
+            "description": _("Performance sistema iderp")
         }
     ]

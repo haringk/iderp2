@@ -16,7 +16,7 @@ def copy_custom_fields(doc, method=None):
         return
     
     try:
-        frappe.logger().info(f"[IDERP] copy_custom_fields attivato per {doc.doctype}: {doc.name}")
+        frappe.logger().info(f"[iderp] copy_custom_fields attivato per {doc.doctype}: {doc.name}")
         
         # Processa ogni item
         for item in doc.items:
@@ -28,13 +28,13 @@ def copy_custom_fields(doc, method=None):
                 apply_universal_calculations(doc, item)
                 
             except Exception as e:
-                frappe.logger().error(f"[IDERP] Errore processing item {item.item_code}: {str(e)}")
+                frappe.logger().error(f"[iderp] Errore processing item {item.item_code}: {str(e)}")
                 continue
         
-        frappe.logger().info(f"[IDERP] copy_custom_fields completato per {doc.name}")
+        frappe.logger().info(f"[iderp] copy_custom_fields completato per {doc.name}")
         
     except Exception as e:
-        frappe.logger().error(f"[IDERP] Errore copy_custom_fields: {str(e)}")
+        frappe.logger().error(f"[iderp] Errore copy_custom_fields: {str(e)}")
 
 def copy_fields_from_previous_document(item):
     """
@@ -93,10 +93,10 @@ def copy_fields_from_previous_document(item):
                     copied_count += 1
         
         if copied_count > 0:
-            frappe.logger().info(f"[IDERP] Copiati {copied_count} campi da {linked_doc_type} per {item.item_code}")
+            frappe.logger().info(f"[iderp] Copiati {copied_count} campi da {linked_doc_type} per {item.item_code}")
             
     except Exception as e:
-        frappe.logger().error(f"[IDERP] Errore copia campi: {str(e)}")
+        frappe.logger().error(f"[iderp] Errore copia campi: {str(e)}")
 
 def apply_universal_calculations(doc, item):
     """
@@ -105,7 +105,7 @@ def apply_universal_calculations(doc, item):
     try:
         # Skip se prezzo è bloccato manualmente
         if getattr(item, 'price_locked', 0):
-            frappe.logger().info(f"[IDERP] Skip calcolo {item.item_code} - prezzo bloccato")
+            frappe.logger().info(f"[iderp] Skip calcolo {item.item_code} - prezzo bloccato")
             return
         
         # Skip se già calcolato automaticamente per evitare loop
@@ -130,7 +130,7 @@ def apply_universal_calculations(doc, item):
             calculate_item_price_server_side(doc, item, tipo_vendita, qty_info)
         
     except Exception as e:
-        frappe.logger().error(f"[IDERP] Errore calcolo universale: {str(e)}")
+        frappe.logger().error(f"[iderp] Errore calcolo universale: {str(e)}")
 
 def calculate_item_quantities(item, tipo_vendita):
     """
@@ -186,7 +186,7 @@ def calculate_item_quantities(item, tipo_vendita):
         return None
         
     except Exception as e:
-        frappe.logger().error(f"[IDERP] Errore calcolo quantità: {str(e)}")
+        frappe.logger().error(f"[iderp] Errore calcolo quantità: {str(e)}")
         return None
 
 def update_calculated_fields(item, qty_info, tipo_vendita):
@@ -204,10 +204,10 @@ def update_calculated_fields(item, qty_info, tipo_vendita):
         elif tipo_vendita == "Pezzo":
             item.pz_totali = int(qty_info['total_qty'])
         
-        frappe.logger().debug(f"[IDERP] Campi aggiornati per {tipo_vendita}: {qty_info['total_qty']:.3f} {qty_info['qty_label']}")
+        frappe.logger().debug(f"[iderp] Campi aggiornati per {tipo_vendita}: {qty_info['total_qty']:.3f} {qty_info['qty_label']}")
         
     except Exception as e:
-        frappe.logger().error(f"[IDERP] Errore update campi: {str(e)}")
+        frappe.logger().error(f"[iderp] Errore update campi: {str(e)}")
 
 def should_calculate_price(doc, item, qty_info):
     """
@@ -236,7 +236,7 @@ def should_calculate_price(doc, item, qty_info):
         return True
         
     except Exception as e:
-        frappe.logger().error(f"[IDERP] Errore should_calculate_price: {str(e)}")
+        frappe.logger().error(f"[iderp] Errore should_calculate_price: {str(e)}")
         return False
 
 def calculate_item_price_server_side(doc, item, tipo_vendita, qty_info):
@@ -292,10 +292,10 @@ def calculate_item_price_server_side(doc, item, tipo_vendita, qty_info):
             tipo_vendita, qty_info, pricing_info, price_per_unit, rate_unitario, customer
         )
         
-        frappe.logger().info(f"[IDERP] Prezzo calcolato server-side: {item.item_code} = €{rate_unitario:.2f}")
+        frappe.logger().info(f"[iderp] Prezzo calcolato server-side: {item.item_code} = €{rate_unitario:.2f}")
         
     except Exception as e:
-        frappe.logger().error(f"[IDERP] Errore calcolo prezzo server-side: {str(e)}")
+        frappe.logger().error(f"[iderp] Errore calcolo prezzo server-side: {str(e)}")
         item.note_calcolo = f"📊 {qty_info.get('dimensions', '')}\n❌ Errore calcolo prezzo: {str(e)}"
 
 def build_server_calculation_notes(tipo_vendita, qty_info, pricing_info, price_per_unit, rate_unitario, customer):
@@ -366,7 +366,7 @@ def recalculate_item_price(item):
             calculate_piece_price(item)
             
     except Exception as e:
-        frappe.logger().error(f"[IDERP Legacy] Errore ricalcolo prezzo: {str(e)}")
+        frappe.logger().error(f"[iderp Legacy] Errore ricalcolo prezzo: {str(e)}")
 
 def calculate_square_meter_price(item):
     """Calcola prezzo per vendita al metro quadrato - Legacy"""
@@ -407,7 +407,7 @@ def calculate_square_meter_price(item):
             item.note_calcolo = f"{mq_totali:.3f} m² (manca prezzo al m²)"
             
     except Exception as e:
-        frappe.logger().error(f"[IDERP Legacy] Errore calcolo m²: {str(e)}")
+        frappe.logger().error(f"[iderp Legacy] Errore calcolo m²: {str(e)}")
 
 def calculate_linear_meter_price(item):
     """Calcola prezzo per vendita al metro lineare - Legacy"""
@@ -442,7 +442,7 @@ def calculate_linear_meter_price(item):
             item.note_calcolo = f"{ml_totali:.2f} ml (manca prezzo al ml)"
             
     except Exception as e:
-        frappe.logger().error(f"[IDERP Legacy] Errore calcolo ml: {str(e)}")
+        frappe.logger().error(f"[iderp Legacy] Errore calcolo ml: {str(e)}")
 
 def calculate_piece_price(item):
     """Gestisce vendita al pezzo - Legacy"""
@@ -459,7 +459,7 @@ def calculate_piece_price(item):
             item.note_calcolo = "Vendita al pezzo - inserire prezzo unitario"
             
     except Exception as e:
-        frappe.logger().error(f"[IDERP Legacy] Errore calcolo pezzi: {str(e)}")
+        frappe.logger().error(f"[iderp Legacy] Errore calcolo pezzi: {str(e)}")
 
 # ================================
 # FUNZIONI UTILITY
@@ -496,7 +496,7 @@ def validate_measurements(item):
                 frappe.throw("Per vendita al metro lineare è richiesta la Lunghezza")
                 
     except Exception as e:
-        frappe.logger().error(f"[IDERP] Errore validazione misure: {str(e)}")
+        frappe.logger().error(f"[iderp] Errore validazione misure: {str(e)}")
 
 # ================================
 # DEBUG E TESTING

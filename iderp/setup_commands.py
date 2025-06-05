@@ -1,7 +1,7 @@
 # iderp/setup_commands.py
 
 """
-Comandi console per setup e manutenzione IDERP
+Comandi console per setup e manutenzione iderp
 Uso: bench --site sito.local console
      > from iderp.setup_commands import *
 """
@@ -31,8 +31,8 @@ def qh():
 # Comandi principali
 
 def quick_test():
-    """Test rapido integrità sistema IDERP"""
-    print("\n🧪 TEST RAPIDO SISTEMA IDERP")
+    """Test rapido integrità sistema iderp"""
+    print("\n🧪 TEST RAPIDO SISTEMA iderp")
     print("="*50)
     
     tests = {
@@ -60,7 +60,7 @@ def quick_test():
     print(f"RISULTATO: {passed} passati, {failed} falliti")
     
     if failed == 0:
-        print("✅ SISTEMA IDERP OPERATIVO!")
+        print("✅ SISTEMA iderp OPERATIVO!")
     else:
         print("⚠️ SISTEMA RICHIEDE ATTENZIONE")
     
@@ -221,12 +221,12 @@ def test_javascript_files():
 
 def system_status():
     """Mostra status dettagliato sistema"""
-    print("\n📊 STATUS SISTEMA IDERP")
+    print("\n📊 STATUS SISTEMA iderp")
     print("="*50)
     
     # Versione
     from iderp import __version__
-    print(f"📌 Versione IDERP: {__version__}")
+    print(f"📌 Versione iderp: {__version__}")
     print(f"📌 Frappe: {frappe.__version__}")
     
     try:
@@ -261,7 +261,7 @@ def system_status():
         print(f"  {icon} {check}: {data['value']}")
     
     # Ultimi errori
-    print("\n🐛 ULTIMI ERRORI IDERP:")
+    print("\n🐛 ULTIMI ERRORI iderp:")
     recent_errors = frappe.get_all("Error Log",
         filters={
             "method": ["like", "%iderp%"],
@@ -307,8 +307,8 @@ def get_installation_stats():
     return stats
 
 def reinstall_iderp():
-    """Reinstalla IDERP con conferma"""
-    print("\n⚠️  ATTENZIONE: Reinstallazione IDERP")
+    """Reinstalla iderp con conferma"""
+    print("\n⚠️  ATTENZIONE: Reinstallazione iderp")
     print("="*50)
     print("Questo comando:")
     print("• Ricreerà tutti i campi custom")
@@ -343,18 +343,18 @@ def reinstall_iderp():
 
 def show_help():
     """Mostra comandi disponibili"""
-    print("\n📚 COMANDI IDERP DISPONIBILI")
+    print("\n📚 COMANDI iderp DISPONIBILI")
     print("="*50)
     
     commands = [
         ("qt()", "Quick Test", "Test rapido integrità sistema"),
         ("qs()", "Quick Status", "Mostra status dettagliato"),
-        ("qi()", "Quick Install", "Reinstalla IDERP"),
+        ("qi()", "Quick Install", "Reinstalla iderp"),
         ("qh()", "Quick Help", "Mostra questo help"),
         ("", "", ""),
         ("setup_demo_data()", "Setup Demo", "Crea dati demo aggiuntivi"),
         ("fix_permissions()", "Fix Permessi", "Sistema permessi DocTypes"),
-        ("clear_iderp_cache()", "Clear Cache", "Pulisce cache IDERP"),
+        ("clear_iderp_cache()", "Clear Cache", "Pulisce cache iderp"),
         ("run_maintenance()", "Manutenzione", "Esegue manutenzione manuale"),
         ("test_pricing()", "Test Pricing", "Test calcolo prezzi"),
         ("export_config()", "Export Config", "Esporta configurazione"),
@@ -436,7 +436,7 @@ def setup_demo_data():
     frappe.db.commit()
 
 def fix_permissions():
-    """Sistema permessi DocTypes IDERP"""
+    """Sistema permessi DocTypes iderp"""
     print("\n🔐 FIX PERMESSI DOCTYPES")
     print("="*50)
     
@@ -478,8 +478,8 @@ def fix_permissions():
     frappe.clear_cache()
 
 def clear_iderp_cache():
-    """Pulisce tutta la cache IDERP"""
-    print("\n🧹 PULIZIA CACHE IDERP")
+    """Pulisce tutta la cache iderp"""
+    print("\n🧹 PULIZIA CACHE iderp")
     print("="*50)
     
     from iderp.maintenance import cleanup_cache
@@ -503,7 +503,7 @@ def clear_iderp_cache():
 
 def run_maintenance(task=None):
     """Esegue task manutenzione"""
-    print("\n🔧 MANUTENZIONE SISTEMA IDERP")
+    print("\n🔧 MANUTENZIONE SISTEMA iderp")
     print("="*50)
     
     if not task:
@@ -556,11 +556,11 @@ def test_pricing(item_code="POSTER-A3", customer_group="Gold", base=50, altezza=
         traceback.print_exc()
 
 def export_config(filename=None):
-    """Esporta configurazione IDERP"""
+    """Esporta configurazione iderp"""
     if not filename:
         filename = f"iderp_config_{frappe.utils.today()}.json"
     
-    print(f"\n📤 EXPORT CONFIGURAZIONE IDERP")
+    print(f"\n📤 EXPORT CONFIGURAZIONE iderp")
     print("="*50)
     
     config = {
@@ -608,8 +608,8 @@ def export_config(filename=None):
     return file_path
 
 def import_config(filename):
-    """Importa configurazione IDERP"""
-    print(f"\n📥 IMPORT CONFIGURAZIONE IDERP")
+    """Importa configurazione iderp"""
+    print(f"\n📥 IMPORT CONFIGURAZIONE iderp")
     print("="*50)
     
     file_path = frappe.get_site_path("private/files", filename)
@@ -634,5 +634,5 @@ def import_config(filename):
         return False
 
 # Auto-esegui help al primo import
-print("\n🚀 IDERP Setup Commands caricati!")
+print("\n🚀 iderp Setup Commands caricati!")
 print("Digita qh() per vedere tutti i comandi disponibili")

@@ -2,7 +2,7 @@
 
 """
 Modulo per gestione minimi globali per preventivo
-Sistema stampa digitale IDERP - ERPNext 15
+Sistema stampa digitale iderp - ERPNext 15
 Implementa logica minimi aggregati invece che per riga
 """
 

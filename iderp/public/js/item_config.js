@@ -1,19 +1,19 @@
 // iderp/public/js/item_config.js
-// IDERP Item Configuration for ERPNext 15
+// iderp Item Configuration for ERPNext 15
 // Enhanced version with proper validation and UX
 
-console.log("IDERP: Item Config JS Loading - ERPNext 15 Compatible");
+console.log("iderp: Item Config JS Loading - ERPNext 15 Compatible");
 
 frappe.ui.form.on('Item', {
     refresh: function(frm) {
-        console.log("IDERP: Item form refreshed");
+        console.log("iderp: Item form refreshed");
         
-        // Add custom buttons for IDERP configuration
+        // Add custom buttons for iderp configuration
         if (frm.doc.supports_custom_measurement) {
             add_iderp_buttons(frm);
         }
         
-        // Show IDERP status indicator
+        // Show iderp status indicator
         update_iderp_status_indicator(frm);
         
         // Add help messages
@@ -21,10 +21,10 @@ frappe.ui.form.on('Item', {
     },
     
     supports_custom_measurement: function(frm) {
-        console.log("IDERP: Custom measurement toggled:", frm.doc.supports_custom_measurement);
+        console.log("iderp: Custom measurement toggled:", frm.doc.supports_custom_measurement);
         
         if (frm.doc.supports_custom_measurement) {
-            // Enable IDERP features
+            // Enable iderp features
             enable_iderp_features(frm);
             
             // Set default selling type if not set
@@ -35,7 +35,7 @@ frappe.ui.form.on('Item', {
             // Show configuration guide
             show_iderp_setup_guide(frm);
         } else {
-            // Disable IDERP features
+            // Disable iderp features
             disable_iderp_features(frm);
         }
         
@@ -46,7 +46,7 @@ frappe.ui.form.on('Item', {
     
     tipo_vendita_default: function(frm) {
         if (frm.doc.supports_custom_measurement && frm.doc.tipo_vendita_default) {
-            console.log("IDERP: Default selling type changed to:", frm.doc.tipo_vendita_default);
+            console.log("iderp: Default selling type changed to:", frm.doc.tipo_vendita_default);
             
             // Update help text based on selling type
             update_selling_type_help(frm);
@@ -66,8 +66,8 @@ frappe.ui.form.on('Item', {
 function add_iderp_buttons(frm) {
     // Remove existing buttons first
     frm.page.remove_inner_button('Configure Pricing Tiers');
-    frm.page.remove_inner_button('Test IDERP Calculation');
-    frm.page.remove_inner_button('IDERP Summary');
+    frm.page.remove_inner_button('Test iderp Calculation');
+    frm.page.remove_inner_button('iderp Summary');
     
     // Add configuration button
     frm.page.add_inner_button(__('Configure Pricing Tiers'), function() {
@@ -75,12 +75,12 @@ function add_iderp_buttons(frm) {
     });
     
     // Add test calculation button
-    frm.page.add_inner_button(__('Test IDERP Calculation'), function() {
+    frm.page.add_inner_button(__('Test iderp Calculation'), function() {
         open_test_calculation_dialog(frm);
     });
     
     // Add summary button
-    frm.page.add_inner_button(__('IDERP Summary'), function() {
+    frm.page.add_inner_button(__('iderp Summary'), function() {
         show_iderp_summary(frm);
     });
 }
@@ -89,15 +89,15 @@ function update_iderp_status_indicator(frm) {
     let status = get_iderp_configuration_status(frm);
     
     let color = 'red';
-    let message = 'IDERP Not Configured';
+    let message = 'iderp Not Configured';
     
     if (status.configured) {
         if (status.complete) {
             color = 'green';
-            message = `IDERP Configured: ${status.summary}`;
+            message = `iderp Configured: ${status.summary}`;
         } else {
             color = 'orange';
-            message = `IDERP Partial: ${status.summary}`;
+            message = `iderp Partial: ${status.summary}`;
         }
     }
     
@@ -139,7 +139,7 @@ function get_iderp_configuration_status(frm) {
 }
 
 function enable_iderp_features(frm) {
-    // Show IDERP sections
+    // Show iderp sections
     frm.toggle_display(['pricing_section', 'customer_group_minimums_section'], true);
     
     // Enable fields
@@ -150,7 +150,7 @@ function enable_iderp_features(frm) {
 }
 
 function disable_iderp_features(frm) {
-    // Hide IDERP sections
+    // Hide iderp sections
     frm.toggle_display(['pricing_section', 'customer_group_minimums_section'], false);
     
     // Clear required flags
@@ -161,7 +161,7 @@ function disable_iderp_features(frm) {
 }
 
 function add_iderp_styling(frm) {
-    // Add visual indicators for IDERP sections
+    // Add visual indicators for iderp sections
     setTimeout(function() {
         let sections = frm.fields_dict.pricing_section?.$wrapper;
         if (sections) {
@@ -172,7 +172,7 @@ function add_iderp_styling(frm) {
 
 function show_iderp_setup_guide(frm) {
     frappe.msgprint({
-        title: __('IDERP Configuration Guide'),
+        title: __('iderp Configuration Guide'),
         indicator: 'blue',
         message: `
             <div class="iderp-setup-guide">
@@ -212,7 +212,7 @@ function update_selling_type_help(frm) {
 function validate_iderp_configuration(frm) {
     // Validate that configuration makes sense
     if (!frm.doc.tipo_vendita_default) {
-        frappe.msgprint(__('Please select a Default Selling Type for IDERP configuration'));
+        frappe.msgprint(__('Please select a Default Selling Type for iderp configuration'));
         return false;
     }
     
@@ -252,7 +252,7 @@ function open_pricing_tiers_dialog(frm) {
 
 function open_test_calculation_dialog(frm) {
     let dialog = new frappe.ui.Dialog({
-        title: __('Test IDERP Calculation'),
+        title: __('Test iderp Calculation'),
         fields: [
             {
                 fieldtype: 'Select',
@@ -353,7 +353,7 @@ function show_iderp_summary(frm) {
         callback: function(r) {
             let summary_html = `
                 <div class="iderp-summary">
-                    <h4>IDERP Configuration Summary</h4>
+                    <h4>iderp Configuration Summary</h4>
                     <table class="table table-bordered">
                         <tr><td><strong>Item Code:</strong></td><td>${frm.doc.item_code}</td></tr>
                         <tr><td><strong>Supports Custom Measurement:</strong></td><td>${frm.doc.supports_custom_measurement ? '✅ Yes' : '❌ No'}</td></tr>
@@ -366,7 +366,7 @@ function show_iderp_summary(frm) {
             `;
             
             frappe.msgprint({
-                title: __('IDERP Summary'),
+                title: __('iderp Summary'),
                 message: summary_html
             });
         }
@@ -389,7 +389,7 @@ function add_iderp_help_messages(frm) {
     }
 }
 
-// Utility function for IDERP styling
+// Utility function for iderp styling
 function add_iderp_css() {
     if ($('.iderp-style').length === 0) {
         $('head').append(`
@@ -414,8 +414,8 @@ function add_iderp_css() {
     }
 }
 
-// Initialize IDERP styling
+// Initialize iderp styling
 $(document).ready(function() {
     add_iderp_css();
-    console.log("✅ IDERP Item Config loaded for ERPNext 15");
+    console.log("✅ iderp Item Config loaded for ERPNext 15");
 });

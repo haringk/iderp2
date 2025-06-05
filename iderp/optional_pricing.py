@@ -2,7 +2,7 @@
 
 """
 Modulo per gestione calcolo prezzi optional
-Sistema stampa digitale IDERP - ERPNext 15
+Sistema stampa digitale iderp - ERPNext 15
 """
 
 import frappe
