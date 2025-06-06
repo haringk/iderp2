@@ -69,6 +69,17 @@ bench clear-cache
 bench restart
 ```
 
+## 🔍 Verifica ambiente
+
+Dopo aver installato l'app è possibile controllare che il sito sia configurato correttamente eseguendo lo script `check_iderp_env.sh` incluso nella root del progetto.
+
+```bash
+cd ~/frappe-bench
+./apps/iderp/check_iderp_env.sh [nome-sito]
+```
+
+Lo script verifica la presenza di Python e Node nelle versioni consigliate, controlla che il comando `bench` sia disponibile e che sul sito indicato siano installate le app `frappe`, `erpnext` e `iderp`. In seguito esegue `bench --site [nome-sito] execute iderp.__init__.check_installation` mostrando in output eventuali DocType o campi mancanti.
+
 ## 🔧 Configurazione
 
 ### Custom Fields Automatici
