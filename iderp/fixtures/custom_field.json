@@ -6,7 +6,8 @@
         "fieldtype": "Section Break",
         "label": "Metrature",
         "insert_after": "stock_uom",
-        "collapsible": 1
+        "collapsible": 1,
+        "name": "Item-section_metrature"
     },
     {
         "doctype": "Custom Field",
@@ -15,7 +16,8 @@
         "fieldtype": "Float",
         "label": "Base Predefinita (mm)",
         "insert_after": "section_metrature",
-        "description": "Base predefinita in millimetri"
+        "description": "Base predefinita in millimetri",
+        "name": "Item-base_default"
     },
     {
         "doctype": "Custom Field",
@@ -24,14 +26,16 @@
         "fieldtype": "Float",
         "label": "Altezza Predefinita (mm)",
         "insert_after": "base_default",
-        "description": "Altezza predefinita in millimetri"
+        "description": "Altezza predefinita in millimetri",
+        "name": "Item-altezza_default"
     },
     {
         "doctype": "Custom Field",
         "dt": "Item",
         "fieldname": "column_break_metr1",
         "fieldtype": "Column Break",
-        "insert_after": "altezza_default"
+        "insert_after": "altezza_default",
+        "name": "Item-column_break_metr1"
     },
     {
         "doctype": "Custom Field",
@@ -40,7 +44,8 @@
         "fieldtype": "Float",
         "label": "Base Minima (mm)",
         "insert_after": "column_break_metr1",
-        "description": "Limite minimo per la base"
+        "description": "Limite minimo per la base",
+        "name": "Item-min_base"
     },
     {
         "doctype": "Custom Field",
@@ -49,7 +54,8 @@
         "fieldtype": "Float",
         "label": "Base Massima (mm)",
         "insert_after": "min_base",
-        "description": "Limite massimo per la base"
+        "description": "Limite massimo per la base",
+        "name": "Item-max_base"
     },
     {
         "doctype": "Custom Field",
@@ -58,7 +64,8 @@
         "fieldtype": "Float",
         "label": "Altezza Minima (mm)",
         "insert_after": "max_base",
-        "description": "Limite minimo per l'altezza"
+        "description": "Limite minimo per l'altezza",
+        "name": "Item-min_altezza"
     },
     {
         "doctype": "Custom Field",
@@ -67,7 +74,8 @@
         "fieldtype": "Float",
         "label": "Altezza Massima (mm)",
         "insert_after": "min_altezza",
-        "description": "Limite massimo per l'altezza"
+        "description": "Limite massimo per l'altezza",
+        "name": "Item-max_altezza"
     },
     {
         "doctype": "Custom Field",
@@ -76,7 +84,8 @@
         "fieldtype": "Section Break",
         "label": "Dimensioni",
         "insert_after": "description",
-        "collapsible": 1
+        "collapsible": 1,
+        "name": "Quotation Item-section_dimensioni"
     },
     {
         "doctype": "Custom Field",
@@ -86,7 +95,8 @@
         "label": "Base (mm)",
         "insert_after": "section_dimensioni",
         "description": "Base in millimetri",
-        "in_list_view": 1
+        "in_list_view": 1,
+        "name": "Quotation Item-base"
     },
     {
         "doctype": "Custom Field",
@@ -96,7 +106,8 @@
         "label": "Altezza (mm)",
         "insert_after": "base",
         "description": "Altezza in millimetri",
-        "in_list_view": 1
+        "in_list_view": 1,
+        "name": "Quotation Item-altezza"
     },
     {
         "doctype": "Custom Field",
@@ -107,7 +118,8 @@
         "insert_after": "altezza",
         "read_only": 1,
         "description": "Metri quadri totali calcolati",
-        "in_list_view": 1
+        "in_list_view": 1,
+        "name": "Quotation Item-mq_totali"
     },
     {
         "doctype": "Custom Field",
@@ -116,7 +128,8 @@
         "fieldtype": "Section Break",
         "label": "Dimensioni",
         "insert_after": "description",
-        "collapsible": 1
+        "collapsible": 1,
+        "name": "Sales Order Item-section_dimensioni"
     },
     {
         "doctype": "Custom Field",
@@ -126,7 +139,8 @@
         "label": "Base (mm)",
         "insert_after": "section_dimensioni",
         "description": "Base in millimetri",
-        "in_list_view": 1
+        "in_list_view": 1,
+        "name": "Sales Order Item-base"
     },
     {
         "doctype": "Custom Field",
@@ -136,7 +150,8 @@
         "label": "Altezza (mm)",
         "insert_after": "base",
         "description": "Altezza in millimetri",
-        "in_list_view": 1
+        "in_list_view": 1,
+        "name": "Sales Order Item-altezza"
     },
     {
         "doctype": "Custom Field",
@@ -147,7 +162,8 @@
         "insert_after": "altezza",
         "read_only": 1,
         "description": "Metri quadri totali calcolati",
-        "in_list_view": 1
+        "in_list_view": 1,
+        "name": "Sales Order Item-mq_totali"
     },
     {
         "doctype": "Custom Field",
@@ -156,7 +172,8 @@
         "fieldtype": "Section Break",
         "label": "Dimensioni",
         "insert_after": "description",
-        "collapsible": 1
+        "collapsible": 1,
+        "name": "Sales Invoice Item-section_dimensioni"
     },
     {
         "doctype": "Custom Field",
@@ -166,7 +183,8 @@
         "label": "Base (mm)",
         "insert_after": "section_dimensioni",
         "description": "Base in millimetri",
-        "in_list_view": 1
+        "in_list_view": 1,
+        "name": "Sales Invoice Item-base"
     },
     {
         "doctype": "Custom Field",
@@ -176,7 +194,8 @@
         "label": "Altezza (mm)",
         "insert_after": "base",
         "description": "Altezza in millimetri",
-        "in_list_view": 1
+        "in_list_view": 1,
+        "name": "Sales Invoice Item-altezza"
     },
     {
         "doctype": "Custom Field",
@@ -187,7 +206,8 @@
         "insert_after": "altezza",
         "read_only": 1,
         "description": "Metri quadri totali calcolati",
-        "in_list_view": 1
+        "in_list_view": 1,
+        "name": "Sales Invoice Item-mq_totali"
     },
     {
         "doctype": "Custom Field",
@@ -196,7 +216,8 @@
         "fieldtype": "Section Break",
         "label": "Dimensioni",
         "insert_after": "description",
-        "collapsible": 1
+        "collapsible": 1,
+        "name": "Delivery Note Item-section_dimensioni"
     },
     {
         "doctype": "Custom Field",
@@ -206,7 +227,8 @@
         "label": "Base (mm)",
         "insert_after": "section_dimensioni",
         "description": "Base in millimetri",
-        "in_list_view": 1
+        "in_list_view": 1,
+        "name": "Delivery Note Item-base"
     },
     {
         "doctype": "Custom Field",
@@ -216,7 +238,8 @@
         "label": "Altezza (mm)",
         "insert_after": "base",
         "description": "Altezza in millimetri",
-        "in_list_view": 1
+        "in_list_view": 1,
+        "name": "Delivery Note Item-altezza"
     },
     {
         "doctype": "Custom Field",
@@ -227,14 +250,16 @@
         "insert_after": "altezza",
         "read_only": 1,
         "description": "Metri quadri totali calcolati",
-        "in_list_view": 1
+        "in_list_view": 1,
+        "name": "Delivery Note Item-mq_totali"
     },
     {
         "doctype": "Custom Field",
         "dt": "Delivery Note Item",
         "fieldname": "column_break_ship1",
         "fieldtype": "Column Break",
-        "insert_after": "mq_totali"
+        "insert_after": "mq_totali",
+        "name": "Delivery Note Item-column_break_ship1"
     },
     {
         "doctype": "Custom Field",
@@ -243,7 +268,8 @@
         "fieldtype": "Float",
         "label": "Peso Totale (kg)",
         "insert_after": "column_break_ship1",
-        "description": "Peso totale della riga"
+        "description": "Peso totale della riga",
+        "name": "Delivery Note Item-total_weight"
     },
     {
         "doctype": "Custom Field",
@@ -252,7 +278,8 @@
         "fieldtype": "Float",
         "label": "Volume (m³)",
         "insert_after": "total_weight",
-        "description": "Volume totale della riga"
+        "description": "Volume totale della riga",
+        "name": "Delivery Note Item-volume"
     },
     {
         "doctype": "Custom Field",
@@ -261,7 +288,8 @@
         "fieldtype": "Int",
         "label": "Numero Colli",
         "insert_after": "volume",
-        "description": "Numero di colli per questa riga"
+        "description": "Numero di colli per questa riga",
+        "name": "Delivery Note Item-no_of_packages"
     },
     {
         "doctype": "Custom Field",
@@ -271,7 +299,8 @@
         "label": "Codice Fiscale",
         "insert_after": "tax_id",
         "length": 16,
-        "description": "Codice fiscale per persone fisiche"
+        "description": "Codice fiscale per persone fisiche",
+        "name": "Customer-fiscal_code"
     },
     {
         "doctype": "Custom Field",
@@ -280,6 +309,7 @@
         "fieldtype": "Link",
         "label": "Template Tasse Predefinito",
         "options": "Sales Taxes and Charges Template",
-        "insert_after": "tax_category"
+        "insert_after": "tax_category",
+        "name": "Customer-default_sales_taxes_template"
     }
 ]
