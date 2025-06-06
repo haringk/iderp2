@@ -169,7 +169,7 @@ def get_delivery_item_fields():
             "fieldname": "volume",
             "label": "Volume (m³)",
             "fieldtype": "Float",
-            "insert_after": "total_weight",
+            "insert_after": "total_volume",
             "description": "Volume totale della riga"
         },
         {
