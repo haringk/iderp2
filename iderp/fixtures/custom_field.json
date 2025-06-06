@@ -277,7 +277,7 @@
         "fieldname": "volume",
         "fieldtype": "Float",
         "label": "Volume (m³)",
-        "insert_after": "total_weight",
+        "insert_after": "total_volume",
         "description": "Volume totale della riga",
         "name": "Delivery Note Item-volume"
     },
