@@ -264,12 +264,12 @@
     {
         "doctype": "Custom Field",
         "dt": "Delivery Note Item",
-        "fieldname": "total_weight",
+        "fieldname": "total_weight_NO",
         "fieldtype": "Float",
         "label": "Peso Totale (kg)",
         "insert_after": "column_break_ship1",
         "description": "Peso totale della riga",
-        "name": "Delivery Note Item-total_weight"
+        "name": "Delivery Note Item-total_weight_NO"
     },
     {
         "doctype": "Custom Field",
