@@ -16,7 +16,7 @@ def test_hybrid_universal_system(item_code="AM"):
     print(f"\n🔬 TEST SISTEMA IBRIDO - {item_code}")
     print("="*60)
     
-    from iderp.pricing_utils import calculate_universal_item_pricing_fixed
+    from iderp_module.pricing_utils import calculate_universal_item_pricing_fixed
     
     test_scenarios = [
         {
@@ -229,7 +229,7 @@ def simple_universal_pricing_test(item_code="AM"):
     print("="*50)
     
     # Test solo Metro Quadrato (che sicuramente funziona)
-    from iderp.pricing_utils import calculate_universal_item_pricing
+    from iderp_module.pricing_utils import calculate_universal_item_pricing
     
     test_result = calculate_universal_item_pricing(
         item_code=item_code,
@@ -667,7 +667,7 @@ def test_universal_system_complete(item_code="AM"):
     print(f"\n🧪 TEST SISTEMA UNIVERSALE COMPLETO - {item_code}")
     print("="*60)
     
-    from iderp.pricing_utils import calculate_universal_item_pricing
+    from iderp_module.pricing_utils import calculate_universal_item_pricing
     
     # Test scenarios realistici
     test_scenarios = [
@@ -1315,7 +1315,7 @@ def help_manual_setup():
     print("\n🏥 DIAGNOSTICA:")
     print("   tdb()  → Test salute database")
     print("\n💡 ESEMPI:")
-    print("   >>> from iderp.manual_setup import *")
+    print("   >>> from iderp_module.manual_setup import *")
     print("   >>> mss()  # Setup più sicuro")
     print("   >>> tdb()  # Se ci sono problemi DB")
     print("="*50)

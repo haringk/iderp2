@@ -1304,9 +1304,9 @@ def validate_api_endpoints():
     
     try:
         # Test di import per verificare che i moduli siano caricabili
-        from iderp.pricing_utils import calculate_universal_item_pricing
-        from iderp.customer_group_pricing import get_customer_group_pricing
-        from iderp.dashboard import get_quotations_this_month
+        from iderp_module.pricing_utils import calculate_universal_item_pricing
+        from iderp_module.customer_group_pricing import get_customer_group_pricing
+        from iderp_module.dashboard import get_quotations_this_month
         
         return True
         
@@ -1319,8 +1319,8 @@ def validate_hooks_configured():
     
     try:
         # Verifica che hooks.py sia presente e valido
-        import iderp.copy_fields
-        import iderp.universal_pricing
+        import iderp_module.copy_fields
+        import iderp_module.universal_pricing
         
         return True
         
@@ -1465,7 +1465,7 @@ def show_next_steps():
     print("   • File info-id.md per funzionalità complete")
     
     print("\n5. 🔧 COMANDI CONSOLE UTILI:")
-    print("   • from iderp.setup_commands import *")
+    print("   • from iderp_module.setup_commands import *")
     print("   • qt() → Test sistema")
     print("   • qs() → Status sistema")
     print("   • qi() → Reinstall se necessario")
@@ -2320,7 +2320,7 @@ def quick_test():
 def can_import_apis():
     """Verifica se le API sono importabili"""
     try:
-        from iderp.pricing_utils import calculate_universal_item_pricing
+        from iderp_module.pricing_utils import calculate_universal_item_pricing
         return True
     except:
         return False

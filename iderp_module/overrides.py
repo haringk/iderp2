@@ -46,7 +46,7 @@ class CustomItem(Item):
             return
             
         # Import validation function
-        from iderp.doctype.item_pricing_tier.item_pricing_tier import validate_item_pricing_tiers
+        from iderp_module.doctype.item_pricing_tier.item_pricing_tier import validate_item_pricing_tiers
         validate_item_pricing_tiers(self)
     
     def validate_customer_group_minimums(self):
@@ -55,7 +55,7 @@ class CustomItem(Item):
             return
             
         # Import validation function  
-        from iderp.doctype.customer_group_minimum.customer_group_minimum import validate_item_customer_minimums
+        from iderp_module.doctype.customer_group_minimum.customer_group_minimum import validate_item_customer_minimums
         validate_item_customer_minimums(self)
     
     def on_update(self):
@@ -66,11 +66,11 @@ class CustomItem(Item):
     def clear_iderp_cache(self):
         """Pulisce cache iderp per questo item"""
         # Pulisce cache pricing tiers
-        from iderp.doctype.item_pricing_tier.item_pricing_tier import clear_all_pricing_tier_cache
+        from iderp_module.doctype.item_pricing_tier.item_pricing_tier import clear_all_pricing_tier_cache
         clear_all_pricing_tier_cache()
         
         # Pulisce cache customer minimums
-        from iderp.doctype.customer_group_minimum.customer_group_minimum import clear_all_minimum_cache
+        from iderp_module.doctype.customer_group_minimum.customer_group_minimum import clear_all_minimum_cache
         clear_all_minimum_cache()
     
     def get_iderp_summary(self):
@@ -160,8 +160,8 @@ class CustomQuotation(Quotation):
         """Applica calcoli iderp server-side"""
         try:
             # Import funzioni di calcolo
-            from iderp.universal_pricing import apply_universal_pricing_server_side
-            from iderp.global_minimums import apply_global_minimums_server_side
+            from iderp_module.universal_pricing import apply_universal_pricing_server_side
+            from iderp_module.global_minimums import apply_global_minimums_server_side
             
             # Applica pricing universale
             apply_universal_pricing_server_side(self)
@@ -224,7 +224,7 @@ def validate_iderp_item_compatibility(doc, method=None):
 # Event handlers per cache management
 def clear_iderp_cache_on_customer_group_change(doc, method=None):
     """Pulisce cache quando cambia customer group"""
-    from iderp.doctype.customer_group_minimum.customer_group_minimum import clear_all_minimum_cache
+    from iderp_module.doctype.customer_group_minimum.customer_group_minimum import clear_all_minimum_cache
     clear_all_minimum_cache()
 
 def clear_iderp_cache_on_item_change(doc, method=None):

@@ -247,7 +247,7 @@ def calculate_item_price_server_side(doc, item, tipo_vendita, qty_info):
         customer = getattr(doc, 'customer', None) or getattr(doc, 'party_name', None)
         
         # Usa il sistema pricing utils per calcolo
-        from iderp.pricing_utils import get_customer_specific_pricing_for_type, get_item_pricing_for_type
+        from iderp_module.pricing_utils import get_customer_specific_pricing_for_type, get_item_pricing_for_type
         
         if customer:
             pricing_info = get_customer_specific_pricing_for_type(
@@ -570,7 +570,7 @@ def get_copy_fields_status():
         
         # Verifica moduli dipendenti
         try:
-            from iderp.pricing_utils import get_customer_specific_pricing_for_type
+            from iderp_module.pricing_utils import get_customer_specific_pricing_for_type
             pricing_utils_available = True
         except ImportError:
             pricing_utils_available = False

@@ -261,7 +261,7 @@ def create_customer_group_price_rule_doctype():
 def install_customer_group_fields():
     """Installa campi per supporto gruppi cliente"""
     
-    from iderp.install import create_custom_field
+    from iderp_module.install import create_custom_field
     
     custom_fields = [
         {
@@ -524,7 +524,7 @@ def get_customer_specific_price_for_sqm(customer, item_code, total_sqm):
     """
     if not customer:
         # Se non c'è cliente, usa prezzi standard
-        from iderp.pricing_utils import get_price_for_sqm
+        from iderp_module.pricing_utils import get_price_for_sqm
         return get_price_for_sqm(item_code, total_sqm)
     
     # Ottieni regole gruppo cliente
@@ -539,7 +539,7 @@ def get_customer_specific_price_for_sqm(customer, item_code, total_sqm):
         min_applied = True
     
     # Usa prezzi standard dell'item con m² effettivi
-    from iderp.pricing_utils import get_price_for_sqm
+    from iderp_module.pricing_utils import get_price_for_sqm
     standard_price = get_price_for_sqm(item_code, effective_sqm)
     
     if standard_price and min_applied:

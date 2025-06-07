@@ -109,7 +109,7 @@ def patch_pricing_tiers_validation():
     
     try:
         # Sostituisce la funzione nel modulo esistente
-        import iderp.pricing_utils
+        import iderp_module.pricing_utils
         
         # Backup della funzione originale
         iderp.pricing_utils.validate_pricing_tiers_original = iderp.pricing_utils.validate_pricing_tiers

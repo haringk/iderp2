@@ -649,7 +649,7 @@ def fix_help():
     print("   fix_migrate()      → Migra regole esistenti")
     print("   fix_sample('ABC')  → Crea minimi esempio per item")
     print("\n💡 ESEMPIO UTILIZZO:")
-    print("   >>> from iderp.customer_group_minimums_fix import *")
+    print("   >>> from iderp_module.customer_group_minimums_fix import *")
     print("   >>> fix_complete_scenario()")
     print("="*60)
 

@@ -298,7 +298,7 @@ def test_all_types():
     """
     print("\n3. 🧪 Test tutti i tipi...")
     
-    from iderp.pricing_utils import calculate_universal_item_pricing
+    from iderp_module.pricing_utils import calculate_universal_item_pricing
     
     tests = [
         {

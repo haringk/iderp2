@@ -355,7 +355,7 @@ def generate_performance_report(start_date, end_date):
     }
     
     # Health check
-    from iderp.maintenance import get_system_health
+    from iderp_module.maintenance import get_system_health
     report["system_health"] = get_system_health()
     
     # Statistiche calcoli

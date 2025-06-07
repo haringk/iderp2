@@ -3,7 +3,7 @@
 """
 Comandi console per setup e manutenzione iderp
 Uso: bench --site sito.local console
-     > from iderp.setup_commands import *
+     > from iderp_module.setup_commands import *
 """
 
 import frappe
@@ -159,10 +159,10 @@ def test_demo_items():
 def test_api_endpoints():
     """Test API importabili"""
     try:
-        from iderp.pricing_utils import calculate_universal_item_pricing
-        from iderp.customer_group_pricing import get_customer_group_pricing
-        from iderp.api.optional import get_item_optionals
-        from iderp.api.machine import get_pending_jobs
+        from iderp_module.pricing_utils import calculate_universal_item_pricing
+        from iderp_module.customer_group_pricing import get_customer_group_pricing
+        from iderp_module.api.optional import get_item_optionals
+        from iderp_module.api.machine import get_pending_jobs
         
         return {
             "success": True,
@@ -245,7 +245,7 @@ def system_status():
     
     # Health check
     print("\n🏥 HEALTH CHECK:")
-    from iderp.maintenance import get_system_health
+    from iderp_module.maintenance import get_system_health
     health = get_system_health()
     
     health_icon = {
@@ -322,7 +322,7 @@ def reinstall_iderp():
         print("\n🔄 Reinstallazione in corso...")
         
         try:
-            from iderp.install import after_install
+            from iderp_module.install import after_install
             result = after_install()
             
             if result:
@@ -482,7 +482,7 @@ def clear_iderp_cache():
     print("\n🧹 PULIZIA CACHE iderp")
     print("="*50)
     
-    from iderp.maintenance import cleanup_cache
+    from iderp_module.maintenance import cleanup_cache
     cleanup_cache()
     
     # Pulizia aggiuntiva
@@ -515,7 +515,7 @@ def run_maintenance(task=None):
         print("\nUso: run_maintenance('task_name')")
         return
     
-    from iderp.maintenance import run_maintenance_now
+    from iderp_module.maintenance import run_maintenance_now
     result = run_maintenance_now(task)
     
     print(f"\n✅ Risultato: {result}")
@@ -529,7 +529,7 @@ def test_pricing(item_code="POSTER-A3", customer_group="Gold", base=50, altezza=
     print(f"Misure: {base}x{altezza} cm")
     
     try:
-        from iderp.pricing_utils import calculate_universal_item_pricing
+        from iderp_module.pricing_utils import calculate_universal_item_pricing
         
         result = calculate_universal_item_pricing(
             item_code=item_code,
