@@ -55,7 +55,7 @@
  "links": [],
  "modified": "2025-05-31 16:00:00.000000",
  "modified_by": "Administrator",
- "module": "iderp",
+ "module": "iderp_module",
  "name": "Pricing Tier",
  "owner": "Administrator",
  "permissions": [
