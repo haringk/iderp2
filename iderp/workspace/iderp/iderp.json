@@ -1,0 +1,107 @@
+{
+    "charts": [],
+    "content": "[{\"id\":\"YqWpM4j5kN\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">iDERP - Gestione Metrature</span>\",\"col\":12}},{\"id\":\"bTJSd6LnQR\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Articoli\",\"col\":3}},{\"id\":\"kHsNz3RmWP\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Preventivi\",\"col\":3}},{\"id\":\"mPqX8vYnTL\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Ordini di Vendita\",\"col\":3}},{\"id\":\"nRtZ9wKpUJ\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Fatture di Vendita\",\"col\":3}},{\"id\":\"xLmK7uNhGV\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"pQwE5tMjHY\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Configurazione Prezzi</span>\",\"col\":12}},{\"id\":\"qSyF6vOkIZ\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Regole Prezzo Gruppo Cliente\",\"col\":3}},{\"id\":\"rUzG7wPlJA\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Minimi Gruppo Cliente\",\"col\":3}},{\"id\":\"sTaH8xQmKB\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Template Opzionali\",\"col\":3}},{\"id\":\"tVbI9yRnLC\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Fasce Prezzo\",\"col\":3}},{\"id\":\"uXcJ0zSoMD\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"vZdK1ATpNE\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Report e Analisi</span>\",\"col\":12}},{\"id\":\"wBeL2BUqOF\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Analisi Vendite Metrature\",\"col\":3}},{\"id\":\"xDfM3CVrPG\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Report Prezzi Gruppo Cliente\",\"col\":3}},{\"id\":\"yFgN4DWsQH\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Riepilogo Ordini Minimi\",\"col\":3}}]",
+    "creation": "2024-01-01 10:00:00.000000",
+    "custom_blocks": [],
+    "docstatus": 0,
+    "doctype": "Workspace",
+    "for_user": "",
+    "hide_custom": 0,
+    "icon": "color-palette",
+    "idx": 0,
+    "is_hidden": 0,
+    "label": "iDERP",
+    "links": [],
+    "modified": "2024-01-01 10:00:00.000000",
+    "modified_by": "Administrator",
+    "module": "iderp",
+    "name": "iderp",
+    "number_cards": [],
+    "owner": "Administrator",
+    "parent_page": "",
+    "public": 1,
+    "quick_lists": [],
+    "restrict_to_domain": "",
+    "roles": [],
+    "sequence_id": 25.0,
+    "shortcuts": [
+        {
+            "color": "Grey",
+            "doc_view": "List",
+            "label": "Articoli",
+            "link_to": "Item",
+            "type": "DocType"
+        },
+        {
+            "color": "Blue",
+            "doc_view": "List",
+            "label": "Preventivi",
+            "link_to": "Quotation",
+            "type": "DocType"
+        },
+        {
+            "color": "Green",
+            "doc_view": "List",
+            "label": "Ordini di Vendita",
+            "link_to": "Sales Order",
+            "type": "DocType"
+        },
+        {
+            "color": "Orange",
+            "doc_view": "List",
+            "label": "Fatture di Vendita",
+            "link_to": "Sales Invoice",
+            "type": "DocType"
+        },
+        {
+            "color": "Red",
+            "doc_view": "List",
+            "label": "Regole Prezzo Gruppo Cliente",
+            "link_to": "Customer Group Price Rule",
+            "type": "DocType"
+        },
+        {
+            "color": "Purple",
+            "doc_view": "List",
+            "label": "Minimi Gruppo Cliente",
+            "link_to": "Customer Group Minimum",
+            "type": "DocType"
+        },
+        {
+            "color": "Yellow",
+            "doc_view": "List",
+            "label": "Template Opzionali",
+            "link_to": "Optional Template",
+            "type": "DocType"
+        },
+        {
+            "color": "Light Blue",
+            "doc_view": "List",
+            "label": "Fasce Prezzo",
+            "link_to": "Item Pricing Tier",
+            "type": "DocType"
+        },
+        {
+            "color": "Green",
+            "doc_view": "",
+            "label": "Analisi Vendite Metrature",
+            "link_to": "Sales Analytics by Square Meters",
+            "type": "Report"
+        },
+        {
+            "color": "Blue",
+            "doc_view": "",
+            "label": "Report Prezzi Gruppo Cliente",
+            "link_to": "Customer Group Price List",
+            "type": "Report"
+        },
+        {
+            "color": "Orange",
+            "doc_view": "",
+            "label": "Riepilogo Ordini Minimi",
+            "link_to": "Minimum Order Summary",
+            "type": "Report"
+        }
+    ],
+    "title": "iDERP"
+}

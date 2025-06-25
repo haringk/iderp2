@@ -21,7 +21,7 @@ doctype_js = {
 }
 
 # Hook di installazione
-after_install = "iderp_module.install.after_install"
+after_install = "iderp.install.after_install"
 
 # Configurazione base fixtures
 fixtures = [
@@ -60,11 +60,11 @@ def boot_session(bootinfo):
 # 
 # # JavaScript e CSS - ERPNext 15 Compatible
 # app_include_js = [
-#     "/assets/iderp/js/iderp_module.js"
+#     "/assets/iderp/js/iderp.js"
 # ]
 # 
 # app_include_css = [
-#     "/assets/iderp/css/iderp_module.css"
+#     "/assets/iderp/css/iderp.css"
 # ]
 # 
 # doctype_js = {
@@ -79,100 +79,100 @@ def boot_session(bootinfo):
 # doc_events = {
 #     "Quotation": {
 #         "before_save": [
-#             "iderp_module.universal_pricing.apply_universal_pricing_server_side",
-#             "iderp_module.global_minimums.apply_global_minimums_server_side",
-#             "iderp_module.optional_pricing.calculate_optional_totals"  # AGGIUNGI QUESTA
+#             "iderp.universal_pricing.apply_universal_pricing_server_side",
+#             "iderp.global_minimums.apply_global_minimums_server_side",
+#             "iderp.optional_pricing.calculate_optional_totals"  # AGGIUNGI QUESTA
 #         ],
-#         "validate": "iderp_module.copy_fields.copy_custom_fields"
+#         "validate": "iderp.copy_fields.copy_custom_fields"
 #     },
 #     "Sales Order": {
 #         "before_save": [
-#             "iderp_module.universal_pricing.apply_universal_pricing_server_side", 
-#             "iderp_module.global_minimums.apply_global_minimums_server_side",
-#             "iderp_module.optional_pricing.calculate_optional_totals"  # AGGIUNGI QUESTA
+#             "iderp.universal_pricing.apply_universal_pricing_server_side", 
+#             "iderp.global_minimums.apply_global_minimums_server_side",
+#             "iderp.optional_pricing.calculate_optional_totals"  # AGGIUNGI QUESTA
 #         ],
-#         "validate": "iderp_module.copy_fields.copy_custom_fields"
+#         "validate": "iderp.copy_fields.copy_custom_fields"
 #     },
 #     "Sales Invoice": {
 #         "before_save": [
-#             "iderp_module.universal_pricing.apply_universal_pricing_server_side",
-#             "iderp_module.global_minimums.apply_global_minimums_server_side",
-#             "iderp_module.optional_pricing.calculate_optional_totals"  # AGGIUNGI QUESTA
+#             "iderp.universal_pricing.apply_universal_pricing_server_side",
+#             "iderp.global_minimums.apply_global_minimums_server_side",
+#             "iderp.optional_pricing.calculate_optional_totals"  # AGGIUNGI QUESTA
 #         ],
-#         "validate": "iderp_module.copy_fields.copy_custom_fields"
+#         "validate": "iderp.copy_fields.copy_custom_fields"
 #     },
 #     "Delivery Note": {
 #         "before_save": [
-#             "iderp_module.universal_pricing.apply_universal_pricing_server_side",
-#             "iderp_module.global_minimums.apply_global_minimums_server_side",
-#             "iderp_module.optional_pricing.calculate_optional_totals"  # AGGIUNGI QUESTA
+#             "iderp.universal_pricing.apply_universal_pricing_server_side",
+#             "iderp.global_minimums.apply_global_minimums_server_side",
+#             "iderp.optional_pricing.calculate_optional_totals"  # AGGIUNGI QUESTA
 #         ],
-#         "validate": "iderp_module.copy_fields.copy_custom_fields"
+#         "validate": "iderp.copy_fields.copy_custom_fields"
 #     },
 #     "Item": {
-#         "validate": "iderp_module.pricing_utils.validate_pricing_tiers"
+#         "validate": "iderp.pricing_utils.validate_pricing_tiers"
 #     },
 #     "Customer": {
-#         "after_insert": "iderp_module.customer_group_pricing.setup_default_customer_group"
+#         "after_insert": "iderp.customer_group_pricing.setup_default_customer_group"
 #     },
 #     # AGGIUNGI QUESTO:
 #     "Item Optional": {
-#         "validate": "iderp_module.optional_pricing.validate_optional"
+#         "validate": "iderp.optional_pricing.validate_optional"
 #     }
 # }
 # 
 # # API Whitelist - ERPNext 15 Compatible
 # whitelisted_methods = [
 #     # Pricing APIs
-#     "iderp_module.pricing_utils.get_item_pricing_tiers",
-#     "iderp_module.pricing_utils.calculate_item_pricing",
-#     "iderp_module.pricing_utils.calculate_universal_item_pricing",
-#     "iderp_module.pricing_utils.calculate_universal_item_pricing_with_fallback",
-#     "iderp_module.pricing_utils.get_customer_group_min_sqm",
+#     "iderp.pricing_utils.get_item_pricing_tiers",
+#     "iderp.pricing_utils.calculate_item_pricing",
+#     "iderp.pricing_utils.calculate_universal_item_pricing",
+#     "iderp.pricing_utils.calculate_universal_item_pricing_with_fallback",
+#     "iderp.pricing_utils.get_customer_group_min_sqm",
 #     
 #     # Customer Group APIs
-#     "iderp_module.customer_group_pricing.get_customer_group_pricing",
-#     "iderp_module.customer_group_pricing.apply_customer_group_rules",
+#     "iderp.customer_group_pricing.get_customer_group_pricing",
+#     "iderp.customer_group_pricing.apply_customer_group_rules",
 #     
 #     # Dashboard APIs
-#     "iderp_module.dashboard.get_quotations_this_month",
-#     "iderp_module.dashboard.get_top_customer_groups", 
-#     "iderp_module.dashboard.get_configured_items_count",
-#     "iderp_module.dashboard.get_average_order_value",
-#     "iderp_module.dashboard.get_iderp_system_health",
+#     "iderp.dashboard.get_quotations_this_month",
+#     "iderp.dashboard.get_top_customer_groups", 
+#     "iderp.dashboard.get_configured_items_count",
+#     "iderp.dashboard.get_average_order_value",
+#     "iderp.dashboard.get_iderp_system_health",
 #     
 #     # Optional APIs (AGGIUNGI QUESTE)
-#     "iderp_module.api.optional.get_item_optionals",
-#     "iderp_module.api.optional.apply_template",
-#     "iderp_module.api.optional.calculate_optional_price",
-#     "iderp_module.api.optional.get_optional_summary",
-#     "iderp_module.api.optional.toggle_optional",
-#     "iderp_module.api.optional.get_templates_for_item",
-#     "iderp_module.optional_pricing.get_optional_price",
-#     "iderp_module.optional_pricing.format_optional_price",
+#     "iderp.api.optional.get_item_optionals",
+#     "iderp.api.optional.apply_template",
+#     "iderp.api.optional.calculate_optional_price",
+#     "iderp.api.optional.get_optional_summary",
+#     "iderp.api.optional.toggle_optional",
+#     "iderp.api.optional.get_templates_for_item",
+#     "iderp.optional_pricing.get_optional_price",
+#     "iderp.optional_pricing.format_optional_price",
 # 
 #     # E-commerce APIs (placeholder per future implementazioni)
-#     "iderp_module.ecommerce.calculate_item_price",
-#     "iderp_module.ecommerce.add_to_cart_calculated",
-#     "iderp_module.ecommerce.get_item_selling_config"
+#     "iderp.ecommerce.calculate_item_price",
+#     "iderp.ecommerce.add_to_cart_calculated",
+#     "iderp.ecommerce.get_item_selling_config"
 # ]
 # 
 # # Installation Hook
-# after_install = "iderp_module.install.after_install"
-# after_migrate = "iderp_module.install.after_install"
+# after_install = "iderp.install.after_install"
+# after_migrate = "iderp.install.after_install"
 # 
 # # Boot Session - Configurazione client-side  
-# boot_session = "iderp_module.boot_session"
+# boot_session = "iderp.boot_session"
 # 
 # # Scheduler Events per manutenzione sistema
 # scheduler_events = {
 #     "daily": [
-#         "iderp_module.maintenance.cleanup_old_calculations",
-#         "iderp_module.optional_pricing.cleanup_optional_orphans"  # AGGIUNGI
+#         "iderp.maintenance.cleanup_old_calculations",
+#         "iderp.optional_pricing.cleanup_optional_orphans"  # AGGIUNGI
 #     ],
 #     "weekly": [
-#         "iderp_module.maintenance.cleanup_cache",
-#         "iderp_module.reports.generate_weekly_reports"
+#         "iderp.maintenance.cleanup_cache",
+#         "iderp.reports.generate_weekly_reports"
 #     ]
 # }
 # 
@@ -217,29 +217,29 @@ def boot_session(bootinfo):
 # 
 # # Override DocType Classes per customizzazioni avanzate
 # override_doctype_class = {
-#     "Item": "iderp_module.overrides.CustomItem",
-#     "Quotation": "iderp_module.overrides.CustomQuotation"
+#     "Item": "iderp.overrides.CustomItem",
+#     "Quotation": "iderp.overrides.CustomQuotation"
 # }
 # 
 # # Permission Queries per sicurezza avanzata
 # permission_query_conditions = {
-#     "Item": "iderp_module.permissions.get_item_permission_query_conditions"
+#     "Item": "iderp.permissions.get_item_permission_query_conditions"
 # }
 # 
 # has_permission = {
-#     "Item": "iderp_module.permissions.has_item_permission"
+#     "Item": "iderp.permissions.has_item_permission"
 # }
 # 
 # # Jinja Filters per template
 # jinja = {
 #     "methods": [
-#         "iderp_module.utils.get_measurement_options",
-#         "iderp_module.utils.format_price_with_measurement",
-#         "iderp_module.optional_pricing.get_optional_price",  # AGGIUNGI
-#         "iderp_module.optional_pricing.format_optional_price"  # AGGIUNGI
+#         "iderp.utils.get_measurement_options",
+#         "iderp.utils.format_price_with_measurement",
+#         "iderp.optional_pricing.get_optional_price",  # AGGIUNGI
+#         "iderp.optional_pricing.format_optional_price"  # AGGIUNGI
 #     ],
 #     "filters": [
-#         "iderp_module.optional_pricing.optional_price"  # AGGIUNGI
+#         "iderp.optional_pricing.optional_price"  # AGGIUNGI
 #     ]
 # }
 # 
@@ -296,7 +296,7 @@ def boot_session(bootinfo):
 # # Performance monitoring
 # benchmarks = {
 #     "pricing_calculation": {
-#         "method": "iderp_module.pricing_utils.calculate_universal_item_pricing",
+#         "method": "iderp.pricing_utils.calculate_universal_item_pricing",
 #         "threshold": 1.0  # 1 secondo max
 #     }
 # }

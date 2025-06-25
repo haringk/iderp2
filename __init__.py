@@ -47,26 +47,26 @@ def get_app_info():
 # __version__ = "2.0.0"
 # 
 # # Import key functions for module access
-# from .iderp_module.pricing_utils import (
+# from .iderp.pricing_utils import (
 #     calculate_universal_item_pricing,
 #     calculate_universal_item_pricing_with_fallback,
 #     get_item_pricing_tiers,
 #     get_customer_group_min_sqm
 # )
 # 
-# from .iderp_module.customer_group_pricing import (
+# from .iderp.customer_group_pricing import (
 #     get_customer_group_pricing,
 #     apply_customer_group_rules
 # )
 # 
 # # Import setup functions
-# from .iderp_module.install import after_install
+# from .iderp.install import after_install
 # 
 # # Import DocType classes for external access
 # try:
-#     from .iderp_module.doctype.customer_group_price_rule.customer_group_price_rule import CustomerGroupPriceRule
-#     from .iderp_module.doctype.item_pricing_tier.item_pricing_tier import ItemPricingTier
-#     from .iderp_module.doctype.customer_group_minimum.customer_group_minimum import CustomerGroupMinimum
+#     from .iderp.doctype.customer_group_price_rule.customer_group_price_rule import CustomerGroupPriceRule
+#     from .iderp.doctype.item_pricing_tier.item_pricing_tier import ItemPricingTier
+#     from .iderp.doctype.customer_group_minimum.customer_group_minimum import CustomerGroupMinimum
 # except ImportError:
 #     # DocTypes might not be installed yet
 #     pass
