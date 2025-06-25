@@ -1,4 +1,3 @@
-# iderp/doctype/pricing_tier/pricing_tier.json
 {
  "actions": [],
  "allow_rename": 1,
@@ -76,4 +75,3 @@
  "sort_order": "DESC",
  "states": []
 }
-
