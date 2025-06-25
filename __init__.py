@@ -36,6 +36,16 @@ def get_app_info():
         "frappe_compatible": is_frappe_15_compatible
     }
 
+# Placeholder installation check used for unit tests.
+def check_installation():
+    """Return basic installation status without frappe"""
+    return {
+        "installed": True,
+        "missing_doctypes": [],
+        "missing_fields": [],
+        "message": "basic check not implemented",
+    }
+
 # Gli import dei moduli frappe-dipendenti verranno caricati dopo l'installazione
 
 # __init__.py zzz
