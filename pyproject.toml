@@ -33,6 +33,7 @@ dev = [
     "pre-commit",
     "black",
     "ruff",
+    "pytest",
 ]
 
 [project.urls]

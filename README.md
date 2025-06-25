@@ -205,6 +205,15 @@ iderp.apply_customer_group_pricing(frm, cdt, cdn);
 iderp.validate_minimum_qty(frm);
 ```
 
+## 🧪 Test
+
+E' possibile eseguire i test unitari con `pytest`.
+
+```bash
+pip install -e .[dev]
+pytest
+```
+
 ## 🤝 Contribuire
 
 1. Fork la repository
